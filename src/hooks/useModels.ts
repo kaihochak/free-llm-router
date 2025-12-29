@@ -145,23 +145,29 @@ function sortModels(models: Model[], sort: SortType): Model[] {
   }
 }
 
-export function generateSnippet(apiUrl: string): string {
-  return `const res = await fetch('${API_BASE}${apiUrl}');
+export function generateSnippet(apiUrl: string, modelIds: string[]): string {
+  const modelsArray = modelIds.map((id) => `    '${id}',`).join('\n');
+
+  return `// 1. Fetch free models from Free Models API
+const res = await fetch('${API_BASE}${apiUrl}');
 const { models } = await res.json();
 
-// Use the first matching model with OpenRouter
-const model = models[0];
-const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Authorization': \`Bearer \${OPENROUTER_API_KEY}\`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    model: model.id,
-    messages: [{ role: 'user', content: 'Hello!' }],
-  }),
-});`;
+// 2. Use with OpenRouter SDK (with automatic fallback)
+import { OpenRouter } from '@openrouter/sdk';
+
+const openRouter = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+const completion = await openRouter.chat.send({
+  // Models are tried in order - if first fails, falls back to next
+  models: [
+${modelsArray}
+  ],
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
+
+console.log(completion.choices[0].message.content);`;
 }
 
 export function getFullApiUrl(apiUrl: string): string {

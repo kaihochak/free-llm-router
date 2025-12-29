@@ -74,8 +74,8 @@ export function OnboardingFlow() {
       content: <SortSelector activeSort={activeSort} onSortChange={setActiveSort} onConfirm={goToNextStep} />,
     },
     {
-      title: 'Copy the code',
-      content: <CodeSnippet apiUrl={apiUrl} />,
+      title: 'Use the API',
+      content: <CodeSnippet apiUrl={apiUrl} modelIds={models.slice(0, 3).map((m) => m.id)} />,
     },
   ];
 

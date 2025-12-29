@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/main.astro';
-import { ModelTable } from '../components/ModelTable';
+import { ModelTableWithProvider } from '../components/ModelTableWithProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { generateAPISchema } from '../lib/seo';
 ---
@@ -15,7 +15,7 @@ import { generateAPISchema } from '../lib/seo';
     <section id="models" class="mb-12 scroll-mt-20">
       <h2 class="mb-6 text-2xl font-semibold">Free Models</h2>
       <p class="mb-4 text-muted-foreground">Select filters to find models that match your needs. Copy the generated code snippet to use in your app.</p>
-      <ModelTable client:load />
+      <ModelTableWithProvider client:load />
     </section>
 
     <!-- API Reference -->
