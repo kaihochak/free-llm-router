@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { FILTERS, type FilterType } from '@/hooks/useModels';
 
 interface UseCaseSelectorProps {
@@ -23,18 +22,14 @@ export function UseCaseSelector({
           const isActive =
             filter.key === 'all' ? activeFilters.length === 0 : activeFilters.includes(filter.key as FilterType);
           return (
-            <Tooltip key={filter.key}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={isActive ? 'secondary' : 'outline'}
-                  size="xl"
-                  onClick={() => onToggleFilter(filter.key)}
-                >
-                  {filter.label}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{filter.description}</TooltipContent>
-            </Tooltip>
+            <Button
+              key={filter.key}
+              variant={isActive ? 'secondary' : 'outline'}
+              size="xl"
+              onClick={() => onToggleFilter(filter.key)}
+            >
+              {filter.label}
+            </Button>
           );
         })}
         {onConfirm && (

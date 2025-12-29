@@ -28,12 +28,9 @@ function getProvider(modelId: string): string {
   return modelId.split('/')[0] || modelId;
 }
 
-function getModelSlug(modelId: string): string {
-  return modelId.replace(/:free$/, '');
-}
-
 function getOpenRouterUrl(modelId: string): string {
-  return `https://openrouter.ai/models/${getModelSlug(modelId)}`;
+  // Keep the :free suffix in the URL
+  return `https://openrouter.ai/${modelId}`;
 }
 
 function getProviderLogoUrl(provider: string): string {

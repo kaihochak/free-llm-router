@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SORT_OPTIONS, type SortType } from '@/hooks/useModels';
 
 interface SortSelectorProps {
@@ -12,18 +11,14 @@ export function SortSelector({ activeSort, onSortChange, onConfirm }: SortSelect
   return (
     <div className="flex flex-wrap justify-center items-center gap-2">
       {SORT_OPTIONS.map((option) => (
-        <Tooltip key={option.key}>
-          <TooltipTrigger asChild>
-            <Button
-              variant={activeSort === option.key ? 'secondary' : 'outline'}
-              size="xl"
-              onClick={() => onSortChange(option.key)}
-            >
-              {option.label}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{option.description}</TooltipContent>
-        </Tooltip>
+        <Button
+          key={option.key}
+          variant={activeSort === option.key ? 'secondary' : 'outline'}
+          size="xl"
+          onClick={() => onSortChange(option.key)}
+        >
+          {option.label}
+        </Button>
       ))}
       {onConfirm && (
         <Button size="xl" onClick={onConfirm}>

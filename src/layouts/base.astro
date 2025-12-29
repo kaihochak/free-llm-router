@@ -1,13 +1,12 @@
 ---
 import '../styles/global.css';
 import { SiteHeader } from '../components/SiteHeader';
+import SEO from '../components/SEO.astro';
+import type { SEOProps } from '../lib/seo';
 
-interface Props {
-  title: string;
-  description?: string;
-}
+interface Props extends SEOProps {}
 
-const { title, description = '' } = Astro.props;
+const seoProps = Astro.props;
 ---
 
 <html lang="en">
@@ -19,8 +18,7 @@ const { title, description = '' } = Astro.props;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <title>{title}</title>
-    {description && <meta name="description" content={description} />}
+    <SEO {...seoProps} />
     <script is:inline>
       (function() {
         const theme = localStorage.getItem('theme');
