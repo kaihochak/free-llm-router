@@ -36,3 +36,16 @@ export type FreeModel = typeof freeModels.$inferSelect;
 export type NewFreeModel = typeof freeModels.$inferInsert;
 export type ModelFeedback = typeof modelFeedback.$inferSelect;
 export type NewModelFeedback = typeof modelFeedback.$inferInsert;
+
+export const siteFeedback = pgTable('site_feedback', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  message: text('message').notNull(),
+  email: text('email').notNull(),
+  userAgent: text('user_agent'),
+  pageUrl: text('page_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export type SiteFeedback = typeof siteFeedback.$inferSelect;
+export type NewSiteFeedback = typeof siteFeedback.$inferInsert;
