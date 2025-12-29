@@ -5,22 +5,14 @@ A public API that provides developers with a list of currently available free mo
 ## Quick Start
 
 ```bash
-# Initialize the project
-bunx --bun create-astro@latest . --template with-tailwindcss --install --add react --git
-
-# Add dependencies
-bun add @astrojs/cloudflare drizzle-orm @neondatabase/serverless
-bun add -D drizzle-kit
-
-# Add shadcn/ui
-bunx --bun shadcn@latest init
-bunx --bun shadcn@latest add table card button badge
+# Install dependencies
+bun install
 
 # Set up environment
 cp .env.example .env
 # Add your Neon DATABASE_URL
 
-# Run migrations
+# Push schema to database
 bun run db:push
 
 # Start dev server
@@ -30,7 +22,7 @@ bun run dev
 ## Documentation
 
 - [PRD](./docs/PRD.md) - Full product requirements document
-- [reference/](./reference/) - Reference implementations from CourseRater
+- [reference/](./reference/) - Reference implementations
 
 ## Stack
 

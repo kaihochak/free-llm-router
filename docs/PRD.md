@@ -80,12 +80,13 @@ OpenRouter's free models change frequently. Developers building POCs/demos need 
 - Returns list of active free models
 - Fields: `id`, `name`, `contextLength`
 - Includes `lastUpdated` timestamp
-- CORS enabled for all origins
+- CORS enabled for all origins (read-only)
 
 **POST /api/feedback**
 - Accepts model issue reports
 - Fields: `modelId`, `issue`, `details`, `source`
 - Issue types: `rate_limited`, `unavailable`, `error`
+- CORS enabled for all origins (rate-limited)
 
 **POST /api/refresh**
 - Triggers sync from OpenRouter API
@@ -117,7 +118,7 @@ CREATE TABLE free_models (
 
 -- Community feedback on models
 CREATE TABLE model_feedback (
-  id TEXT PRIMARY KEY,
+  id TEXT PRIMARY KEY,          -- UUID generated server-side
   model_id TEXT NOT NULL,
   issue TEXT NOT NULL,           -- 'rate_limited' | 'unavailable' | 'error'
   details TEXT,
@@ -263,7 +264,7 @@ REFRESH_API_KEY=your-secret-key
 - DATABASE_URL only accessible server-side
 - Rate limit feedback endpoint to prevent spam (IP-based)
 - Optional API key for refresh endpoint
-- CORS configured appropriately
+- CORS: allow all origins for `GET /api/models` and `POST /api/feedback`; restrict `POST /api/refresh` to same-origin
 - No PII collected
 
 ---
@@ -301,7 +302,7 @@ These files use Supabase, but the logic can be adapted for Drizzle + Neon.
 **Availability**
 - A model is considered active if it appears in the latest `/api/v1/models` response.
 - If a previously stored model is missing, mark it inactive and record `last_seen_at`.
-- Canonical slug can be used as a stable indicator for availability changes.
+- Availability matching is based on `id` only.
 
 **Sync policy**
 - Scheduled daily sync.
@@ -310,4 +311,7 @@ These files use Supabase, but the logic can be adapted for Drizzle + Neon.
 
 **Caching**
 - `GET /api/models` sets `Cache-Control: public, s-maxage=900` and supports `ETag`.
-- `lastUpdated` is sourced from `sync_meta.updated_at`.
+- `lastUpdated` is sourced from `sync_meta.updated_at` for key `models_last_updated`.
+
+**Field mapping**
+- API `contextLength` maps to DB `context_length`.
