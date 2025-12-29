@@ -13,9 +13,10 @@ interface ModelListProps {
   models: Model[];
   loading?: boolean;
   error?: string | null;
+  itemsPerPage?: number;
 }
 
-const ITEMS_PER_PAGE = 10;
+const DEFAULT_ITEMS_PER_PAGE = 10;
 
 function formatTokens(count: number | null): string {
   if (!count) return '-';
@@ -72,14 +73,14 @@ function ProviderLogo({ provider }: { provider: string }) {
   );
 }
 
-export function ModelList({ models, loading, error }: ModelListProps) {
+export function ModelList({ models, loading, error, itemsPerPage = DEFAULT_ITEMS_PER_PAGE }: ModelListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedModelId, setCopiedModelId] = useState<string | null>(null);
 
-  const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(models.length / itemsPerPage);
   const paginatedModels = models.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   // Reset to page 1 when models change

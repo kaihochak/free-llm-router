@@ -32,7 +32,10 @@ const examples = [
 export function CodeExamplesSection() {
   return (
     <section id="code-examples" className="mb-12 scroll-mt-20">
-      <h2 className="mb-6 text-2xl font-semibold">Code Examples</h2>
+      <h2 className="mb-2 text-2xl font-semibold">Code Examples</h2>
+      <p className="mb-6 text-muted-foreground">
+        Ready-to-use code snippets for common integration patterns.
+      </p>
       <div className="space-y-6">
         {examples.map((example) => (
           <Card key={example.id} id={example.id} className="scroll-mt-20">

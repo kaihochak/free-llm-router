@@ -1,4 +1,4 @@
-import { Rocket, List, Book, Code, ChevronRight } from 'lucide-react';
+import { Rocket, Book, Code, ChevronRight } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -28,15 +28,12 @@ const navItems: NavItem[] = [
     href: '#get-started',
     icon: Rocket,
     items: [
-      { title: '1. What are you building?', href: '#step-1' },
-      { title: '2. What matters most?', href: '#step-2' },
-      { title: '3. Ready to code?', href: '#step-3' },
+      { title: 'Overview', href: '#get-started' },
+      { title: 'Browse Models', href: '#models' },
+      { title: '1. Get API Key', href: '#step-1' },
+      { title: '2. Fetch Models', href: '#step-2' },
+      { title: '3. Use Model IDs', href: '#step-3' },
     ],
-  },
-  {
-    title: 'Models',
-    href: '#models',
-    icon: List,
   },
   {
     title: 'API Reference',
