@@ -1,8 +1,22 @@
 ---
 import Layout from '../layouts/main.astro';
 import { ModelTableWithProvider } from '../components/ModelTableWithProvider';
+import { DocsCodeBlock } from '../components/DocsCodeBlock';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { generateAPISchema } from '../lib/seo';
+
+const modelsResponseExample = `{
+  "models": [
+    { "id": "google/gemini-2.0-flash-exp:free", "name": "Gemini 2.0 Flash", "contextLength": 1000000 }
+  ],
+  "lastUpdated": "2024-12-23T10:00:00Z"
+}`;
+
+const feedbackExample = `// Request
+{ "modelId": "...", "issue": "rate_limited" | "unavailable" | "error", "details": "optional" }
+
+// Response
+{ "received": true }`;
 ---
 
 <Layout
@@ -28,12 +42,7 @@ import { generateAPISchema } from '../lib/seo';
             <CardDescription>Returns the list of currently available free models.</CardDescription>
           </CardHeader>
           <CardContent>
-            <pre class="overflow-x-auto rounded bg-muted p-3 text-sm"><code>{`{
-  "models": [
-    { "id": "google/gemini-2.0-flash-exp:free", "name": "Gemini 2.0 Flash", "contextLength": 1000000 }
-  ],
-  "lastUpdated": "2024-12-23T10:00:00Z"
-}`}</code></pre>
+            <DocsCodeBlock code={modelsResponseExample} client:load />
           </CardContent>
         </Card>
 
@@ -43,11 +52,7 @@ import { generateAPISchema } from '../lib/seo';
             <CardDescription>Report issues with a model (rate limiting, errors, unavailability).</CardDescription>
           </CardHeader>
           <CardContent>
-            <pre class="overflow-x-auto rounded bg-muted p-3 text-sm"><code>{`// Request
-{ "modelId": "...", "issue": "rate_limited" | "unavailable" | "error", "details": "optional" }
-
-// Response
-{ "received": true }`}</code></pre>
+            <DocsCodeBlock code={feedbackExample} client:load />
           </CardContent>
         </Card>
       </div>
