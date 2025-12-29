@@ -21,12 +21,6 @@ const examples = [
     description: 'Complete example with model fallback for reliable responses.',
     code: codeExamples.fullIntegration,
   },
-  {
-    id: 'example-report',
-    title: 'Report an Issue',
-    description: 'Help improve model availability data by reporting issues.',
-    code: codeExamples.reportIssue,
-  },
 ];
 
 export function CodeExamplesSection() {

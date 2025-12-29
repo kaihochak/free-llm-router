@@ -28,7 +28,7 @@ export function TryItPanel({
   const [paramValues, setParamValues] = useState<Record<string, string>>(
     params.reduce((acc, p) => ({ ...acc, [p.name]: p.defaultValue || '' }), {})
   );
-  const [body, setBody] = useState(defaultBody ? JSON.stringify(defaultBody, null, 2) : '');
+  const body = defaultBody ? JSON.stringify(defaultBody, null, 2) : '';
   const [response, setResponse] = useState<string | null>(null);
   const [statusCode, setStatusCode] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -105,15 +105,8 @@ export function TryItPanel({
         )}
 
         {/* Body (for POST) */}
-        {method === 'POST' && (
-          <div className="px-4 py-3">
-            <textarea
-              className="w-full h-32 rounded-lg border bg-muted/50 px-4 py-4 text-sm font-mono resize-none focus:outline-none leading-relaxed"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder='{"key": "value"}'
-            />
-          </div>
+        {method === 'POST' && body && (
+          <CodeBlock code={body} language="json" showCopy={false} className='rounded-none border-none' />
         )}
       </div>
 
@@ -123,25 +116,21 @@ export function TryItPanel({
           <h4 className="text-sm font-medium">Response</h4>
           {statusCode !== null && (
             <span
-              className={`text-xs font-medium ${
-                statusCode >= 200 && statusCode < 300
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-red-600 dark:text-red-400'
-              }`}
+              className={`text-xs font-medium ${statusCode >= 200 && statusCode < 300
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-red-600 dark:text-red-400'
+                }`}
             >
               {statusCode}
             </span>
           )}
         </div>
-        <div className="px-4 py-3">
-          <div className="max-h-80 overflow-auto">
-            <CodeBlock
-              code={response || '// Click "Send" to make a request'}
-              language="json"
-              showCopy={!!response}
-            />
-          </div>
-        </div>
+        <CodeBlock
+          code={response || '// Click "Send" to make a request'}
+          language="json"
+          showCopy={!!response}
+          className='rounded-none border-none'
+        />
       </div>
     </div>
   );
