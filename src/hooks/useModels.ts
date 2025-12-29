@@ -28,7 +28,7 @@ interface ApiResponse {
   feedbackCounts: FeedbackCounts;
 }
 
-export type FilterType = 'chat' | 'vision' | 'coding' | 'longContext' | 'reasoning';
+export type FilterType = 'chat' | 'vision' | 'coding' | 'tools' | 'longContext' | 'reasoning';
 export type SortType = 'contextLength' | 'maxOutput' | 'name' | 'provider' | 'capable' | 'leastIssues';
 
 export const FILTERS: { key: FilterType | 'all'; label: string; description: string }[] = [
@@ -36,6 +36,7 @@ export const FILTERS: { key: FilterType | 'all'; label: string; description: str
   { key: 'chat', label: 'Chat', description: 'Models optimized for conversation' },
   { key: 'vision', label: 'Vision', description: 'Models that can analyze images' },
   { key: 'coding', label: 'Coding', description: 'Models specialized for code generation' },
+  { key: 'tools', label: 'Tools', description: 'Models that support function/tool calling' },
   { key: 'longContext', label: 'Long Context', description: 'Models with 100k+ token context windows' },
   { key: 'reasoning', label: 'Reasoning', description: 'Models with advanced reasoning capabilities' },
 ];
@@ -97,6 +98,8 @@ function filterModels(models: Model[], filters: FilterType[]): Model[] {
           const codingKeywords = ['code', 'coder', 'codestral', 'deepseek', 'qwen2.5-coder'];
           const modelIdLower = model.id.toLowerCase();
           return codingKeywords.some((kw) => modelIdLower.includes(kw));
+        case 'tools':
+          return model.supportedParameters?.includes('tools') ?? false;
         case 'longContext':
           return model.contextLength !== null && model.contextLength >= 100000;
         case 'reasoning':
@@ -145,10 +148,11 @@ function sortModels(models: Model[], sort: SortType): Model[] {
 }
 
 export function generateSnippet(apiUrl: string): string {
-  return `const res = await fetch('${API_BASE}${apiUrl}');
+  return `// Fetch free models (live-updated based on your filters above)
+const res = await fetch('${API_BASE}${apiUrl}');
 const { models } = await res.json();
 
-// Pass to OpenRouter - it auto-fallbacks through the list
+// Pass to OpenRouter - auto-fallbacks if a model is unavailable
 const modelIds = models.map(m => m.id);`;
 }
 

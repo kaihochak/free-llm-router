@@ -31,6 +31,7 @@ interface ApiUsageStepProps {
   activeSort: SortType;
   onToggleFilter: (filter: FilterType | 'all') => void;
   onSortChange: (sort: SortType) => void;
+  children?: React.ReactNode;
 }
 
 export function ApiUsageStep({
@@ -39,6 +40,7 @@ export function ApiUsageStep({
   activeSort,
   onToggleFilter,
   onSortChange,
+  children,
 }: ApiUsageStepProps) {
   const fullUrl = getFullApiUrl(apiUrl);
   const snippet = generateSnippet(apiUrl);
@@ -129,8 +131,11 @@ export function ApiUsageStep({
         </Button>
       </div>
 
+      {/* Optional content slot (e.g., ModelList) */}
+      {children}
+
       {/* Step 1: Get an OpenRouter API Key */}
-      <div className="space-y-3">
+      <div id="step-1" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">1</span>
           <h3 className="text-lg font-medium">Get an OpenRouter API Key</h3>
@@ -149,7 +154,7 @@ export function ApiUsageStep({
       </div>
 
       {/* Step 2: Fetch the models */}
-      <div className="space-y-3">
+      <div id="step-2" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">2</span>
           <h3 className="text-lg font-medium">Fetch Free Models</h3>
@@ -163,7 +168,7 @@ export function ApiUsageStep({
       </div>
 
       {/* Step 3: Pass model IDs */}
-      <div className="space-y-3">
+      <div id="step-3" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">3</span>
           <h3 className="text-lg font-medium">Pass Model IDs</h3>

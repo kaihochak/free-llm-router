@@ -5,7 +5,10 @@ import { codeExamples } from '@/lib/code-examples';
 export function ApiReferenceSection() {
   return (
     <section id="api-reference" className="mb-12 scroll-mt-20">
-      <h2 className="mb-6 text-2xl font-semibold">API Reference</h2>
+      <h2 className="mb-2 text-2xl font-semibold">API Reference</h2>
+      <p className="mb-6 text-muted-foreground">
+        Complete reference for all available endpoints, parameters, and response formats.
+      </p>
       <div className="space-y-6">
         {/* GET /api/v1/models/openrouter */}
         <Card id="api-get-models" className="scroll-mt-20">

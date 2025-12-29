@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/main.astro';
-import { ModelTableWithProvider } from '../components/ModelTable';
 import { GetStartedSectionWithProvider } from '../components/docs/GetStartedSection';
 import { ApiReferenceSection } from '../components/docs/ApiReferenceSection';
 import { CodeExamplesSection } from '../components/docs/CodeExamplesSection';
@@ -14,13 +13,6 @@ import { generateAPISchema } from '../lib/seo';
 >
   <div class="container mx-auto max-w-5xl px-4 py-12">
     <GetStartedSectionWithProvider client:load />
-
-    <!-- Live Models with Dynamic Code Snippet -->
-    <section id="models" class="mb-12 scroll-mt-20">
-      <h2 class="mb-6 text-2xl font-semibold">Free Models</h2>
-      <p class="mb-4 text-muted-foreground">Select filters to find models that match your needs. Copy the generated code snippet to use in your app.</p>
-      <ModelTableWithProvider client:load />
-    </section>
 
     <ApiReferenceSection client:load />
     <CodeExamplesSection client:load />
