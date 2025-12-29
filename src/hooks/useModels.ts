@@ -145,23 +145,11 @@ function sortModels(models: Model[], sort: SortType): Model[] {
 }
 
 export function generateSnippet(apiUrl: string): string {
-  return `// 1. Fetch free models from Free Models API
-const res = await fetch('${API_BASE}${apiUrl}');
+  return `const res = await fetch('${API_BASE}${apiUrl}');
 const { models } = await res.json();
 
-// 2. Use with OpenRouter SDK (with automatic fallback)
-import { OpenRouter } from '@openrouter/sdk';
-
-const openRouter = new OpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
-
-const completion = await openRouter.chat.send({
-  models: models.map(m => m.id),
-  messages: [{ role: 'user', content: 'Hello!' }],
-});
-
-console.log(completion.choices[0].message.content);`;
+// Pass to OpenRouter - it auto-fallbacks through the list
+const modelIds = models.map(m => m.id);`;
 }
 
 export function getFullApiUrl(apiUrl: string): string {

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useModels, FILTERS, SORT_OPTIONS, type FilterType } from '@/hooks/useModels';
 import { ModelList } from '@/components/ModelList';
+import { QueryProvider } from '@/components/QueryProvider';
 
 /**
  * Standalone ModelTable component with filters, sort, and model list.
@@ -65,5 +66,13 @@ export function ModelTable() {
       {/* Model List */}
       <ModelList models={models} loading={loading} error={error} />
     </div>
+  );
+}
+
+export function ModelTableWithProvider() {
+  return (
+    <QueryProvider>
+      <ModelTable />
+    </QueryProvider>
   );
 }
