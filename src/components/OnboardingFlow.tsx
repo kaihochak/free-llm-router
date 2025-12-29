@@ -4,7 +4,7 @@ import { useModels } from '@/hooks/useModels';
 import { OnboardingStep } from '@/components/OnboardingStep';
 import { UseCaseSelector } from '@/components/UseCaseSelector';
 import { SortSelector } from '@/components/SortSelector';
-import { CodeSnippet } from '@/components/CodeSnippet';
+import { ApiUsageStep } from '@/components/ApiUsageStep';
 import { ModelList } from '@/components/ModelList';
 
 const slideVariants = {
@@ -78,7 +78,15 @@ export function OnboardingFlow() {
     {
       title: 'Ready to code?',
       description: 'Copy the snippet and start building',
-      content: <CodeSnippet apiUrl={apiUrl} />,
+      content: (
+        <ApiUsageStep
+          apiUrl={apiUrl}
+          activeFilters={activeFilters}
+          activeSort={activeSort}
+          onToggleFilter={toggleFilter}
+          onSortChange={setActiveSort}
+        />
+      ),
       wide: true,
     },
   ];
@@ -197,8 +205,8 @@ export function OnboardingFlow() {
         </AnimatePresence>
       </div>
 
-      {/* Model List (Always Visible) */}
-      <ModelList models={models} loading={loading} error={error} />
+      {/* Model List (Hidden on Step 3) */}
+      {currentStep !== 2 && <ModelList models={models} loading={loading} error={error} />}
     </div>
   );
 }

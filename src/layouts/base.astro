@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { SiteHeader } from '../components/SiteHeader';
+import { Toaster } from '../components/ui/sonner';
 import SEO from '../components/SEO.astro';
 import type { SEOProps } from '../lib/seo';
 
@@ -33,5 +34,6 @@ const seoProps = Astro.props;
     <main class="pt-14">
       <slot />
     </main>
+    <Toaster client:load />
   </body>
 </html>

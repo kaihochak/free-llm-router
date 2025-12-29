@@ -1,22 +1,10 @@
 ---
 import Layout from '../layouts/main.astro';
-import { ModelTableWithProvider } from '../components/ModelTableWithProvider';
-import { DocsCodeBlock } from '../components/DocsCodeBlock';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { ModelTableWithProvider } from '../components/ModelTable';
+import { GetStartedSectionWithProvider } from '../components/docs/GetStartedSection';
+import { ApiReferenceSection } from '../components/docs/ApiReferenceSection';
+import { CodeExamplesSection } from '../components/docs/CodeExamplesSection';
 import { generateAPISchema } from '../lib/seo';
-
-const modelsResponseExample = `{
-  "models": [
-    { "id": "google/gemini-2.0-flash-exp:free", "name": "Gemini 2.0 Flash", "contextLength": 1000000 }
-  ],
-  "lastUpdated": "2024-12-23T10:00:00Z"
-}`;
-
-const feedbackExample = `// Request
-{ "modelId": "...", "issue": "rate_limited" | "unavailable" | "error", "details": "optional" }
-
-// Response
-{ "received": true }`;
 ---
 
 <Layout
@@ -25,6 +13,8 @@ const feedbackExample = `// Request
   jsonLd={generateAPISchema()}
 >
   <div class="container mx-auto max-w-5xl px-4 py-12">
+    <GetStartedSectionWithProvider client:load />
+
     <!-- Live Models with Dynamic Code Snippet -->
     <section id="models" class="mb-12 scroll-mt-20">
       <h2 class="mb-6 text-2xl font-semibold">Free Models</h2>
@@ -32,31 +22,8 @@ const feedbackExample = `// Request
       <ModelTableWithProvider client:load />
     </section>
 
-    <!-- API Reference -->
-    <section id="api-reference" class="mb-12 scroll-mt-20">
-      <h2 class="mb-6 text-2xl font-semibold">API Reference</h2>
-      <div class="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-mono text-base">GET /api/v1/models/openrouter</CardTitle>
-            <CardDescription>Returns the list of currently available free models.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DocsCodeBlock code={modelsResponseExample} client:load />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-mono text-base">POST /api/feedback</CardTitle>
-            <CardDescription>Report issues with a model (rate limiting, errors, unavailability).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DocsCodeBlock code={feedbackExample} client:load />
-          </CardContent>
-        </Card>
-      </div>
-    </section>
+    <ApiReferenceSection client:load />
+    <CodeExamplesSection client:load />
 
     <!-- Footer -->
     <footer class="border-t pt-8 text-center text-sm text-muted-foreground">

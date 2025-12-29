@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { useModelCount } from '@/hooks/useModelCount';
+import { QueryProvider } from '@/components/QueryProvider';
 
 export function ModelHero() {
   const { count: modelCount } = useModelCount();
@@ -59,5 +60,13 @@ export function ModelHero() {
         <OnboardingFlow />
       </div>
     </div>
+  );
+}
+
+export function ModelHeroWithProvider() {
+  return (
+    <QueryProvider>
+      <ModelHero />
+    </QueryProvider>
   );
 }
