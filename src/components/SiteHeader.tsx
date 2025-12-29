@@ -1,17 +1,20 @@
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex w-full items-center gap-2 px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <div className="flex-1">
-          <span className="font-semibold">Free Models API</span>
-        </div>
-        <ThemeToggle />
+    <header className="fixed top-0 left-0 right-0 z-50 flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+      <div className="flex w-full items-center px-4">
+        <a href="/" className="flex items-center gap-2 font-semibold">
+          <img src="/favicon.svg" alt="" className="h-5 w-5" />
+          <span>Free Models API</span>
+        </a>
+        <div className="flex-1" />
+        <nav className="flex items-center gap-4">
+          <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
+            Docs
+          </a>
+          <ThemeToggle />
+        </nav>
       </div>
     </header>
   );

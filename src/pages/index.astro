@@ -1,0 +1,18 @@
+---
+import Layout from '../layouts/base.astro';
+import { ModelHero } from '../components/ModelHero';
+---
+
+<Layout
+  title="Free Models API - Live Free LLM Models from OpenRouter"
+  description="A live list of free LLM models from OpenRouter for your prototypes, POCs, and demos. No API key needed."
+>
+  <div class="container mx-auto max-w-5xl px-4 py-16">
+    <ModelHero client:load />
+
+    <!-- Footer -->
+    <footer class="mt-16 border-t pt-8 text-center text-sm text-muted-foreground">
+      <p>Data synced from <a href="https://openrouter.ai" class="underline hover:text-foreground">OpenRouter</a></p>
+    </footer>
+  </div>
+</Layout>

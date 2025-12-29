@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { AppShell } from '../components/AppShell';
+import { SiteHeader } from '../components/SiteHeader';
 
 interface Props {
   title: string;
@@ -31,8 +31,9 @@ const { title, description = '' } = Astro.props;
     </script>
   </head>
   <body class="min-h-screen bg-background text-foreground">
-    <AppShell client:load>
+    <SiteHeader client:load />
+    <main class="pt-14">
       <slot />
-    </AppShell>
+    </main>
   </body>
 </html>
