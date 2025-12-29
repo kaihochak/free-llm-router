@@ -85,6 +85,7 @@ export function OnboardingFlow() {
           activeSort={activeSort}
           onToggleFilter={toggleFilter}
           onSortChange={setActiveSort}
+          showBrowseModels={false}
         />
       ),
       wide: true,

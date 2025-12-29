@@ -7,7 +7,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -15,11 +14,17 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 
+interface SubItem {
+  title: string;
+  href: string;
+  badge?: 'GET' | 'POST';
+}
+
 interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  items?: { title: string; href: string }[];
+  items?: SubItem[];
 }
 
 const navItems: NavItem[] = [
@@ -40,8 +45,8 @@ const navItems: NavItem[] = [
     href: '#api-reference',
     icon: Book,
     items: [
-      { title: 'GET /models/openrouter', href: '#api-get-models' },
-      { title: 'POST /feedback', href: '#api-post-feedback' },
+      { title: '/models/openrouter', href: '#api-get-models', badge: 'GET' },
+      { title: '/feedback', href: '#api-post-feedback', badge: 'POST' },
     ],
   },
   {
@@ -87,9 +92,20 @@ function NavItemWithSub({ item }: { item: NavItem }) {
               <li key={subItem.title}>
                 <a
                   href={subItem.href}
-                  className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 >
-                  {subItem.title}
+                  {subItem.badge && (
+                    <span
+                      className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                        subItem.badge === 'GET'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                      }`}
+                    >
+                      {subItem.badge}
+                    </span>
+                  )}
+                  <span className={subItem.badge ? 'font-mono text-xs' : ''}>{subItem.title}</span>
                 </a>
               </li>
             ))}
@@ -114,14 +130,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="px-4 py-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-          <p>Found an issue? </p>
-          <a href="https://github.com" className="underline hover:text-foreground">
-            Report it on GitHub
-          </a>
-        </div>
-      </SidebarFooter>
-    </Sidebar>
+          </Sidebar>
   );
 }

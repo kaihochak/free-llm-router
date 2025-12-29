@@ -7,11 +7,39 @@ export function GetStartedSection() {
   const { models, loading, error, activeFilters, activeSort, apiUrl, toggleFilter, setActiveSort } = useModels();
 
   return (
-    <section id="get-started" className="mb-12 scroll-mt-20">
-      <h2 className="mb-2 text-2xl font-semibold">Get Started</h2>
-      <p className="mb-6 text-muted-foreground">
-        Free Models API provides a curated list of free LLM models available on OpenRouter.
-        Use our API to dynamically fetch model IDs and pass them to OpenRouter for automatic fallback support.
+    <section id="get-started" className="scroll-mt-20">
+      <h2 className="mb-4 text-5xl font-bold">Get Started</h2>
+      <p className="mb-4 text-lg text-muted-foreground">
+        Building a demo or prototyping an MVP? You shouldn't have to pay for API costs just to validate an idea.
+      </p>
+      <p className="mb-4 text-base text-muted-foreground">
+        <a
+          href="https://openrouter.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          OpenRouter
+        </a>'s free tier is great for early development, but free models come with trade-offs.
+        They get rate limited, hit capacity, or get removed without notice. That's expected for free resources.
+      </p>
+      <p className="mb-4 text-base text-muted-foreground">
+        We maintain a live-updated list of available free models so you don't have to track availability yourself.
+        Set your preferences using filters and sorting, fetch the list from our API, and pass the model IDs to{' '}
+        <a
+          href="https://openrouter.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          OpenRouter
+        </a>.
+        It will automatically try each model in the order you specified until one responds. No need to manage fallbacks or check which models are currently working.
+      </p>
+      <p className="mb-12 text-base text-muted-foreground">
+        If you encounter issues with a model, please{' '}
+        <a href="#api-post-feedback" className="text-primary hover:underline">report it</a>{' '}
+        so we can update the list for everyone.
       </p>
 
       <ApiUsageStep
@@ -20,15 +48,9 @@ export function GetStartedSection() {
         activeSort={activeSort}
         onToggleFilter={toggleFilter}
         onSortChange={setActiveSort}
+        modelCount={models.length}
       >
-        {/* Model list showing filtered results - appears after URL, before steps */}
-        <div id="models" className="mt-6 scroll-mt-20">
-          <h3 className="mb-4 text-lg font-medium">
-            <span className="font-semibold text-foreground">{models.length}</span>{' '}
-            <span className="text-muted-foreground">free models available</span>
-          </h3>
-          <ModelList models={models} loading={loading} error={error} itemsPerPage={5} />
-        </div>
+        <ModelList models={models} loading={loading} error={error} itemsPerPage={5} />
       </ApiUsageStep>
     </section>
   );

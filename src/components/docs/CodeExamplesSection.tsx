@@ -31,8 +31,8 @@ const examples = [
 
 export function CodeExamplesSection() {
   return (
-    <section id="code-examples" className="mb-12 scroll-mt-20">
-      <h2 className="mb-2 text-2xl font-semibold">Code Examples</h2>
+    <section id="code-examples" className="mt-20 scroll-mt-20">
+      <h2 className="mb-4 text-5xl font-bold">Code Examples</h2>
       <p className="mb-6 text-muted-foreground">
         Ready-to-use code snippets for common integration patterns.
       </p>

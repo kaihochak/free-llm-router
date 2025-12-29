@@ -39,9 +39,17 @@ bun run dev
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/models` | GET | List active free models |
+| `/api/v1/models/openrouter` | GET | List active free models |
 | `/api/feedback` | POST | Report model issues |
+| `/api/site-feedback` | POST | Submit site feedback |
 | `/api/refresh` | POST | Trigger sync from OpenRouter |
+
+### Query Parameters
+
+`GET /api/v1/models/openrouter` supports:
+
+- `filter` - Comma-separated: `chat`, `vision`, `coding`, `longContext`, `reasoning`
+- `sort` - One of: `contextLength`, `maxOutput`, `name`, `provider`, `capable`
 
 ## Environment Variables
 

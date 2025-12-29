@@ -1,4 +1,5 @@
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { FeedbackDialog } from '@/components/FeedbackDialog';
 
 export function SiteHeader() {
   return (
@@ -13,6 +14,7 @@ export function SiteHeader() {
           <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
             Docs
           </a>
+          <FeedbackDialog />
           <ThemeToggle />
         </nav>
       </div>
