@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { FILTERS, type FilterType } from '@/hooks/useModels';
 
 interface UseCaseSelectorProps {
@@ -16,24 +17,28 @@ export function UseCaseSelector({
 }: UseCaseSelectorProps) {
   return (
     <div className="space-y-6">
-      {/* Filter Buttons + Confirm */}
-      <div className="flex flex-wrap justify-center items-center gap-3">
+      {/* Filter Buttons + Continue */}
+      <div className="flex flex-wrap justify-center items-center gap-2">
         {FILTERS.map((filter) => {
           const isActive =
             filter.key === 'all' ? activeFilters.length === 0 : activeFilters.includes(filter.key as FilterType);
           return (
-            <Button
-              key={filter.key}
-              variant={isActive ? 'default' : 'outline'}
-              size="lg"
-              onClick={() => onToggleFilter(filter.key)}
-            >
-              {filter.label}
-            </Button>
+            <Tooltip key={filter.key}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isActive ? 'secondary' : 'outline'}
+                  size="xl"
+                  onClick={() => onToggleFilter(filter.key)}
+                >
+                  {filter.label}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{filter.description}</TooltipContent>
+            </Tooltip>
           );
         })}
         {onConfirm && (
-          <Button size="lg" onClick={onConfirm} className="ml-2">
+          <Button size="xl" onClick={onConfirm} variant="default">
             Continue
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -54,7 +59,7 @@ export function UseCaseSelector({
       </div>
 
       {/* Model Count */}
-      <p className="text-muted-foreground">
+      <p className="text-muted-foreground text-center">
         <span className="font-semibold text-foreground">{modelCount}</span> free models
       </p>
     </div>

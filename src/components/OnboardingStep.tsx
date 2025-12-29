@@ -18,21 +18,21 @@ export function OnboardingStep({
   confirmLabel = 'Continue',
 }: OnboardingStepProps) {
   return (
-    <div className="flex flex-col items-center text-center space-y-6">
+    <div className="flex flex-col items-center text-center space-y-10 py-10">
       {/* Step Number + Title */}
       <div className="flex items-center gap-4">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-bold shrink-0">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-bold shrink-0">
           {stepNumber}
         </span>
-        <h2 className="text-3xl font-bold sm:text-4xl">{title}</h2>
+        <h2 className="text-4xl font-bold sm:text-5xl">{title}</h2>
       </div>
 
       {/* Step Content */}
-      <div className="w-full">{children}</div>
+      <div className="max-w-xl">{children}</div>
 
       {/* Confirm Button */}
       {showConfirm && onConfirm && (
-        <Button size="lg" onClick={onConfirm} className="mt-4">
+        <Button size="lg" onClick={onConfirm} >
           {confirmLabel}
           <svg
             xmlns="http://www.w3.org/2000/svg"

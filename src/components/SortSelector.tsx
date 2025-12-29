@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SORT_OPTIONS, type SortType } from '@/hooks/useModels';
 
 interface SortSelectorProps {
@@ -9,20 +10,23 @@ interface SortSelectorProps {
 
 export function SortSelector({ activeSort, onSortChange, onConfirm }: SortSelectorProps) {
   return (
-    <div className="flex justify-center items-center gap-3">
-      <select
-        value={activeSort}
-        onChange={(e) => onSortChange(e.target.value as SortType)}
-        className="rounded-xl border-2 border-border bg-card px-6 py-3 text-lg font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
-      >
-        {SORT_OPTIONS.map((option) => (
-          <option key={option.key} value={option.key}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+    <div className="flex flex-wrap justify-center items-center gap-2">
+      {SORT_OPTIONS.map((option) => (
+        <Tooltip key={option.key}>
+          <TooltipTrigger asChild>
+            <Button
+              variant={activeSort === option.key ? 'secondary' : 'outline'}
+              size="xl"
+              onClick={() => onSortChange(option.key)}
+            >
+              {option.label}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{option.description}</TooltipContent>
+        </Tooltip>
+      ))}
       {onConfirm && (
-        <Button size="lg" onClick={onConfirm}>
+        <Button size="xl" onClick={onConfirm}>
           Get Code
           <svg
             xmlns="http://www.w3.org/2000/svg"

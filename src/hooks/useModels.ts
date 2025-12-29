@@ -16,21 +16,21 @@ export interface Model {
 export type FilterType = 'chat' | 'vision' | 'coding' | 'longContext' | 'reasoning';
 export type SortType = 'contextLength' | 'maxOutput' | 'name' | 'provider' | 'capable';
 
-export const FILTERS: { key: FilterType | 'all'; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'chat', label: 'Chat' },
-  { key: 'vision', label: 'Vision' },
-  { key: 'coding', label: 'Coding' },
-  { key: 'longContext', label: 'Long Context' },
-  { key: 'reasoning', label: 'Reasoning' },
+export const FILTERS: { key: FilterType | 'all'; label: string; description: string }[] = [
+  { key: 'all', label: 'All', description: 'Show all available free models' },
+  { key: 'chat', label: 'Chat', description: 'Models optimized for conversation' },
+  { key: 'vision', label: 'Vision', description: 'Models that can analyze images' },
+  { key: 'coding', label: 'Coding', description: 'Models specialized for code generation' },
+  { key: 'longContext', label: 'Long Context', description: 'Models with 100k+ token context windows' },
+  { key: 'reasoning', label: 'Reasoning', description: 'Models with advanced reasoning capabilities' },
 ];
 
-export const SORT_OPTIONS: { key: SortType; label: string }[] = [
-  { key: 'contextLength', label: 'Context Length' },
-  { key: 'maxOutput', label: 'Max Output' },
-  { key: 'name', label: 'Name (A-Z)' },
-  { key: 'provider', label: 'Provider (A-Z)' },
-  { key: 'capable', label: 'Most Capable' },
+export const SORT_OPTIONS: { key: SortType; label: string; description: string }[] = [
+  { key: 'contextLength', label: 'Context Length', description: 'Sort by maximum input tokens' },
+  { key: 'maxOutput', label: 'Max Output', description: 'Sort by maximum output tokens' },
+  { key: 'name', label: 'Name (A-Z)', description: 'Sort alphabetically by model name' },
+  { key: 'provider', label: 'Provider (A-Z)', description: 'Sort alphabetically by provider' },
+  { key: 'capable', label: 'Most Capable', description: 'Sort by overall model capability' },
 ];
 
 const API_BASE = 'https://free-models-api.pages.dev';

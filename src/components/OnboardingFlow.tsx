@@ -23,7 +23,7 @@ const slideVariants = {
 };
 
 const springTransition = {
-  type: 'spring',
+  type: 'spring' as const,
   stiffness: 300,
   damping: 30,
 };
@@ -80,7 +80,7 @@ export function OnboardingFlow() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Step Navigation */}
       <div className="flex items-center justify-center gap-3">
         {/* Left Arrow */}
@@ -156,7 +156,7 @@ export function OnboardingFlow() {
       </div>
 
       {/* Step Content with Animation */}
-      <div className="relative overflow-hidden min-h-[200px]">
+      <div className="relative overflow-hidden min-h-45">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentStep}
