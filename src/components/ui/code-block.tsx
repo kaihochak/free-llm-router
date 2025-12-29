@@ -9,6 +9,9 @@ interface CodeBlockProps {
   showCopy?: boolean;
   copyLabel?: string;
   className?: string;
+  editable?: boolean;
+  onChange?: (value: string) => void;
+  placeholder?: string;
 }
 
 export function CodeBlock({

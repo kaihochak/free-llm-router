@@ -23,7 +23,7 @@ export function GetStartedSection() {
         </a>'s free tier is great for early development, but free models come with trade-offs.
         They get rate limited, hit capacity, or get removed without notice. That's expected for free resources.
       </p>
-      <p className="mb-4 text-base text-muted-foreground">
+      <p className="mb-12 text-base text-muted-foreground">
         We maintain a live-updated list of available free models so you don't have to track availability yourself.
         Set your preferences using filters and sorting, fetch the list from our API, and pass the model IDs to{' '}
         <a
@@ -36,12 +36,6 @@ export function GetStartedSection() {
         </a>.
         It will automatically try each model in the order you specified until one responds. No need to manage fallbacks or check which models are currently working.
       </p>
-      <p className="mb-12 text-base text-muted-foreground">
-        If you encounter issues with a model, please{' '}
-        <a href="#api-post-feedback" className="text-primary hover:underline">report it</a>{' '}
-        so we can update the list for everyone.
-      </p>
-
       <ApiUsageStep
         apiUrl={apiUrl}
         activeFilters={activeFilters}

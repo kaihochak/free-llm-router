@@ -57,7 +57,6 @@ const navItems: NavItem[] = [
       { title: 'Basic Fetch', href: '#example-basic' },
       { title: 'With Filters', href: '#example-filters' },
       { title: 'OpenRouter Integration', href: '#example-integration' },
-      { title: 'Report an Issue', href: '#example-report' },
     ],
   },
 ];
