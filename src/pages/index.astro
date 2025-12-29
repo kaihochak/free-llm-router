@@ -1,14 +1,16 @@
 ---
 import Layout from '../layouts/base.astro';
-import { ModelHero } from '../components/ModelHero';
+import { ModelHeroWithProvider } from '../components/ModelHeroWithProvider';
+import { generateOrganizationSchema, generateWebSiteSchema } from '../lib/seo';
 ---
 
 <Layout
-  title="Free Models API - Live Free LLM Models from OpenRouter"
-  description="A live list of free LLM models from OpenRouter for your prototypes, POCs, and demos. No API key needed."
+  title="Models go down. Your app stays up."
+  description="Build your MVP with $0 AI costs. A curated list of free LLM models from OpenRouter. One API call, always a working model."
+  jsonLd={[generateOrganizationSchema(), generateWebSiteSchema()]}
 >
   <div class="container mx-auto max-w-5xl px-4 py-16">
-    <ModelHero client:load />
+    <ModelHeroWithProvider client:load />
 
     <!-- Footer -->
     <footer class="mt-16 border-t pt-8 text-center text-sm text-muted-foreground">

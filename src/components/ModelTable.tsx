@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { useModels, FILTERS, SORT_OPTIONS } from '@/hooks/useModels';
+import { useModels, FILTERS, SORT_OPTIONS, type FilterType } from '@/hooks/useModels';
 import { ModelList } from '@/components/ModelList';
 
 /**
@@ -14,7 +14,6 @@ export function ModelTable() {
     activeFilters,
     activeSort,
     toggleFilter,
-    clearFilters,
     setActiveSort,
   } = useModels();
 
@@ -24,21 +23,22 @@ export function ModelTable() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>
-          {FILTERS.map((filter) => (
-            <Button
-              key={filter.key}
-              variant={activeFilters.includes(filter.key) ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => toggleFilter(filter.key)}
-            >
-              {filter.label}
-            </Button>
-          ))}
-          {activeFilters.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              Clear
-            </Button>
-          )}
+          {FILTERS.map((filter) => {
+            const isActive =
+              filter.key === 'all'
+                ? activeFilters.length === 0
+                : activeFilters.includes(filter.key as FilterType);
+            return (
+              <Button
+                key={filter.key}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => toggleFilter(filter.key)}
+              >
+                {filter.label}
+              </Button>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-2">
