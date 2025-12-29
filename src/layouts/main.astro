@@ -1,0 +1,35 @@
+---
+import '../styles/global.css';
+import { AppShell } from '../components/AppShell';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = '' } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <script is:inline>
+      (function() {
+        const theme = localStorage.getItem('theme');
+        const isDark = theme === 'dark' ||
+          (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) document.documentElement.classList.add('dark');
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen bg-background text-foreground">
+    <AppShell client:load>
+      <slot />
+    </AppShell>
+  </body>
+</html>
