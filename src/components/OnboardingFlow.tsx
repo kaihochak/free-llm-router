@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useModels } from '@/hooks/useModels';
 import { OnboardingStep } from '@/components/OnboardingStep';
@@ -59,7 +59,8 @@ export function OnboardingFlow() {
 
   const steps = [
     {
-      title: "What's your use case?",
+      title: 'What are you building?',
+      description: 'Filter models by capability',
       content: (
         <UseCaseSelector
           activeFilters={activeFilters}
@@ -70,14 +71,30 @@ export function OnboardingFlow() {
       ),
     },
     {
-      title: 'Sort by preference',
+      title: 'What matters most?',
+      description: 'Order results by your priority',
       content: <SortSelector activeSort={activeSort} onSortChange={setActiveSort} onConfirm={goToNextStep} />,
     },
     {
-      title: 'Use the API',
-      content: <CodeSnippet apiUrl={apiUrl} modelIds={models.slice(0, 3).map((m) => m.id)} />,
+      title: 'Ready to code?',
+      description: 'Copy the snippet and start building',
+      content: <CodeSnippet apiUrl={apiUrl} />,
+      wide: true,
     },
   ];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && currentStep > 0) {
+        goToPrevStep();
+      } else if (e.key === 'ArrowRight' && currentStep < steps.length - 1) {
+        goToNextStep();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentStep]);
 
   return (
     <div className="space-y-6">
@@ -170,7 +187,9 @@ export function OnboardingFlow() {
             <OnboardingStep
               stepNumber={currentStep + 1}
               title={steps[currentStep].title}
+              description={steps[currentStep].description}
               showConfirm={false}
+              wide={steps[currentStep].wide}
             >
               {steps[currentStep].content}
             </OnboardingStep>

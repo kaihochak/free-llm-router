@@ -60,9 +60,8 @@ export const modelKeys = {
 function buildApiUrl(filters: FilterType[], sort: SortType): string {
   const params = new URLSearchParams();
   if (filters.length > 0) params.set('filter', filters.join(','));
-  if (sort !== 'contextLength') params.set('sort', sort);
-  const query = params.toString();
-  return `/api/v1/models/openrouter${query ? `?${query}` : ''}`;
+  params.set('sort', sort); // Always include sort
+  return `/api/v1/models/openrouter?${params.toString()}`;
 }
 
 async function fetchAllModels(): Promise<Model[]> {
@@ -145,9 +144,7 @@ function sortModels(models: Model[], sort: SortType): Model[] {
   }
 }
 
-export function generateSnippet(apiUrl: string, modelIds: string[]): string {
-  const modelsArray = modelIds.map((id) => `    '${id}',`).join('\n');
-
+export function generateSnippet(apiUrl: string): string {
   return `// 1. Fetch free models from Free Models API
 const res = await fetch('${API_BASE}${apiUrl}');
 const { models } = await res.json();
@@ -160,10 +157,7 @@ const openRouter = new OpenRouter({
 });
 
 const completion = await openRouter.chat.send({
-  // Models are tried in order - if first fails, falls back to next
-  models: [
-${modelsArray}
-  ],
+  models: models.map(m => m.id),
   messages: [{ role: 'user', content: 'Hello!' }],
 });
 

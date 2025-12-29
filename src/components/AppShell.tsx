@@ -3,6 +3,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SiteHeader } from '@/components/SiteHeader';
 import { QueryProvider } from '@/components/QueryProvider';
+import { Toaster } from '@/components/ui/sonner';
 
 interface AppShellProps {
   children: ReactNode;
@@ -18,6 +19,7 @@ export function AppShell({ children, defaultOpen = true }: AppShellProps) {
         <main className="min-h-screen w-full pt-14 pl-[--sidebar-width]">
           {children}
         </main>
+        <Toaster />
       </SidebarProvider>
     </QueryProvider>
   );

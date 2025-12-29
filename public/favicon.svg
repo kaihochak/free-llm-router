@@ -1,16 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
   <!-- API/Models icon - stylized brackets with nodes -->
-  <path d="M32 28L16 64l16 36M96 28l16 36-16 36" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="64" cy="40" r="8"/>
-  <circle cx="64" cy="64" r="8"/>
-  <circle cx="64" cy="88" r="8"/>
-  <path d="M64 48v8M64 72v8" stroke-width="4" stroke-linecap="round"/>
-  <style>
-    path, circle { stroke: #000; fill: none; }
-    circle { fill: #000; }
-    @media (prefers-color-scheme: dark) {
-      path, circle { stroke: #fff; }
-      circle { fill: #fff; }
-    }
-  </style>
+  <path d="M28 20L8 64l20 44M100 20l20 44-20 44" stroke="#22c55e" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="36" r="10" fill="#22c55e"/>
+  <circle cx="64" cy="64" r="10" fill="#22c55e"/>
+  <circle cx="64" cy="92" r="10" fill="#22c55e"/>
+  <path d="M64 46v8M64 74v8" stroke="#22c55e" stroke-width="5" stroke-linecap="round"/>
 </svg>
