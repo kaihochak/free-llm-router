@@ -27,7 +27,7 @@ export function ApiReferenceSection() {
         Complete reference for all available endpoints, parameters, and response formats.
       </p>
 
-      <div className="space-y-12">
+      <div className="space-y-16">
         {/* GET /api/v1/models/openrouter */}
         <div id="api-get-models" className="scroll-mt-20 space-y-6">
           {/* Header - spans full width, above columns */}
