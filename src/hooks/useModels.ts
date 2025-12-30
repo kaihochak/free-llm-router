@@ -157,18 +157,17 @@ function sortModels(models: Model[], sort: SortType): Model[] {
 
 // The full helper file content for users to copy
 export const FREE_MODELS_FILE = `/**
- * Free Models API - fetch free LLM model IDs from OpenRouter
- *
- * Get your API key at: https://free-models-api.pages.dev/dashboard
+ * Free Models API helper
+ * Get your API key: https://free-models-api.pages.dev/dashboard
+ * Set FREE_MODELS_API_KEY in your environment.
  *
  * Usage:
- *   const ids = await getModelIds('tools');
- *   const ids = await getModelIds(['vision', 'tools']); // Multiple filters
- *   // Returns: ['google/gemini-2.0-flash', 'meta-llama/llama-3.3-70b', ...]
+ *   const ids = await getModelIds(['tools']);
+ *   const ids = await getModelIds(['vision', 'tools']);
  */
 
 const API = 'https://free-models-api.pages.dev/api/v1';
-const API_KEY = 'YOUR_API_KEY'; // Get yours at: https://free-models-api.pages.dev/dashboard
+const API_KEY = process.env.FREE_MODELS_API_KEY;
 
 type Filter = 'chat' | 'vision' | 'coding' | 'tools' | 'longContext' | 'reasoning';
 type Sort = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
@@ -178,31 +177,16 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-/**
- * Fetch free model IDs from the API
- * @param filter - Optional capability filter(s) (e.g., 'tools' or ['vision', 'tools'])
- * @param sort - How to sort results (default: 'capable')
- * @param limit - Max number of models to return
- * @returns Array of model IDs like 'google/gemini-2.0-flash'
- */
-export async function getModelIds(filter?: Filter | Filter[], sort: Sort = 'capable', limit?: number): Promise<string[]> {
+export async function getModelIds(filter?: Filter[], sort: Sort = 'capable', limit?: number): Promise<string[]> {
   const params = new URLSearchParams({ sort });
   if (filter) {
-    const filters = Array.isArray(filter) ? filter.join(',') : filter;
-    params.set('filter', filters);
+    params.set('filter', filter.join(','));
   }
   if (limit) params.set('limit', String(limit));
   const { ids } = await fetch(\`\${API}/models/ids?\${params}\`, { headers }).then(r => r.json());
   return ids;
 }
 
-/**
- * Report an issue with a model (fire-and-forget)
- * This helps improve the free model list over time
- * @param modelId - The model that had an issue
- * @param issue - Type of issue encountered
- * @param details - Optional error message or details
- */
 export function reportIssue(modelId: string, issue: 'error' | 'rate_limited' | 'unavailable', details?: string) {
   fetch(\`\${API}/models/feedback\`, {
     method: 'POST',

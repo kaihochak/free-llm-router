@@ -33,6 +33,7 @@ interface ApiKey {
   expiresAt: Date | null;
   rateLimitMax: number | null;
   remaining: number | null;
+  requestCount?: number | null;
   lastRequest: Date | null;
   enabled: boolean;
 }
@@ -286,7 +287,13 @@ export function DashboardPage() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {key.remaining !== null ? key.remaining : '—'} / {key.rateLimitMax || 1000}
+                        {(() => {
+                          if (typeof key.remaining === 'number') return key.remaining;
+                          if (typeof key.requestCount === 'number' && typeof key.rateLimitMax === 'number') {
+                            return Math.max(key.rateLimitMax - key.requestCount, 0);
+                          }
+                          return '—';
+                        })()} / {key.rateLimitMax || 1000}
                       </span>
                     </TableCell>
                     <TableCell>
