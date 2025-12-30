@@ -67,7 +67,7 @@ function buildApiUrl(filters: FilterType[], sort: SortType): string {
 }
 
 async function fetchAllModels(): Promise<Model[]> {
-  const response = await fetch('/api/v1/models/full');
+  const response = await fetch('/api/demo/models');
   if (!response.ok) {
     throw new Error('Failed to fetch models');
   }
@@ -159,28 +159,40 @@ function sortModels(models: Model[], sort: SortType): Model[] {
 export const FREE_MODELS_FILE = `/**
  * Free Models API - fetch free LLM model IDs from OpenRouter
  *
+ * Get your API key at: https://free-models-api.pages.dev/dashboard
+ *
  * Usage:
  *   const ids = await getModelIds('tools');
+ *   const ids = await getModelIds(['vision', 'tools']); // Multiple filters
  *   // Returns: ['google/gemini-2.0-flash', 'meta-llama/llama-3.3-70b', ...]
  */
 
 const API = 'https://free-models-api.pages.dev/api/v1';
+const API_KEY = 'YOUR_API_KEY'; // Get yours at: https://free-models-api.pages.dev/dashboard
 
 type Filter = 'chat' | 'vision' | 'coding' | 'tools' | 'longContext' | 'reasoning';
 type Sort = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
 
+const headers = {
+  'Authorization': \`Bearer \${API_KEY}\`,
+  'Content-Type': 'application/json',
+};
+
 /**
  * Fetch free model IDs from the API
- * @param filter - Optional capability filter (e.g., 'tools' for function calling)
+ * @param filter - Optional capability filter(s) (e.g., 'tools' or ['vision', 'tools'])
  * @param sort - How to sort results (default: 'capable')
  * @param limit - Max number of models to return
  * @returns Array of model IDs like 'google/gemini-2.0-flash'
  */
-export async function getModelIds(filter?: Filter, sort: Sort = 'capable', limit?: number): Promise<string[]> {
+export async function getModelIds(filter?: Filter | Filter[], sort: Sort = 'capable', limit?: number): Promise<string[]> {
   const params = new URLSearchParams({ sort });
-  if (filter) params.set('filter', filter);
+  if (filter) {
+    const filters = Array.isArray(filter) ? filter.join(',') : filter;
+    params.set('filter', filters);
+  }
   if (limit) params.set('limit', String(limit));
-  const { ids } = await fetch(\`\${API}/models/ids?\${params}\`).then(r => r.json());
+  const { ids } = await fetch(\`\${API}/models/ids?\${params}\`, { headers }).then(r => r.json());
   return ids;
 }
 
@@ -194,7 +206,7 @@ export async function getModelIds(filter?: Filter, sort: Sort = 'capable', limit
 export function reportIssue(modelId: string, issue: 'error' | 'rate_limited' | 'unavailable', details?: string) {
   fetch(\`\${API}/models/feedback\`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ modelId, issue, details }),
   }).catch(() => {}); // Fire-and-forget, don't block on errors
 }`;

@@ -1,12 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
-import { useModelCount } from '@/hooks/useModelCount';
+import { useModels } from '@/hooks/useModels';
 import { QueryProvider } from '@/components/QueryProvider';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 export function ModelHero() {
-  const { count: modelCount } = useModelCount();
+  const { models } = useModels();
+  const modelCount = models.length;
 
   return (
     <div className="space-y-12">
