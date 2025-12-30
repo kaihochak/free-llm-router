@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useModels, FILTERS, SORT_OPTIONS, type FilterType } from '@/hooks/useModels';
 import { ModelList } from '@/components/ModelList';
 import { QueryProvider } from '@/components/QueryProvider';
+
+const ITEMS_PER_PAGE = 10;
 
 /**
  * Standalone ModelTable component with filters, sort, and model list.
@@ -17,6 +20,14 @@ export function ModelTable() {
     toggleFilter,
     setActiveSort,
   } = useModels();
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when models change (e.g., filter/sort changes)
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   return (
     <div className="space-y-6">
@@ -58,13 +69,41 @@ export function ModelTable() {
         </div>
       </div>
 
-      {/* Models Count */}
-      <p className="text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">{models.length}</span> free models
-      </p>
+      {/* Models Count & Pagination */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{models.length}</span> free models
+        </p>
+
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </Button>
+            <span className="text-sm text-muted-foreground px-1">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Model List */}
-      <ModelList models={models} loading={loading} error={error} />
+      <ModelList models={models} loading={loading} error={error} currentPage={currentPage} itemsPerPage={ITEMS_PER_PAGE} />
     </div>
   );
 }

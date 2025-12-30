@@ -1,10 +1,21 @@
+import { useState } from 'react';
 import { useModels } from '@/hooks/useModels';
 import { ApiUsageStep } from '@/components/ApiUsageStep';
 import { ModelList } from '@/components/ModelList';
 import { QueryProvider } from '@/components/QueryProvider';
 
+const ITEMS_PER_PAGE = 5;
+
 export function GetStartedSection() {
   const { models, loading, error, activeFilters, activeSort, apiUrl, toggleFilter, setActiveSort } = useModels();
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when models change (e.g., filter/sort changes)
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   return (
     <section id="get-started" className="scroll-mt-20">
@@ -43,8 +54,11 @@ export function GetStartedSection() {
         onToggleFilter={toggleFilter}
         onSortChange={setActiveSort}
         modelCount={models.length}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
       >
-        <ModelList models={models} loading={loading} error={error} itemsPerPage={5} />
+        <ModelList models={models} loading={loading} error={error} currentPage={currentPage} itemsPerPage={ITEMS_PER_PAGE} />
       </ApiUsageStep>
     </section>
   );

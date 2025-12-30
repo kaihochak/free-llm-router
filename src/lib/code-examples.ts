@@ -1,6 +1,6 @@
 export const codeExamples = {
-  // API Reference - Models Response
-  modelsResponse: `{
+  // API Reference - GET Models Response
+  getModelsResponse: `{
   "models": [
     {
       "id": "google/gemini-2.0-flash-exp:free",
@@ -8,28 +8,16 @@ export const codeExamples = {
       "contextLength": 1000000,
       "maxCompletionTokens": 8192,
       "description": "...",
-      "modality": "text->text",
       "inputModalities": ["text", "image"],
       "outputModalities": ["text"],
-      "supportedParameters": ["tools", "reasoning"],
-      "isModerated": false
+      "supportedParameters": ["tools", "reasoning"]
     }
   ],
-  "feedbackCounts": {
-    "model-id": { "rateLimited": 0, "unavailable": 0, "error": 0 }
-  },
+  "feedbackCounts": { ... },
   "lastUpdated": "2024-12-29T10:00:00Z",
   "filters": ["vision"],
   "sort": "contextLength",
   "count": 15
-}`,
-
-  // API Reference - Feedback Request
-  feedbackRequest: `{
-  "modelId": "google/gemini-2.0-flash-exp:free",
-  "issue": "rate_limited",
-  "details": "Getting 429 after ~10 requests",
-  "source": "my-app"
 }`,
 
   // API Reference - Feedback Response
@@ -69,7 +57,7 @@ async function chat(message: string) {
 }`,
 
   // Code Examples - Report Issue
-  reportIssue: `await fetch('https://free-models-api.pages.dev/api/feedback', {
+  reportIssue: `await fetch('https://free-models-api.pages.dev/api/v1/feedback', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
