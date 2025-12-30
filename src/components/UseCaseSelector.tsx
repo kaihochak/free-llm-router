@@ -4,14 +4,12 @@ import { FILTERS, type FilterType } from '@/hooks/useModels';
 interface UseCaseSelectorProps {
   activeFilters: FilterType[];
   onToggleFilter: (filter: FilterType | 'all') => void;
-  modelCount: number;
   onConfirm?: () => void;
 }
 
 export function UseCaseSelector({
   activeFilters,
   onToggleFilter,
-  modelCount,
   onConfirm,
 }: UseCaseSelectorProps) {
   return (
@@ -52,11 +50,6 @@ export function UseCaseSelector({
           </Button>
         )}
       </div>
-
-      {/* Model Count */}
-      <p className="text-muted-foreground text-center">
-        <span className="font-semibold text-foreground">{modelCount}</span> free models
-      </p>
     </div>
   );
 }

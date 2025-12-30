@@ -76,7 +76,6 @@ export function OnboardingFlow() {
         <UseCaseSelector
           activeFilters={activeFilters}
           onToggleFilter={toggleFilter}
-          modelCount={models.length}
           onConfirm={goToNextStep}
         />
       ),

@@ -184,12 +184,14 @@ export function TryItPanel({
             </span>
           )}
         </div>
-        <CodeBlock
-          code={response || exampleResponse}
-          language="json"
-          showCopy={!!response}
-          className="rounded-none border-none"
-        />
+        <div className="max-h-64 overflow-auto custom-scrollbar">
+          <CodeBlock
+            code={response || exampleResponse}
+            language="json"
+            showCopy={!!response}
+            className="rounded-none border-none"
+          />
+        </div>
       </div>
     </div>
   );

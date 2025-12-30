@@ -86,7 +86,7 @@ function NavItemWithSub({ item }: { item: NavItem }) {
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <ul className="ml-6 mt-1 space-y-1 border-l pl-2">
+          <ul className="ml-4 mt-1 space-y-1 border-l pl-2">
             {item.items.map((subItem) => (
               <li key={subItem.title}>
                 <a
