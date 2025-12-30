@@ -202,12 +202,6 @@ export function ApiUsageStep({
           {/* Model List (passed as children) */}
           {children}
 
-          {/* getModelIds call - shows the equivalent function call */}
-          <CodeBlock
-            code={`getModelIds(${activeFilters.length === 0 ? 'undefined' : activeFilters.length === 1 ? `'${activeFilters[0]}'` : `[${activeFilters.map(f => `'${f}'`).join(', ')}]`}, '${activeSort}'${activeLimit ? `, ${activeLimit}` : ''})`}
-            language="typescript"
-            className="text-sm"
-          />
         </div>
       )}
 
@@ -252,12 +246,20 @@ export function ApiUsageStep({
           <h3 className="text-2xl font-semibold">Use It</h3>
         </div>
         <p className="text-muted-foreground">
+          This is the exact `getModelIds` call for your current filters, sort, and limit.
+        </p>
+        <CodeBlock
+          code={`getModelIds([${activeFilters.map(f => `'${f}'`).join(', ')}], '${activeSort}'${activeLimit ? `, ${activeLimit}` : ''})`}
+          language="typescript"
+          className="text-sm"
+        />
+        <p className="text-muted-foreground">
           Loop through models until one succeeds. Free models may be rate-limited, so we try multiple and optionally fall back to stable models you trust. See{' '}
           <a href="#code-examples" className="text-primary hover:underline">Code Examples</a> for more patterns.
         </p>
         <CodeBlock code={`// 1. Fetch free models and try each until one succeeds
 try {
-  const freeModels = await getModelIds(${activeFilters.length === 0 ? "'tools'" : activeFilters.length === 1 ? `'${activeFilters[0]}'` : `[${activeFilters.map(f => `'${f}'`).join(', ')}]`}, '${activeSort}'${activeLimit ? `, ${activeLimit}` : ', 5'});
+  const freeModels = await getModelIds([${activeFilters.map(f => `'${f}'`).join(', ')}], '${activeSort}'${activeLimit ? `, ${activeLimit}` : ', 5'});
 
   // 2. (Optional) Add stable fallback models you trust (usually paid)
   const stableFallback = ['anthropic/claude-3.5-sonnet'];

@@ -1,5 +1,8 @@
 import { pgTable, text, integer, boolean, timestamp } from 'drizzle-orm/pg-core';
 
+// Re-export auth schema
+export * from './auth-schema';
+
 export const freeModels = pgTable('free_models', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -41,7 +44,7 @@ export const siteFeedback = pgTable('site_feedback', {
   id: text('id').primaryKey(),
   type: text('type').notNull(),
   message: text('message').notNull(),
-  email: text('email').notNull(),
+  email: text('email'),
   userAgent: text('user_agent'),
   pageUrl: text('page_url'),
   createdAt: timestamp('created_at').defaultNow(),
