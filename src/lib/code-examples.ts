@@ -85,7 +85,7 @@ async function chat(userMessage: string) {
   messages.push({ role: 'user', content: userMessage });
 
   try {
-    const models = await getModelIds('chat', 'capable', 5);
+    const models = await getModelIds(['chat'], 'capable', 5);
 
     for (const id of models) {
       try {
@@ -130,7 +130,7 @@ const tools = {
 async function askWithTools(prompt: string) {
   try {
     // Filter for models that support tool calling
-    const models = await getModelIds('tools', 'capable', 3);
+    const models = await getModelIds(['tools'], 'capable', 3);
 
     for (const id of models) {
       try {
