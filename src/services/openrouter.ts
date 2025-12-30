@@ -2,10 +2,10 @@ import { eq, and, notInArray, desc, asc, gte, sql, arrayContains, type SQL } fro
 import { freeModels, modelFeedback, syncMeta, type Database } from '../db';
 
 export type FilterType = 'chat' | 'vision' | 'coding' | 'longContext' | 'reasoning';
-export type SortType = 'contextLength' | 'maxOutput' | 'name' | 'provider' | 'capable';
+export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
 
 const VALID_FILTERS: FilterType[] = ['chat', 'vision', 'coding', 'longContext', 'reasoning'];
-const VALID_SORTS: SortType[] = ['contextLength', 'maxOutput', 'name', 'provider', 'capable'];
+const VALID_SORTS: SortType[] = ['contextLength', 'maxOutput', 'capable', 'leastIssues', 'reliable', 'newest'];
 
 export function validateFilters(value: string | null): FilterType[] {
   if (!value) return [];
@@ -210,6 +210,7 @@ export async function getActiveModels(db: Database) {
       outputModalities: freeModels.outputModalities,
       supportedParameters: freeModels.supportedParameters,
       isModerated: freeModels.isModerated,
+      createdAt: freeModels.createdAt,
     })
     .from(freeModels)
     .where(eq(freeModels.isActive, true))
@@ -253,12 +254,16 @@ function buildOrderBy(sort: SortType) {
       return desc(freeModels.contextLength);
     case 'maxOutput':
       return desc(freeModels.maxCompletionTokens);
-    case 'name':
-      return asc(freeModels.name);
-    case 'provider':
-      return asc(sql`split_part(${freeModels.id}, '/', 1)`);
     case 'capable':
       return desc(sql`coalesce(array_length(${freeModels.supportedParameters}, 1), 0)`);
+    case 'leastIssues':
+      // For now, use priority as a proxy - lower priority = fewer issues
+      return asc(freeModels.priority);
+    case 'reliable':
+      // Composite: capability (high) + low priority (fewer issues)
+      return desc(sql`coalesce(array_length(${freeModels.supportedParameters}, 1), 0) - coalesce(${freeModels.priority}, 100) / 100`);
+    case 'newest':
+      return desc(freeModels.createdAt);
   }
 }
 
@@ -275,6 +280,7 @@ export async function getFilteredModels(db: Database, filters: FilterType[], sor
       outputModalities: freeModels.outputModalities,
       supportedParameters: freeModels.supportedParameters,
       isModerated: freeModels.isModerated,
+      createdAt: freeModels.createdAt,
     })
     .from(freeModels)
     .where(buildFilterCondition(filters))

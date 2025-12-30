@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { modelKeys } from './useModels';
 
 async function fetchModelCount(): Promise<number> {
-  const response = await fetch('/api/v1/models/openrouter');
+  const response = await fetch('/api/v1/models/ids');
   if (!response.ok) {
     throw new Error('Failed to fetch model count');
   }

@@ -1,6 +1,16 @@
 export const codeExamples = {
-  // API Reference - GET Models Response
+  // API Reference - GET Models (IDs only) Response
   getModelsResponse: `{
+  "ids": [
+    "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "deepseek/deepseek-chat:free"
+  ],
+  "count": 15
+}`,
+
+  // API Reference - GET Models Full Response
+  getModelsFullResponse: `{
   "models": [
     {
       "id": "google/gemini-2.0-flash-exp:free",
@@ -24,22 +34,22 @@ export const codeExamples = {
   feedbackResponse: `{ "received": true }`,
 
   // Code Examples - Basic Fetch
-  basicFetch: `const response = await fetch('https://free-models-api.pages.dev/api/v1/models/openrouter');
-const { models, count } = await response.json();
+  basicFetch: `const response = await fetch('https://free-models-api.pages.dev/api/v1/models/ids');
+const { ids, count } = await response.json();
 console.log(\`Found \${count} free models\`);`,
 
   // Code Examples - With Filters
   withFilters: `// Get only vision-capable models, sorted by context length
-const url = 'https://free-models-api.pages.dev/api/v1/models/openrouter?filter=vision&sort=contextLength';
-const { models } = await fetch(url).then(r => r.json());`,
+const url = 'https://free-models-api.pages.dev/api/v1/models/ids?filter=vision&sort=contextLength';
+const { ids } = await fetch(url).then(r => r.json());`,
 
   // Code Examples - Full Integration
   fullIntegration: `import { OpenRouter } from '@openrouter/sdk';
 
 async function chat(message: string) {
-  // 1. Get current free models
-  const { models } = await fetch(
-    'https://free-models-api.pages.dev/api/v1/models/openrouter?sort=capable'
+  // 1. Get current free model IDs
+  const { ids } = await fetch(
+    'https://free-models-api.pages.dev/api/v1/models/ids?sort=capable'
   ).then(r => r.json());
 
   // 2. Create OpenRouter client
@@ -49,7 +59,7 @@ async function chat(message: string) {
 
   // 3. Send message with automatic fallback
   const completion = await openRouter.chat.send({
-    models: models.map(m => m.id),
+    models: ids,
     messages: [{ role: 'user', content: message }],
   });
 
@@ -57,7 +67,7 @@ async function chat(message: string) {
 }`,
 
   // Code Examples - Report Issue
-  reportIssue: `await fetch('https://free-models-api.pages.dev/api/v1/feedback', {
+  reportIssue: `await fetch('https://free-models-api.pages.dev/api/v1/models/feedback', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({

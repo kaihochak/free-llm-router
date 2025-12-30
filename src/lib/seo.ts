@@ -2,7 +2,7 @@ export const siteConfig = {
   name: 'Free Models API',
   url: 'https://free-models-api.pages.dev',
   description:
-    'A curated list of free LLM models from OpenRouter. One API call, always a working model. We track availability so you don\'t have to.',
+    'A live-updated list of free LLM models from OpenRouter. One API call, always a working model. We track availability so you don\'t have to.',
   defaultImage: '/og-image.png',
 };
 
@@ -44,7 +44,7 @@ export function generateAPISchema() {
     name: 'Free Models API',
     description:
       'REST API providing access to free LLM models from OpenRouter',
-    url: `${siteConfig.url}/api/v1/models/openrouter`,
+    url: `${siteConfig.url}/api/v1/models/ids`,
     provider: {
       '@type': 'Organization',
       name: siteConfig.name,

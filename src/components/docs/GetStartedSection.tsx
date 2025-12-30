@@ -10,6 +10,7 @@ export function GetStartedSection() {
   const { models, loading, error, activeFilters, activeSort, apiUrl, toggleFilter, setActiveSort } = useModels();
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeLimit, setActiveLimit] = useState<number | undefined>(5);
   const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
 
   // Reset to page 1 when models change (e.g., filter/sort changes)
@@ -51,8 +52,10 @@ export function GetStartedSection() {
         apiUrl={apiUrl}
         activeFilters={activeFilters}
         activeSort={activeSort}
+        activeLimit={activeLimit}
         onToggleFilter={toggleFilter}
         onSortChange={setActiveSort}
+        onLimitChange={setActiveLimit}
         modelCount={models.length}
         currentPage={currentPage}
         totalPages={totalPages}

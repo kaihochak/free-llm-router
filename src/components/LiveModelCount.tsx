@@ -18,7 +18,7 @@ export function LiveModelCount() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/v1/models/openrouter')
+    fetch('/api/v1/models/full')
       .then((res) => res.json())
       .then((data) => {
         setData(data);

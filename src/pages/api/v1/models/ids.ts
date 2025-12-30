@@ -3,7 +3,6 @@ import { createDb } from '@/db';
 import {
   getFilteredModels,
   getLastUpdated,
-  getRecentFeedbackCounts,
   syncModels,
   validateFilters,
   validateSort,
@@ -17,6 +16,10 @@ const corsHeaders = {
 
 const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
 
+/**
+ * Lightweight endpoint that returns only model IDs
+ * Returns only model IDs - no feedback counts, no full model objects
+ */
 export const GET: APIRoute = async ({ locals, url }) => {
   try {
     const runtime = (locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
@@ -34,6 +37,8 @@ export const GET: APIRoute = async ({ locals, url }) => {
     // Parse and validate query parameters
     const filters = validateFilters(url.searchParams.get('filter'));
     const sort = validateSort(url.searchParams.get('sort'));
+    const limitParam = url.searchParams.get('limit');
+    const limit = limitParam ? Math.min(Math.max(1, parseInt(limitParam, 10) || 50), 100) : undefined;
 
     // Lazy refresh if stale
     const lastUpdated = await getLastUpdated(db);
@@ -41,21 +46,17 @@ export const GET: APIRoute = async ({ locals, url }) => {
       await syncModels(db);
     }
 
-    // Fetch filtered and sorted models + feedback counts
-    const [models, feedbackCounts, updatedAt] = await Promise.all([
-      getFilteredModels(db, filters, sort),
-      getRecentFeedbackCounts(db),
-      getLastUpdated(db),
-    ]);
+    // Fetch filtered and sorted models
+    const allModels = await getFilteredModels(db, filters, sort);
+
+    // Apply limit and extract IDs only
+    const models = limit ? allModels.slice(0, limit) : allModels;
+    const ids = models.map((m) => m.id);
 
     return new Response(
       JSON.stringify({
-        models,
-        feedbackCounts,
-        lastUpdated: updatedAt?.toISOString() ?? new Date().toISOString(),
-        filters: filters.length > 0 ? filters : undefined,
-        sort,
-        count: models.length,
+        ids,
+        count: ids.length,
       }),
       {
         status: 200,
@@ -67,9 +68,9 @@ export const GET: APIRoute = async ({ locals, url }) => {
       }
     );
   } catch (error) {
-    console.error('[API/models] Error:', error);
+    console.error('[API/models/ids] Error:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to fetch models' }),
+      JSON.stringify({ error: 'Failed to fetch model IDs' }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },

@@ -1,4 +1,5 @@
 import { Rocket, Book, Code, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +14,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 interface SubItem {
   title: string;
@@ -34,10 +36,11 @@ const navItems: NavItem[] = [
     icon: Rocket,
     items: [
       { title: 'Overview', href: '#get-started' },
-      { title: '1. Get Your Model List', href: '#models' },
-      { title: '2. Get API Key', href: '#get-api-key' },
-      { title: '3. Fetch Models', href: '#fetch-models' },
-      { title: '4. Use Model IDs', href: '#use-models' },
+      { title: '1. Set Up OpenRouter', href: '#setup-openrouter' },
+      { title: '2. Preview Models', href: '#models' },
+      { title: '3. Get API Key', href: '#get-api-key' },
+      { title: '4. Copy Helper File', href: '#copy-file' },
+      { title: '5. Use It', href: '#use-it' },
     ],
   },
   {
@@ -45,8 +48,9 @@ const navItems: NavItem[] = [
     href: '#api-reference',
     icon: Book,
     items: [
-      { title: '/models/openrouter', href: '#api-get-models', badge: 'GET' },
-      { title: '/feedback', href: '#api-post-feedback', badge: 'POST' },
+      { title: '/models/ids', href: '#api-get-models', badge: 'GET' },
+      { title: '/models/full', href: '#api-get-models-full', badge: 'GET' },
+      { title: '/models/feedback', href: '#api-post-feedback', badge: 'POST' },
     ],
   },
   {
@@ -61,7 +65,7 @@ const navItems: NavItem[] = [
   },
 ];
 
-function NavItemWithSub({ item }: { item: NavItem }) {
+function NavItemWithSub({ item, activeHash }: { item: NavItem; activeHash: string }) {
   if (!item.items) {
     return (
       <SidebarMenuItem>
@@ -87,27 +91,36 @@ function NavItemWithSub({ item }: { item: NavItem }) {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <ul className="ml-4 mt-1 space-y-1 border-l pl-2">
-            {item.items.map((subItem) => (
-              <li key={subItem.title}>
-                <a
-                  href={subItem.href}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                >
-                  {subItem.badge && (
-                    <span
-                      className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                        subItem.badge === 'GET'
-                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-                      }`}
-                    >
-                      {subItem.badge}
-                    </span>
-                  )}
-                  <span className={subItem.badge ? 'font-mono text-xs' : ''}>{subItem.title}</span>
-                </a>
-              </li>
-            ))}
+            {item.items.map((subItem) => {
+              const isActive = activeHash === subItem.href.slice(1);
+              return (
+                <li key={subItem.title}>
+                  <a
+                    href={subItem.href}
+                    className={cn(
+                      'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                      isActive
+                        ? 'bg-accent text-accent-foreground font-medium'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )}
+                  >
+                    {subItem.badge && (
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold',
+                          subItem.badge === 'GET'
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                        )}
+                      >
+                        {subItem.badge}
+                      </span>
+                    )}
+                    <span className={subItem.badge ? 'font-mono text-xs' : ''}>{subItem.title}</span>
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </CollapsibleContent>
       </SidebarMenuItem>
@@ -115,7 +128,35 @@ function NavItemWithSub({ item }: { item: NavItem }) {
   );
 }
 
+// Get all section IDs for intersection observer
+const allSectionIds = navItems.flatMap((item) =>
+  item.items?.map((sub) => sub.href.slice(1)) ?? [item.href.slice(1)]
+);
+
 export function AppSidebar() {
+  const [activeHash, setActiveHash] = useState('get-started');
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the first visible section
+        const visible = entries.find((entry) => entry.isIntersecting);
+        if (visible) {
+          setActiveHash(visible.target.id);
+        }
+      },
+      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
+    );
+
+    // Observe all sections
+    allSectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Sidebar collapsible="none" className="sticky top-14 h-[calc(100vh-3.5rem)] border-r bg-background">
       <SidebarContent className="p-2">
@@ -123,12 +164,12 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
-                <NavItemWithSub key={item.title} item={item} />
+                <NavItemWithSub key={item.title} item={item} activeHash={activeHash} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-          </Sidebar>
+    </Sidebar>
   );
 }

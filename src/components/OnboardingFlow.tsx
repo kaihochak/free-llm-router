@@ -6,6 +6,7 @@ import { UseCaseSelector } from '@/components/UseCaseSelector';
 import { SortSelector } from '@/components/SortSelector';
 import { ApiUsageStep } from '@/components/ApiUsageStep';
 import { ModelList } from '@/components/ModelList';
+import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { Button } from '@/components/ui/button';
 
 const ITEMS_PER_PAGE = 10;
@@ -81,13 +82,13 @@ export function OnboardingFlow() {
       ),
     },
     {
-      title: 'What matters most?',
-      description: 'Order results by your priority',
+      title: 'Set Fallback Priority',
+      description: 'Models are tried in order — first = primary, rest = fallbacks',
       content: <SortSelector activeSort={activeSort} onSortChange={setActiveSort} onConfirm={goToNextStep} />,
     },
     {
-      title: 'Ready to code?',
-      description: 'Copy the snippet and start building',
+      title: 'Add to Your Project',
+      description: 'Copy the helper file and start using free models',
       content: (
         <ApiUsageStep
           apiUrl={apiUrl}
@@ -220,9 +221,7 @@ export function OnboardingFlow() {
       {currentStep !== 2 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{models.length}</span> free models
-            </p>
+            <ModelCountHeader count={models.length} />
 
             {totalPages > 1 && (
               <div className="flex items-center gap-1">
