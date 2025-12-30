@@ -12,6 +12,7 @@ export interface Model {
   outputModalities: string[] | null;
   supportedParameters: string[] | null;
   isModerated: boolean | null;
+  createdAt?: string | null;
   issueCount?: number;
 }
 
@@ -29,7 +30,7 @@ interface ApiResponse {
 }
 
 export type FilterType = 'chat' | 'vision' | 'coding' | 'tools' | 'longContext' | 'reasoning';
-export type SortType = 'contextLength' | 'maxOutput' | 'name' | 'provider' | 'capable' | 'leastIssues';
+export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
 
 export const FILTERS: { key: FilterType | 'all'; label: string; description: string }[] = [
   { key: 'all', label: 'All', description: 'Show all available free models' },
@@ -44,10 +45,10 @@ export const FILTERS: { key: FilterType | 'all'; label: string; description: str
 export const SORT_OPTIONS: { key: SortType; label: string; description: string }[] = [
   { key: 'contextLength', label: 'Context Length', description: 'Sort by maximum input tokens' },
   { key: 'maxOutput', label: 'Max Output', description: 'Sort by maximum output tokens' },
-  { key: 'name', label: 'Name (A-Z)', description: 'Sort alphabetically by model name' },
-  { key: 'provider', label: 'Provider (A-Z)', description: 'Sort alphabetically by provider' },
   { key: 'capable', label: 'Most Capable', description: 'Sort by overall model capability' },
-  { key: 'leastIssues', label: 'Least Issues', description: 'Sort by fewest reported issues' },
+  { key: 'leastIssues', label: 'Least Reported Issues', description: 'Sort by fewest reported issues' },
+  { key: 'reliable', label: 'Most Reliable', description: 'Balanced score of capability and low issues' },
+  { key: 'newest', label: 'Newest First', description: 'Sort by when model was added' },
 ];
 
 const API_BASE = 'https://free-models-api.pages.dev';
@@ -62,11 +63,11 @@ function buildApiUrl(filters: FilterType[], sort: SortType): string {
   const params = new URLSearchParams();
   if (filters.length > 0) params.set('filter', filters.join(','));
   params.set('sort', sort); // Always include sort
-  return `/api/v1/models/openrouter?${params.toString()}`;
+  return `/api/v1/models/ids?${params.toString()}`;
 }
 
 async function fetchAllModels(): Promise<Model[]> {
-  const response = await fetch('/api/v1/models/openrouter');
+  const response = await fetch('/api/v1/models/full');
   if (!response.ok) {
     throw new Error('Failed to fetch models');
   }
@@ -123,15 +124,6 @@ function sortModels(models: Model[], sort: SortType): Model[] {
       return sorted.sort((a, b) => (b.contextLength ?? 0) - (a.contextLength ?? 0));
     case 'maxOutput':
       return sorted.sort((a, b) => (b.maxCompletionTokens ?? 0) - (a.maxCompletionTokens ?? 0));
-    case 'name':
-      return sorted.sort((a, b) => a.name.localeCompare(b.name));
-    case 'provider':
-      // Extract provider from model ID (format: provider/model-name)
-      return sorted.sort((a, b) => {
-        const providerA = a.id.split('/')[0] ?? '';
-        const providerB = b.id.split('/')[0] ?? '';
-        return providerA.localeCompare(providerB);
-      });
     case 'capable':
       // Capability score based on context + output tokens
       return sorted.sort((a, b) => {
@@ -142,18 +134,73 @@ function sortModels(models: Model[], sort: SortType): Model[] {
     case 'leastIssues':
       // Sort by fewest issues first
       return sorted.sort((a, b) => (a.issueCount ?? 0) - (b.issueCount ?? 0));
+    case 'reliable':
+      // Composite: high capability + low issues
+      return sorted.sort((a, b) => {
+        const capabilityA = (a.contextLength ?? 0) + (a.maxCompletionTokens ?? 0) * 2;
+        const capabilityB = (b.contextLength ?? 0) + (b.maxCompletionTokens ?? 0) * 2;
+        const issuesPenaltyA = (a.issueCount ?? 0) * 10000;
+        const issuesPenaltyB = (b.issueCount ?? 0) * 10000;
+        return (capabilityB - issuesPenaltyB) - (capabilityA - issuesPenaltyA);
+      });
+    case 'newest':
+      // Sort by createdAt descending (newest first)
+      return sorted.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
     default:
       return sorted;
   }
 }
 
-export function generateSnippet(apiUrl: string): string {
-  return `// Fetch free models (live-updated based on your filters above)
-const res = await fetch('${API_BASE}${apiUrl}');
-const { models } = await res.json();
+// The full helper file content for users to copy
+export const FREE_MODELS_FILE = `/**
+ * Free Models API - fetch free LLM model IDs from OpenRouter
+ *
+ * Usage:
+ *   const ids = await getModelIds('tools');
+ *   // Returns: ['google/gemini-2.0-flash', 'meta-llama/llama-3.3-70b', ...]
+ */
 
-// Pass to OpenRouter - auto-fallbacks if a model is unavailable
-const modelIds = models.map(m => m.id);`;
+const API = 'https://free-models-api.pages.dev/api/v1';
+
+type Filter = 'chat' | 'vision' | 'coding' | 'tools' | 'longContext' | 'reasoning';
+type Sort = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
+
+/**
+ * Fetch free model IDs from the API
+ * @param filter - Optional capability filter (e.g., 'tools' for function calling)
+ * @param sort - How to sort results (default: 'capable')
+ * @param limit - Max number of models to return
+ * @returns Array of model IDs like 'google/gemini-2.0-flash'
+ */
+export async function getModelIds(filter?: Filter, sort: Sort = 'capable', limit?: number): Promise<string[]> {
+  const params = new URLSearchParams({ sort });
+  if (filter) params.set('filter', filter);
+  if (limit) params.set('limit', String(limit));
+  const { ids } = await fetch(\`\${API}/models/ids?\${params}\`).then(r => r.json());
+  return ids;
+}
+
+/**
+ * Report an issue with a model (fire-and-forget)
+ * This helps improve the free model list over time
+ * @param modelId - The model that had an issue
+ * @param issue - Type of issue encountered
+ * @param details - Optional error message or details
+ */
+export function reportIssue(modelId: string, issue: 'error' | 'rate_limited' | 'unavailable', details?: string) {
+  fetch(\`\${API}/models/feedback\`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ modelId, issue, details }),
+  }).catch(() => {}); // Fire-and-forget, don't block on errors
+}`;
+
+export function generateSnippet(_apiUrl?: string): string {
+  return FREE_MODELS_FILE;
 }
 
 export function getFullApiUrl(apiUrl: string): string {
