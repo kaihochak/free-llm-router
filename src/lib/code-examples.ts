@@ -33,48 +33,120 @@ export const codeExamples = {
   // API Reference - Feedback Response
   feedbackResponse: `{ "received": true }`,
 
-  // Code Examples - Basic Fetch
-  basicFetch: `const response = await fetch('https://free-models-api.pages.dev/api/v1/models/ids');
-const { ids, count } = await response.json();
-console.log(\`Found \${count} free models\`);`,
+  // Code Examples - One-off API Call
+  oneOffCall: `import { getModelIds, reportIssue } from './free-models';
 
-  // Code Examples - With Filters
-  withFilters: `// Get only vision-capable models, sorted by context length
-const url = 'https://free-models-api.pages.dev/api/v1/models/ids?filter=vision&sort=contextLength';
-const { ids } = await fetch(url).then(r => r.json());`,
+const prompt = 'Summarize this article in 3 bullet points: ...';
 
-  // Code Examples - Full Integration
-  fullIntegration: `import { OpenRouter } from '@openrouter/sdk';
+try {
+  // Get top 3 models with both chat and vision capabilities
+  const models = await getModelIds(['chat', 'vision'], 'capable', 3);
 
-async function chat(message: string) {
-  // 1. Get current free model IDs
-  const { ids } = await fetch(
-    'https://free-models-api.pages.dev/api/v1/models/ids?sort=capable'
-  ).then(r => r.json());
-
-  // 2. Create OpenRouter client
-  const openRouter = new OpenRouter({
-    apiKey: process.env.OPENROUTER_API_KEY,
-  });
-
-  // 3. Send message with automatic fallback
-  const completion = await openRouter.chat.send({
-    models: ids,
-    messages: [{ role: 'user', content: message }],
-  });
-
-  return completion.choices[0].message.content;
+  // Try each model until one succeeds
+  for (const id of models) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': \`Bearer \${process.env.OPENROUTER_API_KEY}\`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: id,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      console.log(data.choices[0].message.content);
+      break; // Success - exit loop
+    } catch (e) {
+      reportIssue(id, 'error', e.message); // Help improve the list
+    }
+  }
+} catch {
+  // API unavailable - handle gracefully
+  console.error('Failed to fetch models');
 }`,
 
-  // Code Examples - Report Issue
-  reportIssue: `await fetch('https://free-models-api.pages.dev/api/v1/models/feedback', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    modelId: 'google/gemini-2.0-flash-exp:free',
-    issue: 'rate_limited',
-    details: 'Getting 429 after ~10 requests',
-    source: 'my-app',
+  // Code Examples - Chatbot
+  chatbot: `import { getModelIds, reportIssue } from './free-models';
+import OpenAI from 'openai';
+
+// OpenAI SDK works with OpenRouter's API
+const client = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+// Store conversation history for multi-turn chat
+const messages: OpenAI.ChatCompletionMessageParam[] = [];
+
+async function chat(userMessage: string) {
+  messages.push({ role: 'user', content: userMessage });
+
+  try {
+    const models = await getModelIds('chat', 'capable', 5);
+
+    for (const id of models) {
+      try {
+        const res = await client.chat.completions.create({
+          model: id,
+          messages, // Include full history
+        });
+        const reply = res.choices[0].message.content;
+        messages.push({ role: 'assistant', content: reply });
+        return reply;
+      } catch (e) {
+        reportIssue(id, 'error', e.message);
+      }
+    }
+  } catch {
+    // API unavailable
+  }
+  throw new Error('All models failed');
+}`,
+
+  // Code Examples - Tool Calling
+  toolCalling: `import { getModelIds, reportIssue } from './free-models';
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateText, tool } from 'ai';
+import { z } from 'zod';
+
+// Vercel AI SDK with OpenRouter
+const openrouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+// Define tools with Zod schemas
+const tools = {
+  getWeather: tool({
+    description: 'Get current weather for a location',
+    parameters: z.object({ location: z.string() }),
+    execute: async ({ location }) => \`72°F and sunny in \${location}\`,
   }),
-});`,
+};
+
+async function askWithTools(prompt: string) {
+  try {
+    // Filter for models that support tool calling
+    const models = await getModelIds('tools', 'capable', 3);
+
+    for (const id of models) {
+      try {
+        const { text, toolCalls } = await generateText({
+          model: openrouter(id),
+          prompt,
+          tools,
+        });
+        return { text, toolCalls };
+      } catch (e) {
+        reportIssue(id, 'error', e.message);
+      }
+    }
+  } catch {
+    // API unavailable
+  }
+  throw new Error('All models failed');
+}`,
 };

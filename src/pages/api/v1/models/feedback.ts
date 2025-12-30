@@ -1,17 +1,39 @@
 import type { APIRoute } from 'astro';
 import { createDb, modelFeedback } from '@/db';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+import {
+  validateApiKey,
+  rateLimitHeaders,
+  unauthorizedResponse,
+  rateLimitedResponse,
+  serverErrorResponse,
+  corsHeaders,
+} from '@/lib/api-auth';
 
 const VALID_ISSUES = ['rate_limited', 'unavailable', 'error'] as const;
 
-export const POST: APIRoute = async ({ request, locals }) => {
+/**
+ * Submit feedback about a model issue (rate limiting, unavailability, errors)
+ * Requires API key authentication
+ */
+export const POST: APIRoute = async (context) => {
+  // Validate API key from Authorization header
+  const validation = await validateApiKey(context);
+
+  if (!validation.valid) {
+    // Config/server errors return 500
+    if (validation.errorCode === 'CONFIG_ERROR' || validation.errorCode === 'SERVER_ERROR') {
+      return serverErrorResponse(validation.error || 'Server error');
+    }
+    // Rate limit returns 429
+    if (validation.errorCode === 'RATE_LIMITED') {
+      return rateLimitedResponse(validation);
+    }
+    // All other errors (MISSING_AUTH, INVALID_FORMAT, EMPTY_KEY, INVALID_KEY) return 401
+    return unauthorizedResponse(validation.error || 'Unauthorized');
+  }
+
   try {
-    const runtime = locals.runtime;
+    const runtime = context.locals.runtime;
     const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
 
     if (!databaseUrl) {
@@ -21,13 +43,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const body = await request.json();
-    const { modelId, issue, details, source } = body;
+    const body = await context.request.json();
+    const { modelId, issue, details } = body;
 
     if (!modelId || typeof modelId !== 'string') {
       return new Response(JSON.stringify({ error: 'modelId is required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders, ...rateLimitHeaders(validation) },
       });
     }
 
@@ -36,7 +58,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         JSON.stringify({ error: `issue must be one of: ${VALID_ISSUES.join(', ')}` }),
         {
           status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          headers: { 'Content-Type': 'application/json', ...corsHeaders, ...rateLimitHeaders(validation) },
         }
       );
     }
@@ -49,13 +71,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
       modelId,
       issue,
       details: details || null,
-      source: source || 'anonymous',
+      // Store the user ID from the API key for tracking
+      source: validation.userId || 'api-key',
       createdAt: new Date(),
     });
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders, ...rateLimitHeaders(validation) },
     });
   } catch (error) {
     console.error('[API/feedback] Error:', error);

@@ -1,47 +1,40 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CodeBlock } from '@/components/ui/code-block';
 import { codeExamples } from '@/lib/code-examples';
-
-const examples = [
-  {
-    id: 'example-basic',
-    title: 'Basic Fetch',
-    description: 'Fetch the list of free models and log the count.',
-    code: codeExamples.basicFetch,
-  },
-  {
-    id: 'example-filters',
-    title: 'With Filters',
-    description: 'Filter models by capability and sort order.',
-    code: codeExamples.withFilters,
-  },
-  {
-    id: 'example-integration',
-    title: 'Full Integration with OpenRouter',
-    description: 'Complete example with model fallback for reliable responses.',
-    code: codeExamples.fullIntegration,
-  },
-];
 
 export function CodeExamplesSection() {
   return (
     <section id="code-examples" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">Code Examples</h2>
-      <p className="mb-6 text-muted-foreground">
-        Ready-to-use code snippets for common integration patterns.
+      <p className="mb-12 text-lg text-muted-foreground">
+        Ready-to-use patterns for common use cases.
       </p>
-      <div className="space-y-8">
-        {examples.map((example) => (
-          <Card key={example.id} id={example.id} className="scroll-mt-20">
-            <CardHeader>
-              <CardTitle className="text-base">{example.title}</CardTitle>
-              <CardDescription>{example.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CodeBlock code={example.code} />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-12">
+        {/* One-off API Call */}
+        <div id="example-one-off" className="space-y-3 scroll-mt-20">
+          <h3 className="text-2xl font-semibold">One-off API Call</h3>
+          <p className="text-muted-foreground">
+            Simple single prompt completion - perfect for scripts, CLI tools, or serverless functions.
+          </p>
+          <CodeBlock code={codeExamples.oneOffCall} copyLabel="Copy" />
+        </div>
+
+        {/* Chatbot */}
+        <div id="example-chatbot" className="space-y-3 scroll-mt-20">
+          <h3 className="text-2xl font-semibold">Chatbot</h3>
+          <p className="text-muted-foreground">
+            Multi-turn conversation with message history - ideal for chat interfaces.
+          </p>
+          <CodeBlock code={codeExamples.chatbot} copyLabel="Copy" />
+        </div>
+
+        {/* Tool Calling */}
+        <div id="example-tool-calling" className="space-y-3 scroll-mt-20">
+          <h3 className="text-2xl font-semibold">Tool Calling</h3>
+          <p className="text-muted-foreground">
+            Let the model call functions - for agents, data fetching, or structured outputs.
+          </p>
+          <CodeBlock code={codeExamples.toolCalling} copyLabel="Copy" />
+        </div>
       </div>
     </section>
   );

@@ -23,8 +23,8 @@ export function ApiReferenceSection() {
   return (
     <section id="api-reference" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">API Reference</h2>
-      <p className="mb-8 text-muted-foreground">
-        Complete reference for all available endpoints, parameters, and response formats.
+      <p className="mb-12 text-muted-foreground">
+        Complete reference for all available endpoints. See <a href="#filters-sorting" className="text-primary hover:underline">Filters & Sorting</a> for query parameter details.
       </p>
 
       <div className="space-y-16">
