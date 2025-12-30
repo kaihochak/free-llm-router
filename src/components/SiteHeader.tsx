@@ -1,10 +1,10 @@
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
-import { useSession } from '@/lib/auth-client';
+import { useCachedSession } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 
 export function SiteHeader() {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending } = useCachedSession();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { useModelCount } from '@/hooks/useModelCount';
 import { QueryProvider } from '@/components/QueryProvider';
+import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 export function ModelHero() {
   const { count: modelCount } = useModelCount();
@@ -10,7 +11,7 @@ export function ModelHero() {
   return (
     <div className="space-y-12">
       {/* Header */}
-      <div className="relative flex min-h-[70vh] flex-col items-center justify-center text-center">
+      <div className="relative flex min-h-[80vh] flex-col items-center justify-center text-center pb-16 px-4">
         {/* Radial glow background */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.6_0.2_145/0.15)_0%,transparent_60%)]" />
 
@@ -43,13 +44,13 @@ export function ModelHero() {
           <a href="#onboarding">
             <Button size="lg">
               Get Started
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+              <ArrowDown className="ml-1 h-4 w-4" />
             </Button>
           </a>
           <a href="/docs">
             <Button variant="outline" size="lg">
               Docs
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+              <ArrowUpRight className="ml-1 h-4 w-4" />
             </Button>
           </a>
         </div>
