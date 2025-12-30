@@ -34,6 +34,10 @@ interface ApiUsageStepProps {
   modelCount?: number;
   showBrowseModels?: boolean;
   children?: React.ReactNode;
+  // Pagination props (optional)
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function ApiUsageStep({
@@ -45,6 +49,9 @@ export function ApiUsageStep({
   modelCount,
   showBrowseModels = true,
   children,
+  currentPage,
+  totalPages,
+  onPageChange,
 }: ApiUsageStepProps) {
   const fullUrl = getFullApiUrl(apiUrl);
   const snippet = generateSnippet(apiUrl);
@@ -120,9 +127,37 @@ export function ApiUsageStep({
               </div>
             </div>
 
-            <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{modelCount}</span> free models available
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{modelCount}</span> free models
+              </p>
+
+              {totalPages && totalPages > 1 && onPageChange && currentPage && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronDown className="h-4 w-4 rotate-90" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground px-1">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronDown className="h-4 w-4 -rotate-90" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* API Endpoint Display */}

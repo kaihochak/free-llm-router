@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
@@ -13,6 +12,7 @@ interface ModelListProps {
   models: Model[];
   loading?: boolean;
   error?: string | null;
+  currentPage: number;
   itemsPerPage?: number;
 }
 
@@ -73,20 +73,13 @@ function ProviderLogo({ provider }: { provider: string }) {
   );
 }
 
-export function ModelList({ models, loading, error, itemsPerPage = DEFAULT_ITEMS_PER_PAGE }: ModelListProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+export function ModelList({ models, loading, error, currentPage, itemsPerPage = DEFAULT_ITEMS_PER_PAGE }: ModelListProps) {
   const [copiedModelId, setCopiedModelId] = useState<string | null>(null);
 
-  const totalPages = Math.ceil(models.length / itemsPerPage);
   const paginatedModels = models.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  // Reset to page 1 when models change
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
 
   const copyModelId = async (e: React.MouseEvent, modelId: string) => {
     e.preventDefault();
@@ -206,52 +199,6 @@ export function ModelList({ models, loading, error, itemsPerPage = DEFAULT_ITEMS
           );
         })}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              let page: number;
-              if (totalPages <= 5) {
-                page = i + 1;
-              } else if (currentPage <= 3) {
-                page = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                page = totalPages - 4 + i;
-              } else {
-                page = currentPage - 2 + i;
-              }
-              return (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? 'default' : 'ghost'}
-                  size="lg"
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </Button>
-              );
-            })}
-          </div>
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

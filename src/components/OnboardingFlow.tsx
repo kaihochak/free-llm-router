@@ -6,6 +6,9 @@ import { UseCaseSelector } from '@/components/UseCaseSelector';
 import { SortSelector } from '@/components/SortSelector';
 import { ApiUsageStep } from '@/components/ApiUsageStep';
 import { ModelList } from '@/components/ModelList';
+import { Button } from '@/components/ui/button';
+
+const ITEMS_PER_PAGE = 10;
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -31,6 +34,7 @@ const springTransition = {
 export function OnboardingFlow() {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const {
     models,
@@ -42,6 +46,13 @@ export function OnboardingFlow() {
     toggleFilter,
     setActiveSort,
   } = useModels();
+
+  const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when models change (e.g., filter/sort changes)
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const goToNextStep = () => {
     if (currentStep < 2) {
@@ -206,8 +217,44 @@ export function OnboardingFlow() {
         </AnimatePresence>
       </div>
 
-      {/* Model List (Hidden on Step 3) */}
-      {currentStep !== 2 && <ModelList models={models} loading={loading} error={error} />}
+      {/* Model List with Pagination (Hidden on Step 3) */}
+      {currentStep !== 2 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{models.length}</span> free models
+            </p>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </Button>
+                <span className="text-sm text-muted-foreground px-1">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <ModelList models={models} loading={loading} error={error} currentPage={currentPage} itemsPerPage={ITEMS_PER_PAGE} />
+        </div>
+      )}
     </div>
   );
 }

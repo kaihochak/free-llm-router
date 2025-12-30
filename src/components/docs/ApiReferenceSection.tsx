@@ -1,4 +1,3 @@
-import { CodeBlock } from '@/components/ui/code-block';
 import { TryItPanel } from './TryItPanel';
 import { codeExamples } from '@/lib/code-examples';
 import { Button } from '@/components/ui/button';
@@ -95,7 +94,58 @@ export function ApiReferenceSection() {
 
               <div>
                 <h4 className="mb-3 font-medium">Response</h4>
-                <CodeBlock code={codeExamples.modelsResponse} language="json" />
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="py-2 pr-4 text-left font-medium">Field</th>
+                        <th className="py-2 pr-4 text-left font-medium">Type</th>
+                        <th className="py-2 text-left font-medium">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-muted-foreground">
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 font-mono text-xs">models</td>
+                        <td className="py-2 pr-4">Model[]</td>
+                        <td className="py-2">Array of model objects</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 font-mono text-xs">feedbackCounts</td>
+                        <td className="py-2 pr-4">object</td>
+                        <td className="py-2">Feedback counts per model ID</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 font-mono text-xs">lastUpdated</td>
+                        <td className="py-2 pr-4">string</td>
+                        <td className="py-2">ISO 8601 timestamp of last sync</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 font-mono text-xs">filters</td>
+                        <td className="py-2 pr-4">string[]</td>
+                        <td className="py-2">Applied filter values</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 font-mono text-xs">sort</td>
+                        <td className="py-2 pr-4">string</td>
+                        <td className="py-2">Applied sort value</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 pr-4 font-mono text-xs">count</td>
+                        <td className="py-2 pr-4">number</td>
+                        <td className="py-2">Total number of models returned</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-3 font-medium">Errors</h4>
+                <ul className="list-inside list-disc text-sm text-muted-foreground space-y-1">
+                  <li>
+                    <code className="bg-muted px-1 py-0.5 rounded">500</code> - Server error
+                  </li>
+                </ul>
               </div>
 
               <p className="text-xs text-muted-foreground">
@@ -109,16 +159,13 @@ export function ApiReferenceSection() {
               <TryItPanel
                 endpoint="/api/v1/models/openrouter"
                 method="GET"
-                params={[
-                  { name: 'filter', placeholder: 'chat,vision,tools' },
-                  { name: 'sort', placeholder: 'contextLength', defaultValue: 'contextLength' },
-                ]}
+                exampleResponse={codeExamples.getModelsResponse}
               />
             </div>
           </div>
         </div>
 
-        {/* POST /api/feedback */}
+        {/* POST /api/v1/feedback */}
         <div id="api-post-feedback" className="scroll-mt-20 space-y-6">
           {/* Header - spans full width, above columns */}
           <div className="flex items-start justify-between gap-4">
@@ -127,13 +174,13 @@ export function ApiReferenceSection() {
                 <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">
                   POST
                 </span>
-                <h3 className="font-mono text-lg font-medium">/api/feedback</h3>
+                <h3 className="font-mono text-lg font-medium">/api/v1/feedback</h3>
               </div>
               <p className="text-muted-foreground">
                 Report issues with a model (rate limiting, errors, unavailability).
               </p>
             </div>
-            <CopyEndpointButton endpoint="/api/feedback" />
+            <CopyEndpointButton endpoint="/api/v1/feedback" />
           </div>
 
           {/* Two columns below */}
@@ -188,6 +235,28 @@ export function ApiReferenceSection() {
               </div>
 
               <div>
+                <h4 className="mb-3 font-medium">Response</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="py-2 pr-4 text-left font-medium">Field</th>
+                        <th className="py-2 pr-4 text-left font-medium">Type</th>
+                        <th className="py-2 text-left font-medium">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-muted-foreground">
+                      <tr>
+                        <td className="py-2 pr-4 font-mono text-xs">received</td>
+                        <td className="py-2 pr-4">boolean</td>
+                        <td className="py-2">Whether feedback was recorded</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
                 <h4 className="mb-3 font-medium">Errors</h4>
                 <ul className="list-inside list-disc text-sm text-muted-foreground space-y-1">
                   <li>
@@ -203,14 +272,15 @@ export function ApiReferenceSection() {
             {/* Right: Try It Panel */}
             <div className="lg:sticky lg:top-20 lg:self-start">
               <TryItPanel
-                endpoint="/api/feedback"
+                endpoint="/api/v1/feedback"
                 method="POST"
                 defaultBody={{
-                  modelId: 'google/gemma-3-4b-it:free',
+                  modelId: 'google/gemini-2.0-flash-exp:free',
                   issue: 'rate_limited',
-                  details: 'Getting 429 errors',
+                  details: 'Getting 429 after ~10 requests',
                   source: 'my-app',
                 }}
+                exampleResponse={codeExamples.feedbackResponse}
               />
             </div>
           </div>
