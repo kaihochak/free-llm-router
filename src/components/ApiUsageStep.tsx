@@ -1,29 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   generateSnippet,
-  FILTERS,
-  SORT_OPTIONS,
   type FilterType,
   type SortType,
 } from '@/hooks/useModels';
-import { ChevronDown } from 'lucide-react';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { useCachedSession } from '@/lib/auth-client';
+import { ModelControls } from '@/components/ModelControls';
+import { ChevronDown } from 'lucide-react';
 
 interface ApiUsageStepProps {
   apiUrl: string;
@@ -60,14 +45,6 @@ export function ApiUsageStep({
   const { data: session } = useCachedSession();
   const snippet = generateSnippet(apiUrl);
 
-  const filterLabel = activeFilters.length === 0
-    ? 'All'
-    : activeFilters.length === 1
-      ? FILTERS.find(f => f.key === activeFilters[0])?.label || activeFilters[0]
-      : `${activeFilters.length} selected`;
-
-  const sortLabel = SORT_OPTIONS.find(s => s.key === activeSort)?.label || activeSort;
-
   return (
     <div className="w-full space-y-12">
       {/* Step 1: Set Up OpenRouter */}
@@ -101,107 +78,47 @@ export function ApiUsageStep({
           </p>
 
           {/* Large Filter & Sort Controls */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-            <div className="flex items-center gap-3">
-              <span className="text-lg font-medium">Filter:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="lg" className="gap-2 text-base">
-                    {filterLabel}
-                    <ChevronDown className="h-5 w-5 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuCheckboxItem
-                    checked={activeFilters.length === 0}
-                    onCheckedChange={() => onToggleFilter('all')}
-                  >
-                    All
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuSeparator />
-                  {FILTERS.filter(f => f.key !== 'all').map((filter) => (
-                    <DropdownMenuCheckboxItem
-                      key={filter.key}
-                      checked={activeFilters.includes(filter.key as FilterType)}
-                      onCheckedChange={() => onToggleFilter(filter.key as FilterType)}
-                    >
-                      {filter.label}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+          <ModelControls
+            activeFilters={activeFilters}
+            activeSort={activeSort}
+            activeLimit={activeLimit}
+            onToggleFilter={onToggleFilter}
+            onSortChange={onSortChange}
+            onLimitChange={onLimitChange}
+          />
 
-            <div className="flex items-center gap-3">
-              <span className="text-lg font-medium">Sort:</span>
-              <Select value={activeSort} onValueChange={(value) => onSortChange(value as SortType)}>
-                <SelectTrigger className="h-11 text-base min-w-40">
-                  <SelectValue>{sortLabel}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map((option) => (
-                    <SelectItem key={option.key} value={option.key}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex gap-4 w-full justify-between">
+            {modelCount !== undefined && <ModelCountHeader count={modelCount} />}
 
-            {onLimitChange && (
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-medium">Limit:</span>
-                <Select
-                  value={activeLimit?.toString() ?? 'all'}
-                  onValueChange={(value) => onLimitChange(value === 'all' ? undefined : parseInt(value, 10))}
+            {totalPages && totalPages > 1 && onPageChange && currentPage && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
                 >
-                  <SelectTrigger className="h-11 text-base w-24">
-                    <SelectValue>{activeLimit ?? 'All'}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="all">All</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <ChevronDown className="h-4 w-4 rotate-90" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-1">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronDown className="h-4 w-4 -rotate-90" />
+                </Button>
               </div>
             )}
-
-            <div className="flex gap-4 w-full justify-between">
-              {modelCount !== undefined && <ModelCountHeader count={modelCount} />}
-
-              {totalPages && totalPages > 1 && onPageChange && currentPage && (
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronDown className="h-4 w-4 rotate-90" />
-                  </Button>
-                  <span className="text-sm text-muted-foreground px-1">
-                    {currentPage} / {totalPages}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronDown className="h-4 w-4 -rotate-90" />
-                  </Button>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Model List (passed as children) */}
           {children}
-
         </div>
       )}
 
@@ -236,6 +153,16 @@ export function ApiUsageStep({
         <p className="text-muted-foreground">
           This helper fetches free model IDs from our API and reports issues back. It's a single file with no dependencies.
         </p>
+        {showBrowseModels && (
+          <ModelControls
+            activeFilters={activeFilters}
+            activeSort={activeSort}
+            activeLimit={activeLimit}
+            onToggleFilter={onToggleFilter}
+            onSortChange={onSortChange}
+            onLimitChange={onLimitChange}
+          />
+        )}
         <CodeBlock code={snippet} copyLabel="Copy" />
       </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSession, signOut, authClient, createApiKeyWithLimit } from '@/lib/auth-client';
+import { useCachedSession, signOut, authClient, createApiKeyWithLimit } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Copy, Check, Trash2, LogOut, Key } from 'lucide-react';
 
 interface ApiKey {
   id: string;
@@ -26,58 +37,16 @@ interface ApiKey {
   enabled: boolean;
 }
 
-function CopyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}
-
-function LogOutIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
-
-function KeyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-    </svg>
-  );
-}
 
 export function DashboardPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending } = useCachedSession();
   const [keyName, setKeyName] = useState('');
   const [newKey, setNewKey] = useState<string | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null);
+  const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,19 +107,22 @@ export function DashboardPage() {
     }
   };
 
-  const handleDeleteKey = async (keyId: string) => {
-    if (!confirm('Are you sure you want to delete this API key? This action cannot be undone.')) {
-      return;
-    }
+  const handleDeleteKey = (keyId: string) => {
+    setKeyToDelete(keyId);
+  };
 
-    setDeletingKeyId(keyId);
+  const confirmDelete = async () => {
+    if (!keyToDelete) return;
+
+    setDeletingKeyId(keyToDelete);
     try {
-      await authClient.apiKey.delete({ keyId });
-      setApiKeys(apiKeys.filter((k) => k.id !== keyId));
+      await authClient.apiKey.delete({ keyId: keyToDelete });
+      setApiKeys(apiKeys.filter((k) => k.id !== keyToDelete));
     } catch (err) {
       console.error('Failed to delete API key:', err);
     } finally {
       setDeletingKeyId(null);
+      setKeyToDelete(null);
     }
   };
 
@@ -210,7 +182,7 @@ export function DashboardPage() {
             </div>
           </div>
           <Button variant="outline" onClick={handleSignOut}>
-            <LogOutIcon className="mr-2 h-4 w-4" />
+            <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </Button>
         </CardHeader>
@@ -221,7 +193,7 @@ export function DashboardPage() {
         <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-              <KeyIcon className="h-5 w-5" />
+              <Key className="h-5 w-5" />
               API Key Created
             </CardTitle>
             <CardDescription className="text-green-600 dark:text-green-500">
@@ -235,9 +207,9 @@ export function DashboardPage() {
               </code>
               <Button variant="outline" size="sm" onClick={handleCopyKey}>
                 {copied ? (
-                  <CheckIcon className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-green-600" />
                 ) : (
-                  <CopyIcon className="h-4 w-4" />
+                  <Copy className="h-4 w-4" />
                 )}
               </Button>
               <Button variant="ghost" size="sm" onClick={handleDismissNewKey}>
@@ -330,7 +302,7 @@ export function DashboardPage() {
                         disabled={deletingKeyId === key.id}
                         className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -340,6 +312,28 @@ export function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!keyToDelete} onOpenChange={(open) => !open && setKeyToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete API Key</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this API key? This action cannot be undone and will
+              immediately invalidate the key.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
