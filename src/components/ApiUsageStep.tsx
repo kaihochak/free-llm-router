@@ -56,6 +56,9 @@ export function ApiUsageStep({
   const fullUrl = getFullApiUrl(apiUrl);
   const snippet = generateSnippet(apiUrl);
 
+  // Step numbering: if Browse Models is shown, it's step 1 and others shift
+  const stepOffset = showBrowseModels ? 1 : 0;
+
   const copyUrl = async () => {
     await navigator.clipboard.writeText(fullUrl);
     toast.success('API URL copied to clipboard');
@@ -70,12 +73,18 @@ export function ApiUsageStep({
   const sortLabel = SORT_OPTIONS.find(s => s.key === activeSort)?.label || activeSort;
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-12">
       {/* Browse Models Section */}
       {showBrowseModels && (
         <div id="models" className="scroll-mt-20 space-y-6">
           {/* Header */}
-          <h3 className="text-2xl font-semibold">Browse Models</h3>
+          <div className="flex items-center gap-3">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">1</span>
+            <h3 className="text-2xl font-semibold">Get Your Model List</h3>
+          </div>
+          <p className="text-muted-foreground">
+            Use filters and sorting to customize your list of free models. This list is live and updates automatically - what you see below is the current state, but availability changes over time. You'll fetch this dynamically in your app.
+          </p>
 
           {/* Filter, Sort Controls and Model Count */}
           <div className="flex items-center justify-between">
@@ -186,13 +195,13 @@ export function ApiUsageStep({
         </div>
       )}
 
-      {/* Step 1: Get an OpenRouter API Key */}
-      <div id="step-1" className="space-y-3 scroll-mt-20">
+      {/* Step: Get an OpenRouter API Key */}
+      <div id="get-api-key" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">1</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{1 + stepOffset}</span>
           <h3 className="text-2xl font-semibold">Get an OpenRouter API Key</h3>
         </div>
-        <p className="ml-10 text-muted-foreground">
+        <p className="text-muted-foreground">
           <a
             href="https://openrouter.ai"
             target="_blank"
@@ -205,32 +214,28 @@ export function ApiUsageStep({
         </p>
       </div>
 
-      {/* Step 2: Fetch the models */}
-      <div id="step-2" className="space-y-3 scroll-mt-20">
+      {/* Step: Fetch the models */}
+      <div id="fetch-models" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">2</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{2 + stepOffset}</span>
           <h3 className="text-2xl font-semibold">Fetch Free Models</h3>
         </div>
-        <p className="ml-10 text-muted-foreground">
+        <p className="text-muted-foreground">
           Add this to your app to fetch the list of available free models.
         </p>
-        <div className="ml-10">
-          <CodeBlock code={snippet} copyLabel="Copy" />
-        </div>
+        <CodeBlock code={snippet} copyLabel="Copy" />
       </div>
 
-      {/* Step 3: Pass model IDs */}
-      <div id="step-3" className="space-y-3 scroll-mt-20">
+      {/* Step: Pass model IDs */}
+      <div id="use-models" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">3</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{3 + stepOffset}</span>
           <h3 className="text-2xl font-semibold">Pass Model IDs to OpenRouter</h3>
         </div>
-        <p className="ml-10 text-muted-foreground">
+        <p className="text-muted-foreground">
           Pass the model IDs to OpenRouter. It will automatically try each model in order until one responds.
         </p>
-        <div className="ml-10">
-          <CodeBlock code="models: modelIds" copyLabel="Copy" />
-        </div>
+        <CodeBlock code="models: modelIds" copyLabel="Copy" />
       </div>
     </div>
   );

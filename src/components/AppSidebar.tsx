@@ -34,10 +34,10 @@ const navItems: NavItem[] = [
     icon: Rocket,
     items: [
       { title: 'Overview', href: '#get-started' },
-      { title: 'Browse Models', href: '#models' },
-      { title: '1. Get API Key', href: '#step-1' },
-      { title: '2. Fetch Models', href: '#step-2' },
-      { title: '3. Use Model IDs', href: '#step-3' },
+      { title: '1. Get Your Model List', href: '#models' },
+      { title: '2. Get API Key', href: '#get-api-key' },
+      { title: '3. Fetch Models', href: '#fetch-models' },
+      { title: '4. Use Model IDs', href: '#use-models' },
     ],
   },
   {

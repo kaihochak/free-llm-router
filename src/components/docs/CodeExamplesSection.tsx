@@ -30,7 +30,7 @@ export function CodeExamplesSection() {
       <p className="mb-6 text-muted-foreground">
         Ready-to-use code snippets for common integration patterns.
       </p>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {examples.map((example) => (
           <Card key={example.id} id={example.id} className="scroll-mt-20">
             <CardHeader>
