@@ -23,7 +23,7 @@ import {
 } from '@/hooks/useModels';
 import { ChevronDown } from 'lucide-react';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
-import { useSession } from '@/lib/auth-client';
+import { useCachedSession } from '@/lib/auth-client';
 
 interface ApiUsageStepProps {
   apiUrl: string;
@@ -57,7 +57,7 @@ export function ApiUsageStep({
   totalPages,
   onPageChange,
 }: ApiUsageStepProps) {
-  const { data: session } = useSession();
+  const { data: session } = useCachedSession();
   const snippet = generateSnippet(apiUrl);
 
   const filterLabel = activeFilters.length === 0

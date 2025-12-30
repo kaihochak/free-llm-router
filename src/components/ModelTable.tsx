@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useModels, FILTERS, SORT_OPTIONS, type FilterType } from '@/hooks/useModels';
 import { ModelList } from '@/components/ModelList';
 import { QueryProvider } from '@/components/QueryProvider';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -84,7 +85,7 @@ export function ModelTable() {
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-muted-foreground px-1">
               {currentPage} / {totalPages}
@@ -96,7 +97,7 @@ export function ModelTable() {
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}
