@@ -22,8 +22,8 @@ import {
   type SortType,
 } from '@/hooks/useModels';
 import { ChevronDown } from 'lucide-react';
-import { toast } from 'sonner';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
+import { useSession } from '@/lib/auth-client';
 
 interface ApiUsageStepProps {
   apiUrl: string;
@@ -57,6 +57,7 @@ export function ApiUsageStep({
   totalPages,
   onPageChange,
 }: ApiUsageStepProps) {
+  const { data: session } = useSession();
   const snippet = generateSnippet(apiUrl);
 
   const filterLabel = activeFilters.length === 0
@@ -202,50 +203,33 @@ export function ApiUsageStep({
           {children}
 
           {/* getModelIds call - shows the equivalent function call */}
-          <div className="flex items-center justify-between gap-2 rounded border border-dashed bg-muted/30 px-3 py-2">
-            <code className="text-xs font-mono text-muted-foreground">
-              {`getModelIds(${activeFilters[0] ? `'${activeFilters[0]}'` : 'undefined'}, '${activeSort}'${activeLimit ? `, ${activeLimit}` : ''})`}
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={async () => {
-                const call = `getModelIds(${activeFilters[0] ? `'${activeFilters[0]}'` : ''}, '${activeSort}'${activeLimit ? `, ${activeLimit}` : ''})`;
-                await navigator.clipboard.writeText(call);
-                toast.success('Function call copied');
-              }}
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-              </svg>
-            </Button>
-          </div>
+          <CodeBlock
+            code={`getModelIds(${activeFilters.length === 0 ? 'undefined' : activeFilters.length === 1 ? `'${activeFilters[0]}'` : `[${activeFilters.map(f => `'${f}'`).join(', ')}]`}, '${activeSort}'${activeLimit ? `, ${activeLimit}` : ''})`}
+            language="typescript"
+            className="text-sm"
+          />
         </div>
       )}
 
-      {/* Step 3: Get Your API Key (placeholder) */}
+      {/* Step 3: Get Your API Key */}
       <div id="get-api-key" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 3 : 2}</span>
           <h3 className="text-2xl font-semibold">Get Your API Key</h3>
         </div>
         <p className="text-muted-foreground">
-          Get an API key to access the Free Models API. This helps us track usage and improve the service.
+          Sign in with GitHub to create your API key. Each key has a rate limit of 1,000 requests per day.
         </p>
-        <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center">
-          <p className="text-sm text-muted-foreground">API key authentication coming soon</p>
+        <div className="flex justify-center py-4">
+          {session?.user ? (
+            <Button asChild size="xl">
+              <a href="/dashboard">Go to Dashboard</a>
+            </Button>
+          ) : (
+            <Button asChild size="xl">
+              <a href="/login">Sign in with GitHub</a>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -271,23 +255,27 @@ export function ApiUsageStep({
           Loop through models until one succeeds. Free models may be rate-limited, so we try multiple and optionally fall back to stable models you trust. See{' '}
           <a href="#code-examples" className="text-primary hover:underline">Code Examples</a> for more patterns.
         </p>
-        <CodeBlock code={`// 1. Fetch free models with your selected filter and sort
-const freeModels = await getModelIds('${activeFilters[0] || 'tools'}', '${activeSort}'${activeLimit ? `, ${activeLimit}` : ', 5'});
+        <CodeBlock code={`// 1. Fetch free models and try each until one succeeds
+try {
+  const freeModels = await getModelIds(${activeFilters.length === 0 ? "'tools'" : activeFilters.length === 1 ? `'${activeFilters[0]}'` : `[${activeFilters.map(f => `'${f}'`).join(', ')}]`}, '${activeSort}'${activeLimit ? `, ${activeLimit}` : ', 5'});
 
-// 2. Add stable fallback models you trust (usually paid)
-const stableFallback = ['anthropic/claude-3.5-sonnet'];
-const models = [...freeModels, ...stableFallback];
+  // 2. (Optional) Add stable fallback models you trust (usually paid)
+  const stableFallback = ['anthropic/claude-3.5-sonnet'];
+  const models = [...freeModels, ...stableFallback];
 
-// 3. Try models until one succeeds
-for (const id of models) {
-  try {
-    // Use any OpenAI-compatible SDK
-    return await client.chat.completions.create({ model: id, messages });
-  } catch (e) {
-    // Report failures to help improve the free model list
-    reportIssue(id, 'error', e.message);
+  // 3. Try models until one succeeds
+  for (const id of models) {
+    try {
+      return await client.chat.completions.create({ model: id, messages });
+    } catch (e) {
+      reportIssue(id, 'error', e.message);
+    }
   }
-}`} copyLabel="Copy" />
+} catch {
+  // API unavailable - fall back to hardcoded models
+  // E.g. return await client.chat.completions.create({ model: 'anthropic/claude-3.5-sonnet', messages });
+}
+throw new Error('All models failed');`} copyLabel="Copy" />
       </div>
     </div>
   );

@@ -56,12 +56,18 @@ export function GetStartedSection() {
         onToggleFilter={toggleFilter}
         onSortChange={setActiveSort}
         onLimitChange={setActiveLimit}
-        modelCount={models.length}
+        modelCount={activeLimit ? Math.min(models.length, activeLimit) : models.length}
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       >
-        <ModelList models={models} loading={loading} error={error} currentPage={currentPage} itemsPerPage={ITEMS_PER_PAGE} />
+        <ModelList
+          models={activeLimit ? models.slice(0, activeLimit) : models}
+          loading={loading}
+          error={error}
+          currentPage={currentPage}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
       </ApiUsageStep>
     </section>
   );

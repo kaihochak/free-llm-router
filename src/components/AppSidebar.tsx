@@ -1,4 +1,4 @@
-import { Rocket, Book, Code, ChevronRight } from 'lucide-react';
+import { Rocket, Book, Code, ChevronRight, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
   Sidebar,
@@ -44,6 +44,15 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    title: 'Filters & Sorting',
+    href: '#filters-sorting',
+    icon: Settings,
+    items: [
+      { title: 'Filters', href: '#filters-sorting' },
+      { title: 'Sort Options', href: '#filters-sorting' },
+    ],
+  },
+  {
     title: 'API Reference',
     href: '#api-reference',
     icon: Book,
@@ -58,9 +67,9 @@ const navItems: NavItem[] = [
     href: '#code-examples',
     icon: Code,
     items: [
-      { title: 'Basic Fetch', href: '#example-basic' },
-      { title: 'With Filters', href: '#example-filters' },
-      { title: 'OpenRouter Integration', href: '#example-integration' },
+      { title: 'One-off API Call', href: '#example-one-off' },
+      { title: 'Chatbot', href: '#example-chatbot' },
+      { title: 'Tool Calling', href: '#example-tool-calling' },
     ],
   },
 ];
