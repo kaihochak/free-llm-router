@@ -135,8 +135,8 @@ export function ApiReferenceSection() {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Caching: 15-minute stale threshold.{' '}
-                <code className="bg-muted px-1 py-0.5 rounded">Cache-Control: public, s-maxage=900</code>
+                <code className="bg-muted px-1 py-0.5 rounded">Cache-Control: private, max-age=60</code>
+                {' '}— Responses are cached for 60 seconds at the HTTP layer and 15 minutes in the SDK.
               </p>
             </div>
 
@@ -231,8 +231,8 @@ export function ApiReferenceSection() {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Caching: 15-minute stale threshold.{' '}
-                <code className="bg-muted px-1 py-0.5 rounded">Cache-Control: public, s-maxage=900</code>
+                <code className="bg-muted px-1 py-0.5 rounded">Cache-Control: private, max-age=60</code>
+                {' '}— Responses are cached for 60 seconds at the HTTP layer and 15 minutes in the SDK.
               </p>
             </div>
 

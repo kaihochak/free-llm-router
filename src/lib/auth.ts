@@ -72,7 +72,7 @@ export function createAuth(env: AuthEnv): BetterAuthInstance<AuthOptions> {
         rateLimit: {
           enabled: true,
           timeWindow: 86400 * 1000, // 24 hours in milliseconds
-          maxRequests: 1000,
+          maxRequests: 200,
         },
       }),
     ],
