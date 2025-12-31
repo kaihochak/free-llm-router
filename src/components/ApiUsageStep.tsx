@@ -15,10 +15,10 @@ interface ApiUsageStepProps {
   apiUrl: string;
   activeFilters: FilterType[];
   activeSort: SortType;
-  activeLimit?: number;
+  activeLimit: number | undefined;
   onToggleFilter: (filter: FilterType | 'all') => void;
   onSortChange: (sort: SortType) => void;
-  onLimitChange?: (limit: number | undefined) => void;
+  onLimitChange: (limit: number | undefined) => void;
   modelCount?: number;
   showBrowseModels?: boolean;
   children?: React.ReactNode;
