@@ -37,6 +37,7 @@ export function OnboardingFlow() {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeLimit, setActiveLimit] = useState<number | undefined>(5);
 
   const {
     models,
@@ -95,8 +96,10 @@ export function OnboardingFlow() {
           apiUrl={apiUrl}
           activeFilters={activeFilters}
           activeSort={activeSort}
+          activeLimit={activeLimit}
           onToggleFilter={toggleFilter}
           onSortChange={setActiveSort}
+          onLimitChange={setActiveLimit}
           showBrowseModels={false}
         />
       ),
