@@ -3,7 +3,7 @@
 // Basic usage pattern for "Use It" step
 export const basicUsage = (filters: string[], sort: string, limit?: number) => {
   const filterStr = filters.length > 0 ? `[${filters.map((f) => `'${f}'`).join(', ')}]` : '[]';
-  const limitStr = limit ? `, ${limit}` : `, 5`; // Default to 5 if not specified
+  const limitStr = limit !== undefined ? `, ${limit}` : ''; // Only include limit if explicitly set
   return `// 1. Fetch free models and try each until one succeeds
 try {
   const freeModels = await getModelIds(${filterStr}, '${sort}'${limitStr});
@@ -33,6 +33,6 @@ throw new Error('All models failed');`;
 // getModelIds call generator
 export const getModelIdsCall = (filters: string[], sort: string, limit?: number) => {
   const filterStr = filters.length > 0 ? `[${filters.map((f) => `'${f}'`).join(', ')}]` : '[]';
-  const limitStr = limit ? `, ${limit}` : `, 5`; // Default to 5 if not specified
+  const limitStr = limit !== undefined ? `, ${limit}` : ''; // Only include limit if explicitly set
   return `getModelIds(${filterStr}, '${sort}'${limitStr})`;
 };
