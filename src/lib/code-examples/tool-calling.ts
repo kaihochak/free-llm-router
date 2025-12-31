@@ -1,0 +1,44 @@
+export const toolCalling = `import { getModelIds, reportIssue, issueFromStatus } from './free-models';
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateText, tool } from 'ai';
+import { z } from 'zod';
+
+// Vercel AI SDK with OpenRouter
+const openrouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+// Define tools with Zod schemas
+const tools = {
+  getWeather: tool({
+    description: 'Get current weather for a location',
+    parameters: z.object({ location: z.string() }),
+    execute: async ({ location }) => \`72°F and sunny in \${location}\`,
+  }),
+};
+
+async function askWithTools(prompt: string) {
+  try {
+    // Filter for models that support tool calling
+    // SDK has built-in 15-min cache, so this won't hit the API on every call
+    const models = await getModelIds(['tools'], 'capable', 3);
+
+    for (const id of models) {
+      try {
+        const { text, toolCalls } = await generateText({
+          model: openrouter(id),
+          prompt,
+          tools,
+        });
+        return { text, toolCalls };
+      } catch (e) {
+        // Report with correct issue type - free, doesn't use quota
+        reportIssue(id, issueFromStatus(e.status), e.message);
+      }
+    }
+  } catch {
+    // API unavailable
+  }
+  throw new Error('All models failed');
+}`;

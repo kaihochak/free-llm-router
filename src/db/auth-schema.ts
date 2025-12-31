@@ -68,7 +68,7 @@ export const apiKeys = pgTable('api_keys', {
   enabled: boolean('enabled').default(true),
   rateLimitEnabled: boolean('rate_limit_enabled').default(true),
   rateLimitTimeWindow: integer('rate_limit_time_window').default(86400000), // 24 hours
-  rateLimitMax: integer('rate_limit_max').default(1000),
+  rateLimitMax: integer('rate_limit_max').default(200),
   requestCount: integer('request_count').default(0),
   remaining: integer('remaining'),
   lastRequest: timestamp('last_request'),

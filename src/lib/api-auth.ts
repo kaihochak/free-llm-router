@@ -26,7 +26,7 @@ export const corsHeaders = {
 const RATE_LIMIT_CODES = ['RATE_LIMITED', 'RATE_LIMIT_EXCEEDED', 'TOO_MANY_REQUESTS'];
 
 // Default rate limit values for when result.key is null
-const DEFAULT_RATE_LIMIT = { limit: 1000, timeWindow: 86400000 }; // 1000/day
+const DEFAULT_RATE_LIMIT = { limit: 200, timeWindow: 86400000 }; // 200/day
 
 /**
  * Extracts env vars from Cloudflare runtime or import.meta.env
@@ -146,7 +146,7 @@ export async function validateApiKey(context: APIContext): Promise<ApiKeyValidat
       userId: result.key.userId,
       keyId: result.key.id,
       remaining: result.key.remaining ?? undefined,
-      limit: result.key.rateLimitMax ?? 1000,
+      limit: result.key.rateLimitMax ?? 200,
       lastRequest: result.key.lastRequest ?? undefined,
       timeWindow: result.key.rateLimitTimeWindow ?? 86400000,
     };
@@ -192,7 +192,7 @@ export function unauthorizedResponse(error: string): Response {
  * 429 Rate Limited response - ALWAYS includes CORS headers
  */
 export function rateLimitedResponse(validation: ApiKeyValidation): Response {
-  const headers = { ...corsHeaders, ...rateLimitHeaders(validation) };
+  const headers: Record<string, string> = { ...corsHeaders, ...rateLimitHeaders(validation) };
 
   // Retry-After in seconds until reset
   if (validation.lastRequest && validation.timeWindow) {

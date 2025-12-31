@@ -5,6 +5,7 @@ import {
   type FilterType,
   type SortType,
 } from '@/hooks/useModels';
+import { codeExamples } from '@/lib/code-examples/index';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { useCachedSession } from '@/lib/auth-client';
 import { ModelControls } from '@/components/ModelControls';
@@ -129,7 +130,7 @@ export function ApiUsageStep({
           <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
         </div>
         <p className="text-muted-foreground">
-          Sign in with GitHub to create your API key. Each key has a rate limit of 1,000 requests per day.
+          Sign in with GitHub to create your API key. Each key has a rate limit of 200 requests per day (with SDK caching, this is plenty).
         </p>
         <div className="flex justify-center py-4">
           {session?.user ? (
@@ -174,7 +175,7 @@ export function ApiUsageStep({
           onLimitChange={onLimitChange}
         />
         <CodeBlock
-          code={`getModelIds([${activeFilters.map(f => `'${f}'`).join(', ')}], '${activeSort}'${activeLimit ? `, ${activeLimit}` : ''})`}
+          code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit)}
           language="typescript"
           className="text-sm"
         />
@@ -182,30 +183,7 @@ export function ApiUsageStep({
           Loop through models until one succeeds. Free models may be rate-limited, so we try multiple and optionally fall back to stable models you trust. See{' '}
           <a href="#code-examples" className="text-primary hover:underline">Code Examples</a> for more patterns.
         </p>
-        <CodeBlock code={`// 1. Fetch free models and try each until one succeeds
-try {
-  const freeModels = await getModelIds([${activeFilters.map(f => `'${f}'`).join(', ')}], '${activeSort}'${activeLimit ? `, ${activeLimit}` : ', 5'});
-
-  // 2. (Optional) Add stable fallback models you trust (usually paid)
-  const stableFallback = ['anthropic/claude-3.5-sonnet'];
-  const models = [...freeModels, ...stableFallback];
-
-  // 3. Try models until one succeeds
-  for (const id of models) {
-    try {
-      const res = await client.chat.completions.create({ model: id, messages });
-      return res;
-    } catch (e) {
-      // Report issue with correct type - free, doesn't use quota
-      const status = e.status || e.response?.status;
-      reportIssue(id, issueFromStatus(status), e.message);
-    }
-  }
-} catch {
-  // API unavailable - fall back to hardcoded models
-  // E.g. return await client.chat.completions.create({ model: 'anthropic/claude-3.5-sonnet', messages });
-}
-throw new Error('All models failed');`} copyLabel="Copy" />
+        <CodeBlock code={codeExamples.basicUsage(activeFilters, activeSort, activeLimit)} copyLabel="Copy" />
       </div>
     </div>
   );

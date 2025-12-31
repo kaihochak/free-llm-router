@@ -251,7 +251,7 @@ export function DashboardPage() {
         <CardHeader>
           <CardTitle>Your API Keys</CardTitle>
           <CardDescription>
-            Manage your existing API keys ({apiKeys.length}/{MAX_KEYS}). Rate limit: 1,000 requests per day per key.
+            Manage your existing API keys ({apiKeys.length}/{MAX_KEYS}). Rate limit: 200 requests per day per key.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -293,7 +293,7 @@ export function DashboardPage() {
                             return Math.max(key.rateLimitMax - key.requestCount, 0);
                           }
                           return '—';
-                        })()} / {key.rateLimitMax || 1000}
+                        })()} / {key.rateLimitMax || 200}
                       </span>
                     </TableCell>
                     <TableCell>
