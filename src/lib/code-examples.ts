@@ -34,7 +34,7 @@ export const codeExamples = {
   feedbackResponse: `{ "received": true }`,
 
   // Code Examples - One-off API Call
-  oneOffCall: `import { getModelIds, reportIssue } from './free-models';
+  oneOffCall: `import { getModelIds, reportIssue, issueFromStatus } from './free-models';
 
 const prompt = 'Summarize this article in 3 bullet points: ...';
 
@@ -56,11 +56,16 @@ try {
           messages: [{ role: 'user', content: prompt }],
         }),
       });
+      if (!res.ok) {
+        // Report the right issue type - free, doesn't use quota
+        reportIssue(id, issueFromStatus(res.status), \`HTTP \${res.status}\`);
+        continue;
+      }
       const data = await res.json();
       console.log(data.choices[0].message.content);
       break; // Success - exit loop
     } catch (e) {
-      reportIssue(id, 'error', e.message); // Help improve the list
+      reportIssue(id, 'error', e.message); // Free - doesn't use quota
     }
   }
 } catch {
@@ -69,7 +74,7 @@ try {
 }`,
 
   // Code Examples - Chatbot
-  chatbot: `import { getModelIds, reportIssue } from './free-models';
+  chatbot: `import { getModelIds, reportIssue, issueFromStatus } from './free-models';
 import OpenAI from 'openai';
 
 // OpenAI SDK works with OpenRouter's API
@@ -97,7 +102,8 @@ async function chat(userMessage: string) {
         messages.push({ role: 'assistant', content: reply });
         return reply;
       } catch (e) {
-        reportIssue(id, 'error', e.message);
+        // Report with correct issue type - free, doesn't use quota
+        reportIssue(id, issueFromStatus(e.status), e.message);
       }
     }
   } catch {
@@ -107,7 +113,7 @@ async function chat(userMessage: string) {
 }`,
 
   // Code Examples - Tool Calling
-  toolCalling: `import { getModelIds, reportIssue } from './free-models';
+  toolCalling: `import { getModelIds, reportIssue, issueFromStatus } from './free-models';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 import { z } from 'zod';
@@ -141,7 +147,8 @@ async function askWithTools(prompt: string) {
         });
         return { text, toolCalls };
       } catch (e) {
-        reportIssue(id, 'error', e.message);
+        // Report with correct issue type - free, doesn't use quota
+        reportIssue(id, issueFromStatus(e.status), e.message);
       }
     }
   } catch {

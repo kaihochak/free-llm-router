@@ -187,12 +187,21 @@ export async function getModelIds(filter?: Filter[], sort: Sort = 'capable', lim
   return ids;
 }
 
+// Report issues to help improve model reliability data.
+// This does NOT count towards your rate limit - you're contributing!
 export function reportIssue(modelId: string, issue: 'error' | 'rate_limited' | 'unavailable', details?: string) {
   fetch(\`\${API}/models/feedback\`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ modelId, issue, details }),
   }).catch(() => {}); // Fire-and-forget, don't block on errors
+}
+
+// Helper: detect issue type from HTTP status code
+export function issueFromStatus(status: number): 'rate_limited' | 'unavailable' | 'error' {
+  if (status === 429) return 'rate_limited';
+  if (status === 503) return 'unavailable';
+  return 'error';
 }`;
 
 export function generateSnippet(_apiUrl?: string): string {

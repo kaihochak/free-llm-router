@@ -259,7 +259,10 @@ export function ApiReferenceSection() {
                 <h3 className="font-mono text-lg font-medium">/api/v1/models/feedback</h3>
               </div>
               <p className="text-muted-foreground">
-                Report issues with a model (rate limiting, errors, unavailability).
+                Report issues with a model (rate limiting, errors, unavailability).{' '}
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  Does not count towards your rate limit.
+                </span>
               </p>
             </div>
             <CopyEndpointButton endpoint="/api/v1/models/feedback" />
@@ -305,11 +308,11 @@ export function ApiReferenceSection() {
                         <td className="py-2 pr-4">No</td>
                         <td className="py-2">Optional description of the issue</td>
                       </tr>
-                      <tr>
-                        <td className="py-2 pr-4 font-mono text-xs">source</td>
-                        <td className="py-2 pr-4">string</td>
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 font-mono text-xs">dryRun</td>
+                        <td className="py-2 pr-4">boolean</td>
                         <td className="py-2 pr-4">No</td>
-                        <td className="py-2">Your app identifier (default: "anonymous")</td>
+                        <td className="py-2">If true, validates request but doesn't save (for testing)</td>
                       </tr>
                     </tbody>
                   </table>
@@ -360,7 +363,7 @@ export function ApiReferenceSection() {
                   modelId: 'google/gemini-2.0-flash-exp:free',
                   issue: 'rate_limited',
                   details: 'Getting 429 after ~10 requests',
-                  source: 'my-app',
+                  dryRun: true,
                 }}
                 exampleResponse={codeExamples.feedbackResponse}
               />

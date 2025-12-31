@@ -16,7 +16,7 @@ export function AppShell({ children, defaultOpen = true }: AppShellProps) {
       <SidebarProvider defaultOpen={defaultOpen}>
         <SiteHeader />
         <AppSidebar />
-        <main className="min-h-screen w-full pt-14 pl-[--sidebar-width]">
+        <main className="min-h-screen w-full pt-14 pl-0 md:pl-[--sidebar-width]">
           {children}
         </main>
         <Toaster />

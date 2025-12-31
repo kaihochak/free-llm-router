@@ -46,19 +46,19 @@ export function ModelControls({
   const sortLabel = SORT_OPTIONS.find(s => s.key === activeSort)?.label || activeSort;
   const isSmall = size === 'sm';
   const rootClassName = `flex flex-wrap items-center ${
-    isSmall ? 'gap-x-1 gap-y-2' : 'gap-x-6 gap-y-4'
+    isSmall ? 'gap-x-1 gap-y-2' : 'gap-x-4 gap-y-3 sm:gap-x-6 sm:gap-y-4'
   }${className ? ` ${className}` : ''}`;
 
   return (
     <div className={rootClassName}>
       <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-        <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-lg font-medium'}>Filter:</span>
+        <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Filter:</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
               size={isSmall ? 'sm' : 'lg'}
-              className={isSmall ? 'gap-2 h-8' : 'gap-2 text-base'}
+              className={isSmall ? 'gap-2 h-8' : 'gap-2 h-10 text-sm sm:h-11 sm:text-base'}
             >
               {filterLabel}
               <ChevronDown className={isSmall ? 'h-3 w-3 opacity-50' : 'h-5 w-5 opacity-50'} />
@@ -86,9 +86,9 @@ export function ModelControls({
       </div>
 
       <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-        <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-lg font-medium'}>Sort:</span>
+        <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Sort:</span>
         <Select value={activeSort} onValueChange={(value) => onSortChange(value as SortType)}>
-          <SelectTrigger className={isSmall ? 'h-8 text-sm w-auto' : 'h-11 text-base min-w-40'}>
+          <SelectTrigger className={isSmall ? 'h-8 text-sm w-auto' : 'h-10 w-full text-sm sm:h-11 sm:w-auto sm:min-w-40 sm:text-base'}>
             <SelectValue>{sortLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -103,12 +103,12 @@ export function ModelControls({
 
       {onLimitChange && (
         <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-          <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-lg font-medium'}>Limit:</span>
+          <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Limit:</span>
           <Select
             value={activeLimit?.toString() ?? 'all'}
             onValueChange={(value) => onLimitChange(value === 'all' ? undefined : parseInt(value, 10))}
           >
-            <SelectTrigger className={isSmall ? 'h-8 text-sm w-20' : 'h-11 text-base w-24'}>
+            <SelectTrigger className={isSmall ? 'h-8 text-sm w-20' : 'h-10 w-full text-sm sm:h-11 sm:w-24 sm:text-base'}>
               <SelectValue>{activeLimit ?? 'All'}</SelectValue>
             </SelectTrigger>
             <SelectContent>

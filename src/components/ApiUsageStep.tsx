@@ -49,9 +49,9 @@ export function ApiUsageStep({
     <div className="w-full space-y-12">
       {/* Step 1: Set Up OpenRouter */}
       <div id="setup-openrouter" className="space-y-3 scroll-mt-20">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">1</span>
-          <h3 className="text-2xl font-semibold">Set Up OpenRouter</h3>
+          <h3 className="text-xl font-semibold sm:text-2xl">Set Up OpenRouter</h3>
         </div>
         <p className="text-muted-foreground">
           <a
@@ -69,10 +69,10 @@ export function ApiUsageStep({
       {/* Step 2: Preview Your Model List */}
       {showBrowseModels && (
         <div id="models" className="scroll-mt-20 space-y-6">
-          <div className="flex items-center gap-3">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">2</span>
-            <h3 className="text-2xl font-semibold">Preview Your Model List</h3>
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">2</span>
+          <h3 className="text-xl font-semibold sm:text-2xl">Preview Your Model List</h3>
+        </div>
           <p className="text-muted-foreground">
             Configure filters and sorting to customize which models you'll get. This is a live preview - your app will fetch these dynamically.
           </p>
@@ -87,7 +87,7 @@ export function ApiUsageStep({
             onLimitChange={onLimitChange}
           />
 
-          <div className="flex gap-4 w-full justify-between">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {modelCount !== undefined && <ModelCountHeader count={modelCount} />}
 
             {totalPages && totalPages > 1 && onPageChange && currentPage && (
@@ -124,9 +124,9 @@ export function ApiUsageStep({
 
       {/* Step 3: Get Your API Key */}
       <div id="get-api-key" className="space-y-3 scroll-mt-20">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 3 : 2}</span>
-          <h3 className="text-2xl font-semibold">Get Your API Key</h3>
+          <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
         </div>
         <p className="text-muted-foreground">
           Sign in with GitHub to create your API key. Each key has a rate limit of 1,000 requests per day.
@@ -146,35 +146,33 @@ export function ApiUsageStep({
 
       {/* Step 4: Copy free-models.ts */}
       <div id="copy-file" className="space-y-3 scroll-mt-20">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 4 : 3}</span>
-          <h3 className="text-2xl font-semibold">Copy <code className="font-mono text-xl bg-muted px-1.5 py-0.5 rounded">free-models.ts</code></h3>
+          <h3 className="text-xl font-semibold sm:text-2xl">Copy <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">free-models.ts</code></h3>
         </div>
         <p className="text-muted-foreground">
           This helper fetches free model IDs from our API and reports issues back. It's a single file with no dependencies.
         </p>
-        {showBrowseModels && (
-          <ModelControls
-            activeFilters={activeFilters}
-            activeSort={activeSort}
-            activeLimit={activeLimit}
-            onToggleFilter={onToggleFilter}
-            onSortChange={onSortChange}
-            onLimitChange={onLimitChange}
-          />
-        )}
         <CodeBlock code={snippet} copyLabel="Copy" />
       </div>
 
       {/* Step 5: Use It */}
       <div id="use-it" className="space-y-3 scroll-mt-20">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 5 : 4}</span>
-          <h3 className="text-2xl font-semibold">Use It</h3>
+          <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
         <p className="text-muted-foreground">
           This is the exact `getModelIds` call for your current filters, sort, and limit.
         </p>
+        <ModelControls
+          activeFilters={activeFilters}
+          activeSort={activeSort}
+          activeLimit={activeLimit}
+          onToggleFilter={onToggleFilter}
+          onSortChange={onSortChange}
+          onLimitChange={onLimitChange}
+        />
         <CodeBlock
           code={`getModelIds([${activeFilters.map(f => `'${f}'`).join(', ')}], '${activeSort}'${activeLimit ? `, ${activeLimit}` : ''})`}
           language="typescript"
@@ -195,9 +193,12 @@ try {
   // 3. Try models until one succeeds
   for (const id of models) {
     try {
-      return await client.chat.completions.create({ model: id, messages });
+      const res = await client.chat.completions.create({ model: id, messages });
+      return res;
     } catch (e) {
-      reportIssue(id, 'error', e.message);
+      // Report issue with correct type - free, doesn't use quota
+      const status = e.status || e.response?.status;
+      reportIssue(id, issueFromStatus(status), e.message);
     }
   }
 } catch {

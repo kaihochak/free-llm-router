@@ -112,7 +112,7 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
               href={getOpenRouterUrl(model.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+              className="group flex flex-col items-start gap-2 px-4 py-3 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:gap-3"
             >
               {/* Provider Logo */}
               <div className="shrink-0">
@@ -120,7 +120,7 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
               </div>
 
               {/* Model Name & Badges */}
-              <div className="flex-1 min-w-0 flex items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
                 <span className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
                   {model.name}
                 </span>
@@ -140,7 +140,7 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
               </div>
 
               {/* Stats */}
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex w-full items-center justify-between gap-4 text-xs text-muted-foreground sm:w-auto sm:justify-end">
                 <span className="font-mono hidden sm:inline">{formatTokens(model.contextLength)}</span>
                 <button
                   onClick={(e) => copyModelId(e, model.id)}

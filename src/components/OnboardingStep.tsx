@@ -36,7 +36,7 @@ export function OnboardingStep({
       </div>
 
       {/* Step Content */}
-      <div className={wide ? 'max-w-2xl w-full text-left' : 'max-w-xl'}>{children}</div>
+      <div className={wide ? 'max-w-3xl w-full text-left' : 'max-w-xl'}>{children}</div>
 
       {/* Confirm Button */}
       {showConfirm && onConfirm && (

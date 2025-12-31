@@ -30,7 +30,7 @@ const seoProps = Astro.props;
     </script>
   </head>
   <body class="min-h-screen bg-background text-foreground">
-    <SiteHeader client:load />
+    <SiteHeader client:load showSidebarTrigger={false} />
     <main class="pt-14">
       <slot />
     </main>
