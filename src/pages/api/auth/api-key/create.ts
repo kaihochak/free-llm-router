@@ -70,7 +70,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   // Create the key via Better Auth
   const body = await request.json();
-  const response = await (auth.api as any).createApiKey({
+  const response = await auth.api.createApiKey({
     body: { name: body.name, expiresIn: body.expiresIn },
     headers: request.headers,
   });

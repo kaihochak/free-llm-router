@@ -1,9 +1,15 @@
 import { betterAuth } from 'better-auth';
+import type { Auth as BetterAuthInstance } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { apiKey } from 'better-auth/plugins';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@/db/schema';
+
+// Auth options type that includes the apiKey plugin for proper type inference
+type AuthOptions = {
+  plugins: [ReturnType<typeof apiKey>];
+};
 
 // Environment config passed from runtime
 export interface AuthEnv {
@@ -16,7 +22,8 @@ export interface AuthEnv {
 }
 
 // Cache auth instance to avoid recreation on every request
-const authCache = new Map<string, ReturnType<typeof betterAuth>>();
+// Typed with AuthOptions to preserve apiKey plugin endpoints (verifyApiKey, createApiKey, etc.)
+const authCache = new Map<string, BetterAuthInstance<AuthOptions>>();
 
 // Simple hash function for cache key (not cryptographic, just for differentiation)
 function simpleHash(str: string): string {
@@ -29,7 +36,7 @@ function simpleHash(str: string): string {
   return Math.abs(hash).toString(36);
 }
 
-export function createAuth(env: AuthEnv) {
+export function createAuth(env: AuthEnv): BetterAuthInstance<AuthOptions> {
   // Include all config values in cache key to handle preview/prod differences
   const secretHash = env.githubClientSecret ? simpleHash(env.githubClientSecret) : '';
   const cacheKey = `${env.databaseUrl}:${env.baseUrl}:${env.githubClientId || ''}:${secretHash}`;

@@ -71,7 +71,7 @@ export function ModelTable() {
       </div>
 
       {/* Models Count & Pagination */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{models.length}</span> free models
         </p>

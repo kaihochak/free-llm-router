@@ -119,6 +119,7 @@ export function FeedbackDialog() {
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <span className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+          <MessageSquare className="h-4 w-4 inline sm:hidden" />
           <span className="hidden sm:inline">Feedback</span>
         </span>
       </SheetTrigger>

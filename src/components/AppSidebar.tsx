@@ -167,7 +167,7 @@ export function AppSidebar() {
   }, []);
 
   return (
-    <Sidebar collapsible="none" className="sticky top-14 h-[calc(100vh-3.5rem)] border-r bg-background">
+    <Sidebar collapsible="offcanvas" className="sticky top-14 h-[calc(100vh-3.5rem)] border-r bg-background">
       <SidebarContent className="p-2">
         <SidebarGroup>
           <SidebarGroupContent>
