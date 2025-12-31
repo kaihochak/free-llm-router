@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 // Re-export from code-examples (single source of truth for all code snippets)
 import { FREE_MODELS_SDK as FREE_MODELS_FILE } from '@/lib/code-examples/index';
+import { useLocalStorage } from './useLocalStorage';
 
 export interface Model {
   id: string;
@@ -170,8 +171,9 @@ export function getFullApiUrl(apiUrl: string): string {
 }
 
 export function useModels() {
-  const [activeFilters, setActiveFilters] = useState<FilterType[]>([]);
-  const [activeSort, setActiveSort] = useState<SortType>('contextLength');
+  const [activeFilters, setActiveFilters] = useLocalStorage<FilterType[]>('freeModels:filters', []);
+  const [activeSort, setActiveSort] = useLocalStorage<SortType>('freeModels:sort', 'contextLength');
+  const [activeLimit, setActiveLimit] = useLocalStorage<number | undefined>('freeModels:limit', 5);
 
   // Fetch all models once
   const {
@@ -197,9 +199,10 @@ export function useModels() {
     if (filter === 'all') {
       setActiveFilters([]);
     } else {
-      setActiveFilters((prev) =>
-        prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
-      );
+      const newFilters = activeFilters.includes(filter)
+        ? activeFilters.filter((f) => f !== filter)
+        : [...activeFilters, filter];
+      setActiveFilters(newFilters);
     }
   };
 
@@ -209,8 +212,10 @@ export function useModels() {
     error: error instanceof Error ? error.message : error ? String(error) : null,
     activeFilters,
     activeSort,
+    activeLimit,
     apiUrl,
     setActiveSort,
+    setActiveLimit,
     toggleFilter,
   };
 }

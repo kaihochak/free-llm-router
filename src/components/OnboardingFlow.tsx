@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useModels } from '@/hooks/useModels';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { OnboardingStep } from '@/components/OnboardingStep';
 import { UseCaseSelector } from '@/components/UseCaseSelector';
 import { SortSelector } from '@/components/SortSelector';
@@ -34,10 +35,9 @@ const springTransition = {
 };
 
 export function OnboardingFlow() {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useLocalStorage('freeModels:onboardingStep', 0);
   const [direction, setDirection] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeLimit, setActiveLimit] = useState<number | undefined>(5);
 
   const {
     models,
@@ -45,9 +45,11 @@ export function OnboardingFlow() {
     error,
     activeFilters,
     activeSort,
+    activeLimit,
     apiUrl,
     toggleFilter,
     setActiveSort,
+    setActiveLimit,
   } = useModels();
 
   const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
@@ -60,14 +62,14 @@ export function OnboardingFlow() {
   const goToNextStep = () => {
     if (currentStep < 2) {
       setDirection(1);
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const goToPrevStep = () => {
     if (currentStep > 0) {
       setDirection(-1);
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep(currentStep - 1);
     }
   };
 

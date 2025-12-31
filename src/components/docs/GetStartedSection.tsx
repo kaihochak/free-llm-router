@@ -7,10 +7,9 @@ import { QueryProvider } from '@/components/QueryProvider';
 const ITEMS_PER_PAGE = 5;
 
 export function GetStartedSection() {
-  const { models, loading, error, activeFilters, activeSort, apiUrl, toggleFilter, setActiveSort } = useModels();
+  const { models, loading, error, activeFilters, activeSort, activeLimit, apiUrl, toggleFilter, setActiveSort, setActiveLimit } = useModels();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeLimit, setActiveLimit] = useState<number | undefined>(5);
   const effectiveModelCount = activeLimit ? Math.min(models.length, activeLimit) : models.length;
   const totalPages = Math.ceil(effectiveModelCount / ITEMS_PER_PAGE);
 
