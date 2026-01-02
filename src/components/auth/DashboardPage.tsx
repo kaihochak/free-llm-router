@@ -168,7 +168,7 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* User Info Card */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-4">
             {session.user.image && (
               <img
