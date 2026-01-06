@@ -46,6 +46,7 @@ export function OnboardingFlow() {
     activeFilters,
     activeSort,
     activeLimit,
+    lastUpdated,
     apiUrl,
     toggleFilter,
     setActiveSort,
@@ -87,7 +88,7 @@ export function OnboardingFlow() {
     },
     {
       title: 'Set Fallback Priority',
-      description: 'Models are tried in order — first = primary, rest = fallbacks',
+      description: 'Models are tried in order - first = primary, rest = fallbacks',
       content: <SortSelector activeSort={activeSort} onSortChange={setActiveSort} onConfirm={goToNextStep} />,
     },
     {
@@ -99,6 +100,7 @@ export function OnboardingFlow() {
           activeFilters={activeFilters}
           activeSort={activeSort}
           activeLimit={activeLimit}
+          lastUpdated={lastUpdated}
           onToggleFilter={toggleFilter}
           onSortChange={setActiveSort}
           onLimitChange={setActiveLimit}
@@ -203,7 +205,7 @@ export function OnboardingFlow() {
       {currentStep !== 2 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <ModelCountHeader count={models.length} />
+            <ModelCountHeader count={models.length} lastUpdated={lastUpdated} />
 
             {totalPages > 1 && (
               <div className="flex items-center gap-1">

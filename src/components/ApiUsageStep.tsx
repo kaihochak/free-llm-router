@@ -16,6 +16,7 @@ interface ApiUsageStepProps {
   activeFilters: FilterType[];
   activeSort: SortType;
   activeLimit: number | undefined;
+  lastUpdated?: string | null;
   onToggleFilter: (filter: FilterType | 'all') => void;
   onSortChange: (sort: SortType) => void;
   onLimitChange: (limit: number | undefined) => void;
@@ -33,6 +34,7 @@ export function ApiUsageStep({
   activeFilters,
   activeSort,
   activeLimit,
+  lastUpdated,
   onToggleFilter,
   onSortChange,
   onLimitChange,
@@ -89,7 +91,7 @@ export function ApiUsageStep({
           />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {modelCount !== undefined && <ModelCountHeader count={modelCount} />}
+            {modelCount !== undefined && <ModelCountHeader count={modelCount} lastUpdated={lastUpdated} />}
 
             {totalPages && totalPages > 1 && onPageChange && currentPage && (
               <div className="flex items-center gap-1">
@@ -130,7 +132,7 @@ export function ApiUsageStep({
           <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
         </div>
         <p className="text-muted-foreground">
-          Sign in with GitHub to create your API key. Each key has a rate limit of 200 requests per day (with SDK caching, this is plenty).
+          Sign in with GitHub to create your API key. All keys share a per-user limit of 200 requests per 24 hours (with SDK caching, this is plenty).
         </p>
         <div className="flex justify-center py-4">
           {session?.user ? (

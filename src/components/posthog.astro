@@ -1,6 +1,7 @@
 ---
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
 const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+const isProd = import.meta.env.PROD;
 ---
 
 {posthogKey && (
@@ -9,6 +10,7 @@ const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog
     posthog.init(posthogKey, {
       api_host: posthogHost,
       capture_pageview: true,
+      disable_session_recording: !isProd,
       person_profiles: 'identified_only',
     });
   </script>

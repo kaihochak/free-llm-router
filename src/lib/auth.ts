@@ -70,9 +70,7 @@ export function createAuth(env: AuthEnv): BetterAuthInstance<AuthOptions> {
       apiKey({
         defaultPrefix: 'fma_',
         rateLimit: {
-          enabled: true,
-          timeWindow: 86400 * 1000, // 24 hours in milliseconds
-          maxRequests: 200,
+          enabled: false, // DISABLED - using custom user-level rate limiting
         },
       }),
     ],

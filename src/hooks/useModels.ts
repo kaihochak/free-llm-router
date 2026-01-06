@@ -30,16 +30,16 @@ interface FeedbackCounts {
 interface ApiResponse {
   models: Omit<Model, 'issueCount'>[];
   feedbackCounts: FeedbackCounts;
+  lastUpdated?: string;
 }
 
-export type FilterType = 'chat' | 'vision' | 'coding' | 'tools' | 'longContext' | 'reasoning';
+export type FilterType = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
 export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
 
 export const FILTERS: { key: FilterType | 'all'; label: string; description: string }[] = [
   { key: 'all', label: 'All', description: 'Show all available free models' },
   { key: 'chat', label: 'Chat', description: 'Models optimized for conversation' },
   { key: 'vision', label: 'Vision', description: 'Models that can analyze images' },
-  { key: 'coding', label: 'Coding', description: 'Models specialized for code generation' },
   { key: 'tools', label: 'Tools', description: 'Models that support function/tool calling' },
   { key: 'longContext', label: 'Long Context', description: 'Models with 100k+ token context windows' },
   { key: 'reasoning', label: 'Reasoning', description: 'Models with advanced reasoning capabilities' },
@@ -69,7 +69,12 @@ function buildApiUrl(filters: FilterType[], sort: SortType): string {
   return `/api/v1/models/ids?${params.toString()}`;
 }
 
-async function fetchAllModels(): Promise<Model[]> {
+interface ModelsResponse {
+  models: Model[];
+  lastUpdated: string | null;
+}
+
+async function fetchAllModels(): Promise<ModelsResponse> {
   const response = await fetch('/api/demo/models');
   if (!response.ok) {
     throw new Error('Failed to fetch models');
@@ -77,13 +82,18 @@ async function fetchAllModels(): Promise<Model[]> {
   const data: ApiResponse = await response.json();
 
   // Attach issue counts to each model
-  return data.models.map((model) => {
+  const models = data.models.map((model) => {
     const feedback = data.feedbackCounts[model.id];
     const issueCount = feedback
       ? feedback.rateLimited + feedback.unavailable + feedback.error
       : 0;
     return { ...model, issueCount };
   });
+
+  return {
+    models,
+    lastUpdated: data.lastUpdated ?? null,
+  };
 }
 
 // Frontend filtering logic
@@ -97,20 +107,16 @@ function filterModels(models: Model[], filters: FilterType[]): Model[] {
           return model.modality === 'text->text' || model.outputModalities?.includes('text');
         case 'vision':
           return model.inputModalities?.includes('image');
-        case 'coding':
-          // Check if model name/id suggests coding capability
-          const codingKeywords = ['code', 'coder', 'codestral', 'deepseek', 'qwen2.5-coder'];
-          const modelIdLower = model.id.toLowerCase();
-          return codingKeywords.some((kw) => modelIdLower.includes(kw));
         case 'tools':
           return model.supportedParameters?.includes('tools') ?? false;
         case 'longContext':
           return model.contextLength !== null && model.contextLength >= 100000;
         case 'reasoning':
-          // Check for reasoning model indicators
-          const reasoningKeywords = ['reasoning', 'think', 'o1', 'o3', 'r1', 'qwq'];
-          const idLower = model.id.toLowerCase();
-          return reasoningKeywords.some((kw) => idLower.includes(kw));
+          // Check for reasoning capability via supported parameters
+          return (
+            model.supportedParameters?.includes('reasoning') ||
+            model.supportedParameters?.includes('include_reasoning')
+          ) ?? false;
         default:
           return true;
       }
@@ -177,7 +183,7 @@ export function useModels() {
 
   // Fetch all models once
   const {
-    data: allModels = [],
+    data: modelsResponse = { models: [], lastUpdated: null },
     isLoading: loading,
     error,
   } = useQuery({
@@ -188,9 +194,9 @@ export function useModels() {
 
   // Filter and sort on frontend
   const models = useMemo(() => {
-    const filtered = filterModels(allModels, activeFilters);
+    const filtered = filterModels(modelsResponse.models, activeFilters);
     return sortModels(filtered, activeSort);
-  }, [allModels, activeFilters, activeSort]);
+  }, [modelsResponse.models, activeFilters, activeSort]);
 
   // API URL for the code snippet (reflects current filters/sort)
   const apiUrl = useMemo(() => buildApiUrl(activeFilters, activeSort), [activeFilters, activeSort]);
@@ -213,6 +219,7 @@ export function useModels() {
     activeFilters,
     activeSort,
     activeLimit,
+    lastUpdated: modelsResponse.lastUpdated,
     apiUrl,
     setActiveSort,
     setActiveLimit,

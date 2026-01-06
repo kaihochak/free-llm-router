@@ -50,6 +50,11 @@ export function DashboardPage() {
   const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userRateLimit, setUserRateLimit] = useState<{
+    remaining: number;
+    limit: number;
+    requestCount: number;
+  } | null>(null);
 
   // Fetch API keys from server
   const fetchApiKeys = useCallback(async () => {
@@ -66,12 +71,30 @@ export function DashboardPage() {
     }
   }, []);
 
-  // Fetch API keys when session is available
+  // Fetch user's rate limit data
+  const fetchUserRateLimit = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/rate-limit');
+      if (response.ok) {
+        const data = await response.json();
+        setUserRateLimit({
+          remaining: data.remaining,
+          limit: data.limit,
+          requestCount: data.requestCount,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch user rate limit:', err);
+    }
+  }, []);
+
+  // Fetch API keys and user rate limit when session is available
   useEffect(() => {
     if (session?.user) {
       fetchApiKeys();
+      fetchUserRateLimit();
     }
-  }, [session?.user, fetchApiKeys]);
+  }, [session?.user, fetchApiKeys, fetchUserRateLimit]);
 
   const handleSignOut = async () => {
     await signOut({ fetchOptions: { onSuccess: () => { window.location.href = '/'; } } });
@@ -189,6 +212,38 @@ export function DashboardPage() {
         </CardHeader>
       </Card>
 
+      {/* API Usage Card */}
+      <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+            <Key className="h-5 w-5" />
+            API Usage (Shared Across All Keys)
+          </CardTitle>
+          <CardDescription className="text-blue-600 dark:text-blue-500">
+            Your usage resets 24 hours after your last request
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {userRateLimit ? (
+            <div className="space-y-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold">{userRateLimit.remaining}</span>
+                <span className="text-muted-foreground">/ {userRateLimit.limit} requests remaining</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {userRateLimit.requestCount > 0 ? (
+                  <>Used {userRateLimit.requestCount} request{userRateLimit.requestCount === 1 ? '' : 's'} today</>
+                ) : (
+                  'No requests made yet'
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Loading usage data...</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* New Key Alert - Show only once after creation */}
       {newKey && (
         <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
@@ -221,12 +276,12 @@ export function DashboardPage() {
         </Card>
       )}
 
-      {/* Create API Key Card */}
+      {/* API Keys */}
       <Card>
         <CardHeader>
-          <CardTitle>Create API Key</CardTitle>
+          <CardTitle>API Keys</CardTitle>
           <CardDescription>
-            Generate a new API key to access the Free Models API
+            Manage your keys ({apiKeys.length}/{MAX_KEYS}). All keys share your account&apos;s rate limit of {userRateLimit?.limit ?? 200} requests per day.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -243,80 +298,59 @@ export function DashboardPage() {
             </Button>
           </form>
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-        </CardContent>
-      </Card>
 
-      {/* API Keys List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your API Keys</CardTitle>
-          <CardDescription>
-            Manage your existing API keys ({apiKeys.length}/{MAX_KEYS}). Rate limit: 200 requests per day per key.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingKeys ? (
-            <p className="text-center text-muted-foreground py-4">Loading keys...</p>
-          ) : apiKeys.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
-              No API keys yet. Create one above to get started.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Key</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {apiKeys.map((key) => (
-                  <TableRow key={key.id}>
-                    <TableCell className="font-medium">{key.name}</TableCell>
-                    <TableCell>
-                      <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
-                        {key.prefix || key.start || 'fma_'}...
-                      </code>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(key.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">
-                        {(() => {
-                          if (typeof key.remaining === 'number') return key.remaining;
-                          if (typeof key.requestCount === 'number' && typeof key.rateLimitMax === 'number') {
-                            return Math.max(key.rateLimitMax - key.requestCount, 0);
-                          }
-                          return '—';
-                        })()} / {key.rateLimitMax || 200}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={key.enabled ? 'default' : 'secondary'}>
-                        {key.enabled ? 'Active' : 'Disabled'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteKey(key.id)}
-                        disabled={deletingKeyId === key.id}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+          <div className="mt-6">
+            {isLoadingKeys ? (
+              <p className="text-center text-muted-foreground py-4">Loading keys...</p>
+            ) : apiKeys.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                No API keys yet. Create one above to get started.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Key</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableHeader>
+                <TableBody>
+                  {apiKeys.map((key) => (
+                    <TableRow key={key.id}>
+                      <TableCell className="font-medium">{key.name}</TableCell>
+                      <TableCell>
+                        <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
+                          {key.prefix || key.start || 'fma_'}...
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(key.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={key.enabled ? 'default' : 'secondary'}>
+                          {key.enabled ? 'Active' : 'Disabled'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteKey(key.id)}
+                          disabled={deletingKeyId === key.id}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </CardContent>
       </Card>
 

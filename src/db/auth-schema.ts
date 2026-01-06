@@ -10,6 +10,12 @@ export const users = pgTable('users', {
   image: text('image'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  // User-level rate limiting (200 requests/24 hours shared across all keys)
+  requestCount: integer('request_count').default(0),
+  remaining: integer('remaining').default(200),
+  lastRequest: timestamp('last_request'),
+  rateLimitMax: integer('rate_limit_max').default(200),
+  rateLimitTimeWindow: integer('rate_limit_time_window').default(86400000), // 24 hours in milliseconds
 });
 
 export const sessions = pgTable('sessions', {
