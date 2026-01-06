@@ -77,7 +77,8 @@ export const ALL: APIRoute = async ({ request, locals }) => {
 
   try {
     const auth = createAuth(authEnv);
-    return auth.handler(request);
+    const response = await auth.handler(request);
+    return response;
   } catch (error) {
     console.error('[Auth] Error:', error);
     return new Response(
