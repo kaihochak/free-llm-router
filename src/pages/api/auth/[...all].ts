@@ -75,6 +75,14 @@ export const ALL: APIRoute = async ({ request, locals }) => {
     githubClientSecret,
   };
 
-  const auth = createAuth(authEnv);
-  return auth.handler(request);
+  try {
+    const auth = createAuth(authEnv);
+    return auth.handler(request);
+  } catch (error) {
+    console.error('[Auth] Error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Auth error', message: String(error) }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    );
+  }
 };
