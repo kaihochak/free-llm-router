@@ -345,3 +345,11 @@ export async function getModelsWithLazyRefresh(db: Database) {
     lastUpdated: updatedAt?.toISOString() ?? new Date().toISOString(),
   };
 }
+
+export async function ensureFreshModels(db: Database) {
+  const lastUpdated = await getLastUpdated(db);
+
+  if (!lastUpdated || Date.now() - lastUpdated.getTime() > STALE_THRESHOLD_MS) {
+    await syncModels(db);
+  }
+}

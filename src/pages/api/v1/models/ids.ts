@@ -2,8 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb } from '@/db';
 import {
   getFilteredModels,
-  getLastUpdated,
-  syncModels,
+  ensureFreshModels,
   validateFilters,
   validateSort,
 } from '@/services/openrouter';
@@ -15,8 +14,6 @@ import {
   serverErrorResponse,
   corsHeaders,
 } from '@/lib/api-auth';
-
-const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Lightweight endpoint that returns only model IDs
@@ -60,10 +57,7 @@ export const GET: APIRoute = async (context) => {
     const limit = limitParam ? Math.min(Math.max(1, parseInt(limitParam, 10) || 50), 100) : undefined;
 
     // Lazy refresh if stale
-    const lastUpdated = await getLastUpdated(db);
-    if (!lastUpdated || Date.now() - lastUpdated.getTime() > STALE_THRESHOLD_MS) {
-      await syncModels(db);
-    }
+    await ensureFreshModels(db);
 
     // Fetch filtered and sorted models
     const allModels = await getFilteredModels(db, filters, sort);

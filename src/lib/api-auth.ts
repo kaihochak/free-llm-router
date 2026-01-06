@@ -1,7 +1,8 @@
 import type { APIContext } from 'astro';
-import { createAuth, type AuthEnv } from './auth';
-import { eq, and } from 'drizzle-orm';
-import { createDb, apiKeys } from '@/db';
+import { base64Url } from '@better-auth/utils/base64';
+import { type AuthEnv } from './auth';
+import { eq, and, sql } from 'drizzle-orm';
+import { createDb, apiKeys, users } from '@/db';
 
 export interface ApiKeyValidation {
   valid: boolean;
@@ -13,6 +14,7 @@ export interface ApiKeyValidation {
   limit?: number;
   lastRequest?: Date;
   timeWindow?: number;
+  requestCount?: number;
 }
 
 // CORS headers - include on ALL responses from protected endpoints
@@ -21,12 +23,6 @@ export const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-// Rate limit error codes to check (Better Auth may use different codes)
-const RATE_LIMIT_CODES = ['RATE_LIMITED', 'RATE_LIMIT_EXCEEDED', 'TOO_MANY_REQUESTS'];
-
-// Default rate limit values for when result.key is null
-const DEFAULT_RATE_LIMIT = { limit: 200, timeWindow: 86400000 }; // 200/day
 
 /**
  * Extracts env vars from Cloudflare runtime or import.meta.env
@@ -54,11 +50,115 @@ function getEnv(context: APIContext): Partial<AuthEnv> & { missing: string[] } {
 }
 
 /**
+ * Checks and updates user-level rate limits.
+ * Enforces 200 requests/24 hours per user across all API keys.
+ * Uses PostgreSQL row locking for atomic enforcement (zero overage).
+ */
+async function checkUserRateLimit(
+  userId: string,
+  databaseUrl: string
+): Promise<Omit<ApiKeyValidation, 'valid' | 'keyId'>> {
+  const db = createDb(databaseUrl);
+
+  // Atomic rate limit check with strict enforcement via PostgreSQL row locking
+  // Reset logic and limit check both in SQL for zero-race atomic operation
+  const now = new Date();
+
+  // Single atomic UPDATE with SQL-side reset check and limit enforcement
+  const result = await db
+    .update(users)
+    .set({
+      // CASE expression: reset to 1 if window expired, else increment
+      requestCount: sql`
+        CASE
+          WHEN ${users.lastRequest} IS NULL
+            OR EXTRACT(EPOCH FROM (NOW() - ${users.lastRequest})) * 1000 >= COALESCE(${users.rateLimitTimeWindow}, 86400000)
+          THEN 1
+          ELSE COALESCE(${users.requestCount}, 0) + 1
+        END
+      `,
+      // Compute remaining based on new requestCount
+      remaining: sql`
+        GREATEST(
+          COALESCE(${users.rateLimitMax}, 200) -
+          CASE
+            WHEN ${users.lastRequest} IS NULL
+              OR EXTRACT(EPOCH FROM (NOW() - ${users.lastRequest})) * 1000 >= COALESCE(${users.rateLimitTimeWindow}, 86400000)
+            THEN 1
+            ELSE COALESCE(${users.requestCount}, 0) + 1
+          END,
+          0
+        )
+      `,
+      lastRequest: sql`NOW()`,
+      updatedAt: sql`NOW()`,
+    })
+    .where(
+      // Strict enforcement: Allow if window reset OR under limit
+      // PostgreSQL row lock serializes all updates - zero overage in practice
+      and(
+        eq(users.id, userId),
+        sql`
+          (${users.lastRequest} IS NULL
+           OR EXTRACT(EPOCH FROM (NOW() - ${users.lastRequest})) * 1000 >= COALESCE(${users.rateLimitTimeWindow}, 86400000))
+          OR COALESCE(${users.requestCount}, 0) < COALESCE(${users.rateLimitMax}, 200)
+        `
+      )
+    )
+    .returning({
+      requestCount: users.requestCount,
+      remaining: users.remaining,
+      rateLimitMax: users.rateLimitMax,
+      rateLimitTimeWindow: users.rateLimitTimeWindow,
+      lastRequest: users.lastRequest,
+    });
+
+  // If no rows updated, either limit exceeded OR user doesn't exist
+  if (!result || result.length === 0) {
+    // Fetch current state to distinguish between rate-limited vs missing user
+    const [current] = await db
+      .select({
+        requestCount: users.requestCount,
+        rateLimitMax: users.rateLimitMax,
+        rateLimitTimeWindow: users.rateLimitTimeWindow,
+        lastRequest: users.lastRequest,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    // User doesn't exist - this shouldn't happen if API key was valid, but handle it
+    if (!current) {
+      return { error: 'User not found', errorCode: 'USER_NOT_FOUND' };
+    }
+
+    // User exists but update failed - rate limit exceeded
+    return {
+      error: 'Rate limit exceeded',
+      errorCode: 'RATE_LIMITED',
+      remaining: 0,
+      limit: current.rateLimitMax ?? 200,
+      lastRequest: current.lastRequest ?? new Date(), // Fallback to now for consistent Retry-After headers
+      timeWindow: current.rateLimitTimeWindow ?? 86400000,
+      requestCount: current.requestCount ?? (current.rateLimitMax ?? 200),
+    };
+  }
+
+  const updated = result[0];
+  return {
+    remaining: updated.remaining ?? 0,
+    limit: updated.rateLimitMax ?? 200,
+    lastRequest: updated.lastRequest ?? now,
+    timeWindow: updated.rateLimitTimeWindow ?? 86400000,
+    requestCount: updated.requestCount ?? 0,
+  };
+}
+
+/**
  * Validates API key from Authorization header.
  * Expected format: "Bearer fma_xxxxx"
  */
 export async function validateApiKey(context: APIContext): Promise<ApiKeyValidation> {
-  // Get all env vars from runtime (Cloudflare Pages) or import.meta.env (dev)
   const envResult = getEnv(context);
   if (envResult.missing.length > 0) {
     return {
@@ -76,13 +176,11 @@ export async function validateApiKey(context: APIContext): Promise<ApiKeyValidat
     githubClientSecret: envResult.githubClientSecret,
   };
 
-  // Parse Authorization header
   const authHeader = context.request.headers.get('Authorization');
   if (!authHeader) {
     return { valid: false, error: 'Missing Authorization header', errorCode: 'MISSING_AUTH' };
   }
 
-  // Support "Bearer <key>" format only
   if (!authHeader.startsWith('Bearer ')) {
     return {
       valid: false,
@@ -91,68 +189,66 @@ export async function validateApiKey(context: APIContext): Promise<ApiKeyValidat
     };
   }
 
-  const apiKey = authHeader.slice(7).trim(); // Remove "Bearer " prefix
+  const apiKey = authHeader.slice(7).trim();
   if (!apiKey) {
     return { valid: false, error: 'API key is empty', errorCode: 'EMPTY_KEY' };
   }
 
-  const auth = createAuth(authEnv);
-
   try {
-    // Better Auth verifyApiKey response:
-    // { valid: boolean, error: { message, code } | null, key: ApiKey | null }
-    const result = await auth.api.verifyApiKey({
-      body: { key: apiKey },
-    });
+    // Hash key with SHA-256 (Better Auth format: base64url, no padding)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(apiKey));
+    const hash = base64Url.encode(new Uint8Array(hashBuffer), { padding: false });
 
-    if (!result.valid) {
-      // Check for rate limit error codes (may vary by Better Auth version)
-      const errorCode = result.error?.code?.toUpperCase() || '';
-      const isRateLimited =
-        RATE_LIMIT_CODES.some((code) => errorCode.includes(code)) ||
-        result.error?.message?.toLowerCase().includes('rate limit');
+    // Validate key directly (bypass Better Auth's per-key rate limiting)
+    const db = createDb(authEnv.databaseUrl);
+    const result = await db
+      .select()
+      .from(apiKeys)
+      .where(and(eq(apiKeys.key, hash), eq(apiKeys.enabled, true)))
+      .limit(1);
 
-      if (isRateLimited) {
-        // Use defaults if result.key is null (shouldn't happen but be safe)
-        const limit = result.key?.rateLimitMax ?? DEFAULT_RATE_LIMIT.limit;
-        const timeWindow = result.key?.rateLimitTimeWindow ?? DEFAULT_RATE_LIMIT.timeWindow;
-        // If lastRequest is missing, use now so Retry-After = timeWindow
-        const lastRequest = result.key?.lastRequest ?? new Date();
+    if (!result.length) {
+      return { valid: false, error: 'Invalid API key', errorCode: 'INVALID_KEY' };
+    }
 
-        return {
-          valid: false,
-          error: 'Rate limit exceeded',
-          errorCode: 'RATE_LIMITED',
-          remaining: 0,
-          limit,
-          lastRequest,
-          timeWindow,
-        };
-      }
+    const key = result[0];
 
+    if (key.expiresAt && key.expiresAt < new Date()) {
+      return { valid: false, error: 'API key expired', errorCode: 'EXPIRED_KEY' };
+    }
+
+    // Check user-level rate limits
+    const rateLimitCheck = await checkUserRateLimit(key.userId, authEnv.databaseUrl);
+
+    if (rateLimitCheck.errorCode === 'RATE_LIMITED') {
       return {
         valid: false,
-        error: result.error?.message || 'Invalid API key',
-        errorCode: result.error?.code || 'INVALID_KEY',
+        userId: key.userId,
+        keyId: key.id,
+        ...rateLimitCheck,
       };
     }
 
-    if (!result.key) {
-      return { valid: false, error: 'Invalid API key', errorCode: 'INVALID_KEY' };
+    if (rateLimitCheck.errorCode) {
+      return {
+        valid: false,
+        error: rateLimitCheck.error || 'Rate limit check failed',
+        errorCode: rateLimitCheck.errorCode,
+      };
     }
 
     return {
       valid: true,
-      userId: result.key.userId,
-      keyId: result.key.id,
-      remaining: result.key.remaining ?? undefined,
-      limit: result.key.rateLimitMax ?? 200,
-      lastRequest: result.key.lastRequest ?? undefined,
-      timeWindow: result.key.rateLimitTimeWindow ?? 86400000,
+      userId: key.userId,
+      keyId: key.id,
+      remaining: rateLimitCheck.remaining,
+      limit: rateLimitCheck.limit,
+      lastRequest: rateLimitCheck.lastRequest,
+      timeWindow: rateLimitCheck.timeWindow,
+      requestCount: rateLimitCheck.requestCount,
     };
   } catch (error) {
     console.error('[API Auth] Verification error:', error);
-    // Internal errors should be 500, not 401
     return { valid: false, error: 'Internal server error', errorCode: 'SERVER_ERROR' };
   }
 }
@@ -251,18 +347,16 @@ export async function validateApiKeyOnly(context: APIContext): Promise<ApiKeyVal
   }
 
   try {
-    // Hash key with SHA-256 (Better Auth format)
+    // Hash key with SHA-256 (Better Auth format: base64url, no padding)
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(apiKey));
-    const hashHex = Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
+    const hash = base64Url.encode(new Uint8Array(hashBuffer), { padding: false });
 
     // Direct DB query - no rate limit tracking
     const db = createDb(envResult.databaseUrl!);
     const result = await db
       .select()
       .from(apiKeys)
-      .where(and(eq(apiKeys.key, hashHex), eq(apiKeys.enabled, true)))
+      .where(and(eq(apiKeys.key, hash), eq(apiKeys.enabled, true)))
       .limit(1);
 
     if (!result.length) {

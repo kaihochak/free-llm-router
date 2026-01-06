@@ -7,7 +7,7 @@ import { QueryProvider } from '@/components/QueryProvider';
 const ITEMS_PER_PAGE = 5;
 
 export function GetStartedSection() {
-  const { models, loading, error, activeFilters, activeSort, activeLimit, apiUrl, toggleFilter, setActiveSort, setActiveLimit } = useModels();
+  const { models, loading, error, activeFilters, activeSort, activeLimit, lastUpdated, apiUrl, toggleFilter, setActiveSort, setActiveLimit } = useModels();
 
   const [currentPage, setCurrentPage] = useState(1);
   const effectiveModelCount = activeLimit ? Math.min(models.length, activeLimit) : models.length;
@@ -19,7 +19,7 @@ export function GetStartedSection() {
   }
 
   return (
-    <section id="get-started" className="scroll-mt-20">
+    <section id="get-started" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">Get Started</h2>
       <p className="mb-4 text-lg text-muted-foreground">
         Building a demo or prototyping an MVP? You shouldn't have to pay for API costs just to validate an idea.
@@ -53,6 +53,7 @@ export function GetStartedSection() {
         activeFilters={activeFilters}
         activeSort={activeSort}
         activeLimit={activeLimit}
+        lastUpdated={lastUpdated}
         onToggleFilter={toggleFilter}
         onSortChange={setActiveSort}
         onLimitChange={setActiveLimit}
