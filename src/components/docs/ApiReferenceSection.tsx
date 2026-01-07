@@ -70,7 +70,6 @@ export function ApiReferenceSection() {
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">chat</code>,{' '}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">vision</code>,{' '}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">coding</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">tools</code>,{' '}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">longContext</code>,{' '}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">reasoning</code>
                         </td>
@@ -84,7 +83,6 @@ export function ApiReferenceSection() {
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">maxOutput</code>,{' '}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">capable</code>,{' '}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">leastIssues</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">reliable</code>,{' '}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">newest</code>
                         </td>
                       </tr>

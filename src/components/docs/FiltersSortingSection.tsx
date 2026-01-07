@@ -14,7 +14,7 @@ export function FiltersSortingSection() {
         <div className="space-y-4">
           <h3 className="text-2xl font-semibold">Filters</h3>
           <p className="text-muted-foreground">
-            Pass one or more filters as a comma-separated list: <code className="bg-muted px-1.5 py-0.5 rounded text-sm">?filter=vision,tools</code>
+            Pass one or more filters as a comma-separated list: <code className="bg-muted px-1.5 py-0.5 rounded text-sm">?filter=vision,coding</code>
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -35,10 +35,6 @@ export function FiltersSortingSection() {
                 </tr>
                 <tr className="border-b">
                   <td className="py-2 pr-4 font-mono text-xs">coding</td>
-                  <td className="py-2">Models specialized for code generation (e.g., Codestral, DeepSeek Coder)</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2 pr-4 font-mono text-xs">tools</td>
                   <td className="py-2">Models that support function/tool calling</td>
                 </tr>
                 <tr className="border-b">
@@ -83,17 +79,12 @@ export function FiltersSortingSection() {
                 <tr className="border-b">
                   <td className="py-2 pr-4 font-mono text-xs">capable</td>
                   <td className="py-2 pr-4">Most Capable</td>
-                  <td className="py-2">Overall capability score (context + output weighted) - good default</td>
+                  <td className="py-2">Most supported features first - good default</td>
                 </tr>
                 <tr className="border-b">
                   <td className="py-2 pr-4 font-mono text-xs">leastIssues</td>
                   <td className="py-2 pr-4">Least Reported Issues</td>
                   <td className="py-2">Fewest user-reported issues first - best for stability</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2 pr-4 font-mono text-xs">reliable</td>
-                  <td className="py-2 pr-4">Most Reliable</td>
-                  <td className="py-2">Balanced score of capability and low issues - recommended for production</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 font-mono text-xs">newest</td>
