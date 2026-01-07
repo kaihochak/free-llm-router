@@ -1,24 +1,16 @@
-import { eq, and, notInArray, desc, asc, gte, sql, arrayContains, type SQL } from 'drizzle-orm';
+import { eq, and, notInArray, gte, sql } from 'drizzle-orm';
 import { freeModels, modelFeedback, syncMeta, type Database } from '../db';
+import {
+  type FilterType,
+  type SortType,
+  validateFilters,
+  validateSort,
+  filterModels,
+  sortModels,
+} from '../lib/model-types';
 
-export type FilterType = 'chat' | 'vision' | 'coding' | 'longContext' | 'reasoning';
-export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
-
-const VALID_FILTERS: FilterType[] = ['chat', 'vision', 'coding', 'longContext', 'reasoning'];
-const VALID_SORTS: SortType[] = ['contextLength', 'maxOutput', 'capable', 'leastIssues', 'reliable', 'newest'];
-
-export function validateFilters(value: string | null): FilterType[] {
-  if (!value) return [];
-  const filters = value.split(',').map((f) => f.trim());
-  return filters.filter((f) => VALID_FILTERS.includes(f as FilterType)) as FilterType[];
-}
-
-export function validateSort(value: string | null): SortType {
-  if (value && VALID_SORTS.includes(value as SortType)) {
-    return value as SortType;
-  }
-  return 'contextLength';
-}
+// Re-export types and validation functions for backwards compatibility
+export { type FilterType, type SortType, validateFilters, validateSort };
 
 interface OpenRouterApiModel {
   id: string;
@@ -217,74 +209,31 @@ export async function getActiveModels(db: Database) {
     .orderBy(freeModels.priority);
 }
 
-function getSingleFilterCondition(filter: FilterType): SQL {
-  switch (filter) {
-    case 'chat':
-      return eq(freeModels.modality, 'text->text');
-    case 'vision':
-      return arrayContains(freeModels.inputModalities, ['image']);
-    case 'coding':
-      return arrayContains(freeModels.supportedParameters, ['tools']);
-    case 'longContext':
-      return gte(freeModels.contextLength, 100000);
-    case 'reasoning':
-      return arrayContains(freeModels.supportedParameters, ['reasoning']);
-  }
+/**
+ * Get all active models with issue counts attached.
+ * Used by getFilteredModels to enable shared filtering/sorting logic.
+ */
+async function getActiveModelsWithFeedback(db: Database) {
+  const models = await getActiveModels(db);
+  const feedbackCounts = await getRecentFeedbackCounts(db);
+
+  // Attach issueCount to each model (same logic as frontend)
+  return models.map((model) => {
+    const feedback = feedbackCounts[model.id];
+    const issueCount = feedback ? feedback.rateLimited + feedback.unavailable + feedback.error : 0;
+    return { ...model, issueCount };
+  });
 }
 
-function buildFilterCondition(filters: FilterType[]) {
-  const activeCondition = eq(freeModels.isActive, true);
-
-  if (filters.length === 0) {
-    return activeCondition;
-  }
-
-  if (filters.length === 1) {
-    return and(activeCondition, getSingleFilterCondition(filters[0]));
-  }
-
-  // Multiple filters: AND them together (inclusive)
-  const filterConditions = filters.map(getSingleFilterCondition);
-  return and(activeCondition, ...filterConditions);
-}
-
-function buildOrderBy(sort: SortType) {
-  switch (sort) {
-    case 'contextLength':
-      return desc(freeModels.contextLength);
-    case 'maxOutput':
-      return desc(freeModels.maxCompletionTokens);
-    case 'capable':
-      return desc(sql`coalesce(array_length(${freeModels.supportedParameters}, 1), 0)`);
-    case 'leastIssues':
-      // For now, use priority as a proxy - lower priority = fewer issues
-      return asc(freeModels.priority);
-    case 'reliable':
-      // Composite: capability (high) + low priority (fewer issues)
-      return desc(sql`coalesce(array_length(${freeModels.supportedParameters}, 1), 0) - coalesce(${freeModels.priority}, 100) / 100`);
-    case 'newest':
-      return desc(freeModels.createdAt);
-  }
-}
-
+/**
+ * Get filtered and sorted models using shared logic from model-types.ts.
+ * Single source of truth - same functions used by frontend and backend.
+ */
 export async function getFilteredModels(db: Database, filters: FilterType[], sort: SortType) {
-  return db
-    .select({
-      id: freeModels.id,
-      name: freeModels.name,
-      contextLength: freeModels.contextLength,
-      maxCompletionTokens: freeModels.maxCompletionTokens,
-      description: freeModels.description,
-      modality: freeModels.modality,
-      inputModalities: freeModels.inputModalities,
-      outputModalities: freeModels.outputModalities,
-      supportedParameters: freeModels.supportedParameters,
-      isModerated: freeModels.isModerated,
-      createdAt: freeModels.createdAt,
-    })
-    .from(freeModels)
-    .where(buildFilterCondition(filters))
-    .orderBy(buildOrderBy(sort));
+  const allModels = await getActiveModelsWithFeedback(db);
+  const filtered = filterModels(allModels, filters);
+  const sorted = sortModels(filtered, sort);
+  return sorted;
 }
 
 const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes

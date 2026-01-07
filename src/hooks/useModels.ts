@@ -3,6 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 // Re-export from code-examples (single source of truth for all code snippets)
 import { FREE_MODELS_SDK as FREE_MODELS_FILE } from '@/lib/code-examples/index';
 import { useLocalStorage } from './useLocalStorage';
+import {
+  type FilterType as ApiFilterType,
+  type SortType as ApiSortType,
+  FILTER_DEFINITIONS,
+  SORT_DEFINITIONS,
+  filterModels,
+  sortModels,
+} from '@/lib/model-types';
 
 export interface Model {
   id: string;
@@ -33,26 +41,13 @@ interface ApiResponse {
   lastUpdated?: string;
 }
 
-export type FilterType = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
-export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'reliable' | 'newest';
+// Use shared types from model-types.ts (single source of truth)
+export type FilterType = ApiFilterType;
+export type SortType = ApiSortType;
 
-export const FILTERS: { key: FilterType | 'all'; label: string; description: string }[] = [
-  { key: 'all', label: 'All', description: 'Show all available free models' },
-  { key: 'chat', label: 'Chat', description: 'Models optimized for conversation' },
-  { key: 'vision', label: 'Vision', description: 'Models that can analyze images' },
-  { key: 'tools', label: 'Tools', description: 'Models that support function/tool calling' },
-  { key: 'longContext', label: 'Long Context', description: 'Models with 100k+ token context windows' },
-  { key: 'reasoning', label: 'Reasoning', description: 'Models with advanced reasoning capabilities' },
-];
-
-export const SORT_OPTIONS: { key: SortType; label: string; description: string }[] = [
-  { key: 'contextLength', label: 'Context Length', description: 'Sort by maximum input tokens' },
-  { key: 'maxOutput', label: 'Max Output', description: 'Sort by maximum output tokens' },
-  { key: 'capable', label: 'Most Capable', description: 'Sort by overall model capability' },
-  { key: 'leastIssues', label: 'Least Reported Issues', description: 'Sort by fewest reported issues' },
-  { key: 'reliable', label: 'Most Reliable', description: 'Balanced score of capability and low issues' },
-  { key: 'newest', label: 'Newest First', description: 'Sort by when model was added' },
-];
+// Re-export filter and sort definitions for UI components
+export const FILTERS = FILTER_DEFINITIONS;
+export const SORT_OPTIONS = SORT_DEFINITIONS;
 
 const API_BASE = 'https://free-models-api.pages.dev';
 
@@ -96,73 +91,7 @@ async function fetchAllModels(): Promise<ModelsResponse> {
   };
 }
 
-// Frontend filtering logic
-function filterModels(models: Model[], filters: FilterType[]): Model[] {
-  if (filters.length === 0) return models;
-
-  return models.filter((model) => {
-    return filters.every((filter) => {
-      switch (filter) {
-        case 'chat':
-          return model.modality === 'text->text' || model.outputModalities?.includes('text');
-        case 'vision':
-          return model.inputModalities?.includes('image');
-        case 'tools':
-          return model.supportedParameters?.includes('tools') ?? false;
-        case 'longContext':
-          return model.contextLength !== null && model.contextLength >= 100000;
-        case 'reasoning':
-          // Check for reasoning capability via supported parameters
-          return (
-            model.supportedParameters?.includes('reasoning') ||
-            model.supportedParameters?.includes('include_reasoning')
-          ) ?? false;
-        default:
-          return true;
-      }
-    });
-  });
-}
-
-// Frontend sorting logic
-function sortModels(models: Model[], sort: SortType): Model[] {
-  const sorted = [...models];
-
-  switch (sort) {
-    case 'contextLength':
-      return sorted.sort((a, b) => (b.contextLength ?? 0) - (a.contextLength ?? 0));
-    case 'maxOutput':
-      return sorted.sort((a, b) => (b.maxCompletionTokens ?? 0) - (a.maxCompletionTokens ?? 0));
-    case 'capable':
-      // Capability score based on context + output tokens
-      return sorted.sort((a, b) => {
-        const scoreA = (a.contextLength ?? 0) + (a.maxCompletionTokens ?? 0) * 2;
-        const scoreB = (b.contextLength ?? 0) + (b.maxCompletionTokens ?? 0) * 2;
-        return scoreB - scoreA;
-      });
-    case 'leastIssues':
-      // Sort by fewest issues first
-      return sorted.sort((a, b) => (a.issueCount ?? 0) - (b.issueCount ?? 0));
-    case 'reliable':
-      // Composite: high capability + low issues
-      return sorted.sort((a, b) => {
-        const capabilityA = (a.contextLength ?? 0) + (a.maxCompletionTokens ?? 0) * 2;
-        const capabilityB = (b.contextLength ?? 0) + (b.maxCompletionTokens ?? 0) * 2;
-        const issuesPenaltyA = (a.issueCount ?? 0) * 10000;
-        const issuesPenaltyB = (b.issueCount ?? 0) * 10000;
-        return (capabilityB - issuesPenaltyB) - (capabilityA - issuesPenaltyA);
-      });
-    case 'newest':
-      // Sort by createdAt descending (newest first)
-      return sorted.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
-    default:
-      return sorted;
-  }
-}
+// filterModels and sortModels are imported from @/lib/model-types (single source of truth)
 
 // FREE_MODELS_FILE is imported from /public/free-models.ts at build time (see top of file)
 // This ensures users always get the latest SDK with caching built-in
