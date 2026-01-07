@@ -163,7 +163,8 @@ export function getSortValue<T extends FilterableModel>(model: T, sort: SortType
 
 /**
  * Sort models by criteria.
- * Single source of truth for sorting - used by frontend.
+ * Single source of truth for sorting - used by frontend and backend.
+ * Uses contextLength as tie-breaker for consistent ordering.
  */
 export function sortModels<T extends FilterableModel>(models: T[], sort: SortType): T[] {
   const sorted = [...models];
@@ -172,6 +173,11 @@ export function sortModels<T extends FilterableModel>(models: T[], sort: SortTyp
   return sorted.sort((a, b) => {
     const valueA = getSortValue(a, sort);
     const valueB = getSortValue(b, sort);
-    return direction === 'desc' ? valueB - valueA : valueA - valueB;
+    const primary = direction === 'desc' ? valueB - valueA : valueA - valueB;
+
+    if (primary !== 0) return primary;
+
+    // Tie-breaker: contextLength desc
+    return (b.contextLength ?? 0) - (a.contextLength ?? 0);
   });
 }

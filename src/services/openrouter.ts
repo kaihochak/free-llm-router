@@ -205,8 +205,7 @@ export async function getActiveModels(db: Database) {
       createdAt: freeModels.createdAt,
     })
     .from(freeModels)
-    .where(eq(freeModels.isActive, true))
-    .orderBy(freeModels.priority);
+    .where(eq(freeModels.isActive, true));
 }
 
 /**
