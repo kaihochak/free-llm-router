@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
-export type TimeRange = '24h' | '7d' | '30d';
+export type TimeRange = '15m' | '1h' | '6h' | '24h' | '7d' | '30d';
 
 export interface IssueData {
   modelId: string;
@@ -26,6 +26,9 @@ interface IssuesResponse {
 }
 
 export const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
+  { value: '15m', label: 'Last 15 minutes' },
+  { value: '1h', label: 'Last 1 hour' },
+  { value: '6h', label: 'Last 6 hours' },
   { value: '24h', label: 'Last 24 hours' },
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },
