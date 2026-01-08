@@ -278,9 +278,12 @@ export async function getRecentFeedbackCounts(db: Database): Promise<FeedbackCou
 }
 
 // Time range options for issues page
-export type TimeRange = '24h' | '7d' | '30d';
+export type TimeRange = '15m' | '1h' | '6h' | '24h' | '7d' | '30d';
 
 const TIME_RANGE_MS: Record<TimeRange, number> = {
+  '15m': 15 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
   '30d': 30 * 24 * 60 * 60 * 1000,
@@ -384,7 +387,31 @@ function generateTimeBuckets(range: TimeRange): string[] {
   const now = new Date();
   const buckets: string[] = [];
 
-  if (range === '24h') {
+  if (range === '15m') {
+    // 15 minute window (minute buckets)
+    for (let i = 14; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCSeconds(0, 0);
+      d.setUTCMinutes(d.getUTCMinutes() - i);
+      buckets.push(d.toISOString().replace('T', ' ').slice(0, 19));
+    }
+  } else if (range === '1h') {
+    // 60 minute window (minute buckets)
+    for (let i = 59; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCSeconds(0, 0);
+      d.setUTCMinutes(d.getUTCMinutes() - i);
+      buckets.push(d.toISOString().replace('T', ' ').slice(0, 19));
+    }
+  } else if (range === '6h') {
+    // 6 hourly buckets
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCMinutes(0, 0, 0);
+      d.setUTCHours(d.getUTCHours() - i);
+      buckets.push(d.toISOString().replace('T', ' ').slice(0, 19));
+    }
+  } else if (range === '24h') {
     // 24 hourly buckets
     for (let i = 23; i >= 0; i--) {
       const d = new Date(now);
@@ -424,7 +451,8 @@ export async function getFeedbackTimeline(
 ): Promise<TimelinePoint[]> {
   const windowMs = TIME_RANGE_MS[range];
   // Use hourly buckets for 24h, daily for 7d/30d
-  const truncUnit = range === '24h' ? 'hour' : 'day';
+  const truncUnit =
+    range === '15m' || range === '1h' ? 'minute' : range === '6h' || range === '24h' ? 'hour' : 'day';
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
 
   const results = await db

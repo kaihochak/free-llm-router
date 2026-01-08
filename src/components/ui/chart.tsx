@@ -182,7 +182,13 @@ function ChartTooltipContent({
           .map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
-            const indicatorColor = color || item.payload.fill || item.color
+            const indicatorColor = color || item.payload?.fill || item.color
+            const dataKey = item.dataKey || item.name
+            const rawValue =
+              dataKey && item.payload && typeof item.payload?.[dataKey] === "number"
+                ? (item.payload as Record<string, unknown>)[dataKey]
+                : item.value
+            const displayValue = typeof rawValue === "number" ? rawValue : undefined
 
             return (
               <div
@@ -232,9 +238,9 @@ function ChartTooltipContent({
                           {itemConfig?.label || item.name}
                         </span>
                       </div>
-                      {item.value && (
+                      {displayValue !== undefined && (
                         <span className="text-foreground font-mono font-medium tabular-nums">
-                          {item.value.toLocaleString()}
+                          {displayValue.toLocaleString()}
                         </span>
                       )}
                     </div>

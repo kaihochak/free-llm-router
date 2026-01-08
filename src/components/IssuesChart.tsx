@@ -1,17 +1,17 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
   type ChartConfig,
   ChartContainer,
   ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import type { IssueSummary, TimelinePoint, TimeRange } from "@/services/openrouter"
+import { cn } from "@/lib/utils"
 
 interface IssuesChartProps {
   timeline: TimelinePoint[]
@@ -30,7 +30,14 @@ const CHART_COLORS = [
 
 function formatDateLabel(dateString: string, range: TimeRange): string {
   const date = new Date(dateString)
-  if (range === "24h") {
+  if (range === "15m" || range === "1h") {
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+  }
+  if (range === "6h" || range === "24h") {
     return date.toLocaleTimeString("en-US", { hour: "numeric", hour12: true })
   }
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -43,11 +50,85 @@ function getShortModelName(modelId: string): string {
   return modelPart.replace(/:free$/, "")
 }
 
+function InteractiveLegendContent({
+  payload,
+  visibleSeries,
+  onToggle,
+}: {
+  payload?: any[]
+  visibleSeries: Set<string>
+  onToggle: (dataKey: string) => void
+}) {
+  if (!payload?.length) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
+      {payload
+        .filter((item) => item.type !== "none")
+        .map((item) => {
+          const isVisible = visibleSeries.has(item.dataKey)
+          const shortName = getShortModelName(item.dataKey)
+
+          return (
+            <button
+              key={item.dataKey ?? item.value}
+              onClick={() => onToggle(item.dataKey)}
+              className={cn(
+                "flex items-center gap-1.5 rounded px-2 py-1 transition-opacity cursor-pointer",
+                isVisible ? "opacity-100" : "opacity-40 hover:opacity-60"
+              )}
+              title={isVisible ? "Click to hide" : "Click to show"}
+            >
+              <div
+                className={cn(
+                  "h-2 w-2 shrink-0 rounded-[2px] transition-opacity",
+                  !isVisible && "opacity-50"
+                )}
+                style={{
+                  backgroundColor: item.color,
+                }}
+              />
+              <span className={!isVisible ? "text-muted-foreground" : ""}>
+                {shortName}
+              </span>
+            </button>
+          )
+        })}
+    </div>
+  )
+}
+
 export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
   // Get unique model IDs from issues (sorted by total issues)
   const modelIds = useMemo(() => {
     return issues.map((issue) => issue.modelId)
   }, [issues])
+
+  // State to track which series are currently visible
+  const [visibleSeries, setVisibleSeries] = useState<Set<string>>(new Set())
+
+  // Initialize visible series when modelIds change
+  useEffect(() => {
+    setVisibleSeries(new Set(modelIds))
+  }, [modelIds])
+
+  // Handle legend click - toggle series visibility
+  const handleLegendClick = (dataKey: string) => {
+    setVisibleSeries((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(dataKey)) {
+        // Only allow hiding if there's more than one visible series
+        if (newSet.size > 1) {
+          newSet.delete(dataKey)
+        }
+      } else {
+        newSet.add(dataKey)
+      }
+      return newSet
+    })
+  }
 
   // Build chart config dynamically based on models present
   const chartConfig = useMemo(() => {
@@ -60,6 +141,18 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
     })
     return config
   }, [modelIds])
+
+  // Legend payload stays constant so clicking an item doesn't remove it
+  const legendPayload = useMemo(
+    () =>
+      modelIds.map((modelId, index) => ({
+        dataKey: modelId,
+        value: chartConfig[modelId]?.label ?? getShortModelName(modelId),
+        color: CHART_COLORS[index % CHART_COLORS.length],
+        type: "square" as const,
+      })),
+    [chartConfig, modelIds]
+  )
 
   // Format timeline data for recharts - ensure all models have values (0 if missing)
   const chartData = useMemo(() => {
@@ -128,17 +221,21 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
             />
           }
         />
-        {modelIds.map((modelId, index) => (
-          <Area
-            key={modelId}
-            dataKey={modelId}
-            type="monotone"
-            fill={`url(#fill-${index})`}
-            stroke={CHART_COLORS[index % CHART_COLORS.length]}
-            stackId="a"
-          />
-        ))}
-        <ChartLegend content={<ChartLegendContent />} />
+        {modelIds.map((modelId, index) =>
+          visibleSeries.has(modelId) ? (
+            <Area
+              key={modelId}
+              dataKey={modelId}
+              type="monotone"
+              fill={`url(#fill-${index})`}
+              stroke={CHART_COLORS[index % CHART_COLORS.length]}
+            />
+          ) : null
+        )}
+        <ChartLegend
+          payload={legendPayload}
+          content={<InteractiveLegendContent visibleSeries={visibleSeries} onToggle={handleLegendClick} />}
+        />
       </AreaChart>
     </ChartContainer>
   )

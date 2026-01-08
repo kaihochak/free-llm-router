@@ -6,7 +6,7 @@ import {
   type TimeRange,
 } from '@/services/openrouter';
 
-const VALID_RANGES: TimeRange[] = ['24h', '7d', '30d', 'all'];
+const VALID_RANGES: TimeRange[] = ['15m', '1h', '6h', '24h', '7d', '30d'];
 
 function validateRange(value: string | null): TimeRange {
   if (value && VALID_RANGES.includes(value as TimeRange)) {
