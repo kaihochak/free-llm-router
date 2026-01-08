@@ -1,0 +1,18 @@
+---
+import Layout from '../layouts/base.astro';
+import { IssuesPage } from '../components/IssuesPage';
+---
+
+<Layout
+  title="Model Issues - Free Models API"
+  description="View reported issues for free LLM models including rate limits, availability, and errors."
+>
+  <div class="container mx-auto max-w-5xl px-4 py-8">
+    <IssuesPage client:load />
+
+    <!-- Footer -->
+    <footer class="mt-16 pt-8 text-center text-sm text-muted-foreground">
+      <p>Issues reported by API users</p>
+    </footer>
+  </div>
+</Layout>

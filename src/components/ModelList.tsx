@@ -104,7 +104,6 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
 
   return (
     <div className="space-y-4">
-      {/* Compact Model List */}
       <div className="rounded-xl border bg-card divide-y">
         {paginatedModels.map((model) => {
           const badges = getCapabilityBadges(model);
@@ -118,7 +117,7 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
               href={getOpenRouterUrl(model.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex flex-col items-start gap-2 px-4 py-3 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:gap-3"
+              className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
             >
               {/* Provider Logo */}
               <div className="shrink-0">
@@ -151,7 +150,7 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
               </div>
 
               {/* Stats */}
-              <div className="flex w-full items-center justify-between gap-3 text-xs text-muted-foreground sm:w-auto sm:justify-end">
+              <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                 {/* Context / Output tokens */}
                 <TooltipProvider>
                   <Tooltip>

@@ -277,6 +277,74 @@ export async function getRecentFeedbackCounts(db: Database): Promise<FeedbackCou
   return counts;
 }
 
+// Time range options for issues page
+export type TimeRange = '24h' | '7d' | '30d';
+
+const TIME_RANGE_MS: Record<TimeRange, number> = {
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '30d': 30 * 24 * 60 * 60 * 1000,
+};
+
+export interface IssueSummary {
+  modelId: string;
+  modelName: string;
+  rateLimited: number;
+  unavailable: number;
+  error: number;
+  total: number;
+}
+
+export async function getFeedbackCountsByRange(
+  db: Database,
+  range: TimeRange
+): Promise<IssueSummary[]> {
+  const windowMs = TIME_RANGE_MS[range];
+
+  const baseQuery = db
+    .select({
+      modelId: modelFeedback.modelId,
+      modelName: freeModels.name,
+      issue: modelFeedback.issue,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(modelFeedback)
+    .leftJoin(freeModels, eq(modelFeedback.modelId, freeModels.id))
+    .groupBy(modelFeedback.modelId, freeModels.name, modelFeedback.issue);
+
+  const results =
+    windowMs !== null
+      ? await baseQuery.where(gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)))
+      : await baseQuery;
+
+  // Aggregate into IssueSummary array
+  const summaryMap: Record<string, IssueSummary> = {};
+
+  for (const row of results) {
+    if (!summaryMap[row.modelId]) {
+      summaryMap[row.modelId] = {
+        modelId: row.modelId,
+        modelName: row.modelName ?? row.modelId,
+        rateLimited: 0,
+        unavailable: 0,
+        error: 0,
+        total: 0,
+      };
+    }
+    if (row.issue === 'rate_limited') {
+      summaryMap[row.modelId].rateLimited = row.count;
+    } else if (row.issue === 'unavailable') {
+      summaryMap[row.modelId].unavailable = row.count;
+    } else if (row.issue === 'error') {
+      summaryMap[row.modelId].error = row.count;
+    }
+    summaryMap[row.modelId].total += row.count;
+  }
+
+  // Sort by total issues descending
+  return Object.values(summaryMap).sort((a, b) => b.total - a.total);
+}
+
 export async function getModelsWithLazyRefresh(db: Database) {
   const lastUpdated = await getLastUpdated(db);
 
@@ -300,4 +368,97 @@ export async function ensureFreshModels(db: Database) {
   if (!lastUpdated || Date.now() - lastUpdated.getTime() > STALE_THRESHOLD_MS) {
     await syncModels(db);
   }
+}
+
+// Timeline data point for charts
+export interface TimelinePoint {
+  date: string;
+  [modelId: string]: number | string;
+}
+
+/**
+ * Generate all time buckets for a given range, even if empty.
+ * Uses UTC dates to match PostgreSQL date_trunc output.
+ */
+function generateTimeBuckets(range: TimeRange): string[] {
+  const now = new Date();
+  const buckets: string[] = [];
+
+  if (range === '24h') {
+    // 24 hourly buckets
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCMinutes(0, 0, 0);
+      d.setUTCHours(d.getUTCHours() - i);
+      buckets.push(d.toISOString().replace('T', ' ').slice(0, 19));
+    }
+  } else if (range === '7d') {
+    // 7 daily buckets
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCHours(0, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - i);
+      buckets.push(d.toISOString().replace('T', ' ').slice(0, 19));
+    }
+  } else {
+    // 30d - 30 daily buckets
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCHours(0, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - i);
+      buckets.push(d.toISOString().replace('T', ' ').slice(0, 19));
+    }
+  }
+
+  return buckets;
+}
+
+/**
+ * Get feedback counts grouped by time bucket and model for charting.
+ * Returns array of { date, modelId1: count, modelId2: count, ... }
+ * Includes all time buckets even if empty.
+ */
+export async function getFeedbackTimeline(
+  db: Database,
+  range: TimeRange
+): Promise<TimelinePoint[]> {
+  const windowMs = TIME_RANGE_MS[range];
+  // Use hourly buckets for 24h, daily for 7d/30d
+  const truncUnit = range === '24h' ? 'hour' : 'day';
+  const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
+
+  const results = await db
+    .select({
+      bucket: sql<string>`${dateTrunc}::text`,
+      modelId: modelFeedback.modelId,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(modelFeedback)
+    .where(gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)))
+    .groupBy(dateTrunc, modelFeedback.modelId)
+    .orderBy(dateTrunc);
+
+  // Build map of actual data
+  const dataMap: Record<string, Record<string, number>> = {};
+  for (const row of results) {
+    if (!dataMap[row.bucket]) {
+      dataMap[row.bucket] = {};
+    }
+    dataMap[row.bucket][row.modelId] = row.count;
+  }
+
+  // Generate all buckets and fill with data (or empty)
+  const allBuckets = generateTimeBuckets(range);
+  const timeline: TimelinePoint[] = [];
+
+  for (const bucket of allBuckets) {
+    const point: TimelinePoint = { date: bucket };
+    const bucketData = dataMap[bucket];
+    if (bucketData) {
+      Object.assign(point, bucketData);
+    }
+    timeline.push(point);
+  }
+
+  return timeline;
 }

@@ -18,39 +18,31 @@ export function SiteHeader({ showSidebarTrigger = true }: SiteHeaderProps) {
           {showSidebarTrigger && <SidebarTrigger className="md:hidden" />}
           <a href="/" className="flex items-center gap-2 font-semibold">
             <img src="/favicon.svg" alt="" className="h-5 w-5" />
-            <span className="text-sm sm:text-base">Free Models API</span>
+            <span className="hidden sm:inline text-sm sm:text-base">Free Models API</span>
           </a>
-          <nav className="hidden items-center gap-4 md:flex">
+          <nav className="items-center gap-4 flex">
             <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
               Docs
+            </a>
+            <a href="/issues" className="text-sm text-muted-foreground hover:text-foreground">
+              Issues
             </a>
             <FeedbackDialog />
           </nav>
         </div>
         <div className="flex-1" />
-        <div className="flex items-center gap-2 sm:gap-3">
-          <a
-            href="/docs"
-            className="text-sm text-muted-foreground hover:text-foreground md:hidden"
-          >
-            Docs
-          </a>
-          <div className="md:hidden">
-            <FeedbackDialog />
-          </div>
-          {!isPending && (
-            session?.user ? (
-              <Button variant="outline" size="sm" asChild>
-                <a href="/dashboard">Dashboard</a>
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" asChild>
-                <a href="/login">Sign In</a>
-              </Button>
-            )
-          )}
-          <ThemeToggle />
-        </div>
+        {!isPending && (
+          session?.user ? (
+            <Button variant="outline" size="sm" className="h-8 px-2 text-xs sm:px-3 sm:text-sm" asChild>
+              <a href="/dashboard">Dashboard</a>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="h-8 px-2 text-xs sm:px-3 sm:text-sm" asChild>
+              <a href="/login">Sign In</a>
+            </Button>
+          )
+        )}
+        <ThemeToggle />
       </div>
     </header>
   );

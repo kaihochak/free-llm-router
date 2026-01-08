@@ -1,0 +1,85 @@
+import { useMemo } from 'react';
+import { useIssues, TIME_RANGE_OPTIONS, type TimeRange } from '@/hooks/useIssues';
+import { ModelList } from '@/components/ModelList';
+import { ModelCountHeader } from '@/components/ModelCountHeader';
+import { IssuesChart } from '@/components/IssuesChart';
+import { QueryProvider } from '@/components/QueryProvider';
+import type { Model } from '@/hooks/useModels';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+function IssuesPageContent() {
+  const { issues, timeline, loading, error, range, setRange, count, lastUpdated } = useIssues();
+
+  // Convert IssueData to Model format for ModelList
+  const models: Model[] = useMemo(() => {
+    return issues.map((issue) => ({
+      id: issue.modelId,
+      name: issue.modelName,
+      contextLength: null,
+      maxCompletionTokens: null,
+      description: null,
+      modality: null,
+      inputModalities: null,
+      outputModalities: null,
+      supportedParameters: null,
+      isModerated: null,
+      issueCount: issue.total,
+    }));
+  }, [issues]);
+
+  return (
+    <section className="scroll-mt-16 sm:mt-4">
+      <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Reported Issues</h2>
+      <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
+        Track reported issues for free LLM models including rate limits, availability problems, and errors.
+      </p>
+      <p className="mb-8 text-sm text-muted-foreground sm:mb-12 sm:text-base">
+        This data is collected from API users who report issues when models fail.
+        Models with fewer reported issues are generally more reliable for your use case.
+      </p>
+
+      {/* Controls */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <ModelCountHeader
+          count={count}
+          lastUpdated={lastUpdated}
+          label={`model${count === 1 ? '' : 's'} with reported issues`}
+        />
+        <Select value={range} onValueChange={(v) => setRange(v as TimeRange)}>
+          <SelectTrigger className="w-full sm:w-45">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_RANGE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Chart */}
+      <div className="mb-8">
+        <IssuesChart timeline={timeline} issues={issues} range={range} />
+      </div>
+
+      {/* Issues list */}
+      <ModelList models={models} loading={loading} error={error} currentPage={1} />
+    </section>
+  );
+}
+
+export function IssuesPage() {
+  return (
+    <QueryProvider>
+      <IssuesPageContent />
+    </QueryProvider>
+  );
+}
