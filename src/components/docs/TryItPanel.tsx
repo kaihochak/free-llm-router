@@ -3,7 +3,7 @@ import { CodeBlock } from '@/components/ui/code-block';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ModelControls } from '@/components/ModelControls';
-import { type FilterType, type SortType } from '@/hooks/useModels';
+import type { FilterType, SortType } from '@/lib/api-definitions';
 import { Loader2 } from 'lucide-react';
 import { DEFAULT_SORT } from '@/lib/api-definitions';
 
@@ -25,6 +25,9 @@ export function TryItPanel({
   const [activeFilters, setActiveFilters] = useState<FilterType[]>([]);
   const [activeSort, setActiveSort] = useState<SortType>(DEFAULT_SORT);
   const [activeLimit, setActiveLimit] = useState<number | undefined>(undefined);
+  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useState(5);
+  const [activeTimeWindow, setActiveTimeWindow] = useState('24h');
+  const [activeUserOnly, setActiveUserOnly] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [statusCode, setStatusCode] = useState<number | null>(null);
@@ -46,6 +49,9 @@ export function TryItPanel({
     if (activeFilters.length > 0) params.set('filter', activeFilters.join(','));
     params.set('sort', activeSort);
     if (activeLimit) params.set('limit', String(activeLimit));
+    if (activeExcludeWithIssues !== 5) params.set('excludeWithIssues', String(activeExcludeWithIssues));
+    if (activeTimeWindow !== '24h') params.set('timeWindow', activeTimeWindow);
+    if (activeUserOnly) params.set('userOnly', 'true');
     return `${endpoint}?${params.toString()}`;
   };
 
@@ -129,9 +135,15 @@ export function TryItPanel({
               activeFilters={activeFilters}
               activeSort={activeSort}
               activeLimit={activeLimit}
+              activeExcludeWithIssues={activeExcludeWithIssues}
+              activeTimeWindow={activeTimeWindow}
+              activeUserOnly={activeUserOnly}
               onToggleFilter={toggleFilter}
               onSortChange={setActiveSort}
               onLimitChange={setActiveLimit}
+              onExcludeWithIssuesChange={setActiveExcludeWithIssues}
+              onTimeWindowChange={setActiveTimeWindow}
+              onUserOnlyChange={setActiveUserOnly}
               size="sm"
               className="gap-x-4 gap-y-2"
             />
