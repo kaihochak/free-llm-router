@@ -185,7 +185,7 @@ export const DEFAULT_FILTER: FilterType[] = [];
 export const DEFAULT_SORT: SortType = 'contextLength';
 export const DEFAULT_LIMIT: number = 5;
 export const DEFAULT_EXCLUDE_WITH_ISSUES: number = 5;
-export const DEFAULT_TIME_WINDOW: TimeRange = '24h';
+export const DEFAULT_TIME_WINDOW: TimeRange = '15m';
 export const DEFAULT_USER_ONLY: boolean = false;
 
 // ==================== VALIDATION UTILITIES ====================

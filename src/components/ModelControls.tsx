@@ -13,7 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { type FilterType, type SortType } from '@/hooks/useModels';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
+import type { FilterType, SortType } from '@/lib/api-definitions';
 import {
   FILTER_DEFINITIONS,
   SORT_DEFINITIONS,
@@ -21,6 +26,9 @@ import {
   EXCLUDE_WITH_ISSUES_DEFINITIONS,
   VALID_TIME_WINDOWS_WITH_LABELS,
   TIME_WINDOW_DEFINITIONS,
+  DEFAULT_EXCLUDE_WITH_ISSUES,
+  DEFAULT_TIME_WINDOW,
+  DEFAULT_USER_ONLY,
 } from '@/lib/api-definitions';
 import { ChevronDown } from 'lucide-react';
 
@@ -38,16 +46,15 @@ interface ModelControlsProps {
   onTimeWindowChange?: (value: string) => void;
   onUserOnlyChange?: (value: boolean) => void;
   size?: 'sm' | 'lg';
-  className?: string;
 }
 
 export function ModelControls({
   activeFilters,
   activeSort,
   activeLimit,
-  activeExcludeWithIssues = 5,
-  activeTimeWindow = '24h',
-  activeUserOnly = false,
+  activeExcludeWithIssues = DEFAULT_EXCLUDE_WITH_ISSUES,
+  activeTimeWindow = DEFAULT_TIME_WINDOW,
+  activeUserOnly = DEFAULT_USER_ONLY,
   onToggleFilter,
   onSortChange,
   onLimitChange,
@@ -55,8 +62,9 @@ export function ModelControls({
   onTimeWindowChange,
   onUserOnlyChange,
   size = 'lg',
-  className,
 }: ModelControlsProps) {
+  const isSmall = size === 'sm';
+
   const filterLabel = activeFilters.length === 0
     ? 'All'
     : activeFilters.length === 1
@@ -64,24 +72,26 @@ export function ModelControls({
       : `${activeFilters.length} selected`;
 
   const sortLabel = SORT_DEFINITIONS.find(s => s.key === activeSort)?.label || activeSort;
-  const isSmall = size === 'sm';
-  const rootClassName = `flex flex-wrap items-center ${
-    isSmall ? 'gap-x-1 gap-y-2' : 'gap-x-4 gap-y-3 sm:gap-x-6 sm:gap-y-4'
-  }${className ? ` ${className}` : ''}`;
+
+  const labelClass = isSmall ? 'text-xs leading-4' : 'text-sm font-medium leading-5';
+  const gapClass = isSmall ? 'gap-1' : 'gap-2';
+  const buttonClass = isSmall ? 'h-10! min-w-[20px]' : 'h-12! min-w-[20px]';
+  const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
 
   return (
-    <div className={rootClassName}>
-      <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-        <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Filter:</span>
+    <div className={`flex flex-wrap ${isSmall ? 'gap-4' : 'gap-3'}`}>
+      <div className={`flex flex-col ${gapClass}`}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Filter:</span>
+          </TooltipTrigger>
+          <TooltipContent>Filter models by capability (chat, vision, coding, long context, reasoning)</TooltipContent>
+        </Tooltip>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size={isSmall ? 'sm' : 'lg'}
-              className={isSmall ? 'gap-2 h-8' : 'gap-2 h-10 text-sm sm:h-11 sm:text-base'}
-            >
+            <Button variant="outline" size={size} className={`${buttonClass} gap-2`}>
               {filterLabel}
-              <ChevronDown className={isSmall ? 'h-3 w-3 opacity-50' : 'h-5 w-5 opacity-50'} />
+              <ChevronDown className={`${chevronClass} opacity-50`} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -105,10 +115,15 @@ export function ModelControls({
         </DropdownMenu>
       </div>
 
-      <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-        <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Sort:</span>
+      <div className={`flex flex-col ${gapClass}`}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Sort:</span>
+          </TooltipTrigger>
+          <TooltipContent>Sort models by context length, max output, name, provider, or capabilities</TooltipContent>
+        </Tooltip>
         <Select value={activeSort} onValueChange={(value) => onSortChange(value as SortType)}>
-          <SelectTrigger className={isSmall ? 'h-8 text-sm w-auto' : 'h-10 w-full text-sm sm:h-11 sm:w-auto sm:min-w-40 sm:text-base'}>
+          <SelectTrigger className={`w-auto ${buttonClass}`}>
             <SelectValue>{sortLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -122,13 +137,18 @@ export function ModelControls({
       </div>
 
       {onLimitChange && (
-        <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-          <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Limit:</span>
+        <div className={`flex flex-col ${gapClass} `}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Limit:</span>
+            </TooltipTrigger>
+            <TooltipContent>Maximum number of models to display</TooltipContent>
+          </Tooltip>
           <Select
             value={activeLimit?.toString() ?? 'all'}
             onValueChange={(value) => onLimitChange(value === 'all' ? undefined : parseInt(value, 10))}
           >
-            <SelectTrigger className={isSmall ? 'h-8 text-sm w-20' : 'h-10 w-full text-sm sm:h-11 sm:w-24 sm:text-base'}>
+            <SelectTrigger className={`w-20 ${buttonClass}`}>
               <SelectValue>{activeLimit ?? 'All'}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -143,13 +163,18 @@ export function ModelControls({
       )}
 
       {onExcludeWithIssuesChange && (
-        <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-          <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Max Issues:</span>
+        <div className={`flex flex-col ${gapClass}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Max Issues:</span>
+            </TooltipTrigger>
+            <TooltipContent>Exclude models with more reported issues than this threshold</TooltipContent>
+          </Tooltip>
           <Select
             value={activeExcludeWithIssues.toString()}
             onValueChange={(value) => onExcludeWithIssuesChange(parseInt(value, 10))}
           >
-            <SelectTrigger className={isSmall ? 'h-8 text-sm w-20' : 'h-10 w-full text-sm sm:h-11 sm:w-24 sm:text-base'}>
+            <SelectTrigger className={`w-20 ${buttonClass}`}>
               <SelectValue>{activeExcludeWithIssues}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -164,13 +189,15 @@ export function ModelControls({
       )}
 
       {onTimeWindowChange && (
-        <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-          <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>Time:</span>
-          <Select
-            value={activeTimeWindow}
-            onValueChange={onTimeWindowChange}
-          >
-            <SelectTrigger className={isSmall ? 'h-8 text-sm w-20' : 'h-10 w-full text-sm sm:h-11 sm:w-24 sm:text-base'}>
+        <div className={`flex flex-col ${gapClass}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Time:</span>
+            </TooltipTrigger>
+            <TooltipContent>Time window for tracking model issues and feedback</TooltipContent>
+          </Tooltip>
+          <Select value={activeTimeWindow} onValueChange={onTimeWindowChange}>
+            <SelectTrigger className={`w-20 ${buttonClass}`}>
               <SelectValue>{activeTimeWindow}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -185,12 +212,17 @@ export function ModelControls({
       )}
 
       {onUserOnlyChange && (
-        <div className={isSmall ? 'flex flex-col gap-1' : 'flex items-center gap-3'}>
-          <span className={isSmall ? 'text-[11px] text-muted-foreground' : 'text-base font-medium sm:text-lg'}>My Reports:</span>
+        <div className={`flex flex-col ${gapClass}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>My Reports:</span>
+            </TooltipTrigger>
+            <TooltipContent>Show only issues you have reported</TooltipContent>
+          </Tooltip>
           <Button
             variant={activeUserOnly ? 'default' : 'outline'}
-            size={isSmall ? 'sm' : 'lg'}
-            className={isSmall ? 'h-8' : 'h-10 sm:h-11'}
+            size={size}
+            className={buttonClass}
             onClick={() => onUserOnlyChange(!activeUserOnly)}
           >
             {activeUserOnly ? 'On' : 'Off'}
