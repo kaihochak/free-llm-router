@@ -54,14 +54,19 @@ function InteractiveLegendContent({
   payload,
   visibleSeries,
   onToggle,
+  issues,
 }: {
   payload?: any[]
   visibleSeries: Set<string>
   onToggle: (dataKey: string) => void
+  issues: IssueSummary[]
 }) {
   if (!payload?.length) {
     return null
   }
+
+  // Create a map of modelId to issue summary for quick lookup
+  const issuesMap = new Map(issues.map((issue) => [issue.modelId, issue]))
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
@@ -70,6 +75,7 @@ function InteractiveLegendContent({
         .map((item) => {
           const isVisible = visibleSeries.has(item.dataKey)
           const shortName = getShortModelName(item.dataKey)
+          const issueSummary = issuesMap.get(item.dataKey)
 
           return (
             <button
@@ -92,6 +98,11 @@ function InteractiveLegendContent({
               />
               <span className={!isVisible ? "text-muted-foreground" : ""}>
                 {shortName}
+                {issueSummary && issueSummary.errorRate > 0 && (
+                  <span className="text-xs opacity-70 ml-1">
+                    ({issueSummary.errorRate.toFixed(1)}%)
+                  </span>
+                )}
               </span>
             </button>
           )
@@ -234,7 +245,7 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
         )}
         <ChartLegend
           payload={legendPayload}
-          content={<InteractiveLegendContent visibleSeries={visibleSeries} onToggle={handleLegendClick} />}
+          content={<InteractiveLegendContent visibleSeries={visibleSeries} onToggle={handleLegendClick} issues={issues} />}
         />
       </AreaChart>
     </ChartContainer>

@@ -44,12 +44,16 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Filters & Sorting',
+    title: 'Query Parameters',
     href: '#filters-sorting',
     icon: Settings,
     items: [
-      { title: 'Filters', href: '#filters-sorting' },
-      { title: 'Sort Options', href: '#filters-sorting' },
+      { title: 'filter', href: '#param-filter' },
+      { title: 'sort', href: '#param-sort' },
+      { title: 'limit', href: '#param-limit' },
+      { title: 'excludeWithIssues', href: '#param-exclude-issues' },
+      { title: 'timeWindow', href: '#param-time-window' },
+      { title: 'userOnly', href: '#param-user-only' },
     ],
   },
   {

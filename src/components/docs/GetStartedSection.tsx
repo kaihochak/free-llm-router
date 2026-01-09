@@ -7,7 +7,7 @@ import { QueryProvider } from '@/components/QueryProvider';
 const ITEMS_PER_PAGE = 5;
 
 export function GetStartedSection() {
-  const { models, loading, error, activeFilters, activeSort, activeLimit, lastUpdated, apiUrl, toggleFilter, setActiveSort, setActiveLimit } = useModels();
+  const { models, loading, error, activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow, activeUserOnly, lastUpdated, apiUrl, toggleFilter, setActiveSort, setActiveLimit, setActiveExcludeWithIssues, setActiveTimeWindow, setActiveUserOnly } = useModels();
 
   const [currentPage, setCurrentPage] = useState(1);
   const effectiveModelCount = activeLimit ? Math.min(models.length, activeLimit) : models.length;
@@ -53,10 +53,16 @@ export function GetStartedSection() {
         activeFilters={activeFilters}
         activeSort={activeSort}
         activeLimit={activeLimit}
+        activeExcludeWithIssues={activeExcludeWithIssues}
+        activeTimeWindow={activeTimeWindow}
+        activeUserOnly={activeUserOnly}
         lastUpdated={lastUpdated}
         onToggleFilter={toggleFilter}
         onSortChange={setActiveSort}
         onLimitChange={setActiveLimit}
+        onExcludeWithIssuesChange={setActiveExcludeWithIssues}
+        onTimeWindowChange={setActiveTimeWindow}
+        onUserOnlyChange={setActiveUserOnly}
         modelCount={effectiveModelCount}
         currentPage={currentPage}
         totalPages={totalPages}

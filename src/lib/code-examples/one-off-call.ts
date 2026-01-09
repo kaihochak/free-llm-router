@@ -1,4 +1,4 @@
-export const oneOffCall = `import { getModelIds, reportIssue, issueFromStatus } from './free-models';
+export const oneOffCall = `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-models';
 
 const prompt = 'Summarize this article in 3 bullet points: ...';
 
@@ -28,6 +28,8 @@ try {
       }
       const data = await res.json();
       console.log(data.choices[0].message.content);
+      // Report success - helps other users know this model works!
+      reportSuccess(id);
       break; // Success - exit loop
     } catch (e) {
       reportIssue(id, 'error', e.message); // Free - doesn't use quota

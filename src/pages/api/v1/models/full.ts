@@ -1,21 +1,15 @@
 import type { APIRoute } from 'astro';
-import { createDb } from '@/db';
 import {
   getFilteredModels,
   ensureFreshModels,
   getLastUpdated,
   getRecentFeedbackCounts,
-  validateFilters,
-  validateSort,
 } from '@/services/openrouter';
 import {
-  validateApiKey,
   rateLimitHeaders,
-  unauthorizedResponse,
-  rateLimitedResponse,
-  serverErrorResponse,
   corsHeaders,
 } from '@/lib/api-auth';
+import { initializeRequest, getUserIdIfUserOnly } from '@/lib/api-params';
 
 /**
  * Full model endpoint - returns complete model objects with all metadata
@@ -23,48 +17,35 @@ import {
  * Requires API key authentication
  */
 export const GET: APIRoute = async (context) => {
-  // Validate API key from Authorization header
-  const validation = await validateApiKey(context);
+  const req = await initializeRequest(context);
 
-  if (!validation.valid) {
-    // Config/server errors return 500
-    if (validation.errorCode === 'CONFIG_ERROR' || validation.errorCode === 'SERVER_ERROR') {
-      return serverErrorResponse(validation.error || 'Server error');
-    }
-    // Rate limit returns 429
-    if (validation.errorCode === 'RATE_LIMITED') {
-      return rateLimitedResponse(validation);
-    }
-    // All other errors (MISSING_AUTH, INVALID_FORMAT, EMPTY_KEY, INVALID_KEY) return 401
-    return unauthorizedResponse(validation.error || 'Unauthorized');
-  }
+  // If error response, return it
+  if (req instanceof Response) return req;
 
   try {
-    const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-    const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
+    const { db, params, validation } = req;
+    const { filters, sort, limit, excludeWithIssues, timeWindow } = params;
 
-    if (!databaseUrl) {
-      return new Response(JSON.stringify({ error: 'Database not configured' }), {
-        status: 500,
+    // Parse userOnly parameter (default: false, shows all community reports)
+    const userOnly = context.url.searchParams.get('userOnly') === 'true';
+    let userId: string | undefined;
+
+    try {
+      userId = await getUserIdIfUserOnly(context, userOnly);
+    } catch (error) {
+      return new Response(JSON.stringify({ error: (error as Error).message || 'Invalid API key' }), {
+        status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
-
-    const db = createDb(databaseUrl);
-
-    // Parse and validate query parameters
-    const filters = validateFilters(context.url.searchParams.get('filter'));
-    const sort = validateSort(context.url.searchParams.get('sort'));
-    const limitParam = context.url.searchParams.get('limit');
-    const limit = limitParam ? Math.min(Math.max(1, parseInt(limitParam, 10) || 50), 100) : undefined;
 
     // Lazy refresh if stale
     await ensureFreshModels(db);
 
     // Fetch filtered and sorted models + feedback counts
     const [allModels, feedbackCounts, updatedAt] = await Promise.all([
-      getFilteredModels(db, filters, sort),
-      getRecentFeedbackCounts(db),
+      getFilteredModels(db, filters, sort, excludeWithIssues, timeWindow),
+      getRecentFeedbackCounts(db, timeWindow, userId),
       getLastUpdated(db),
     ]);
 

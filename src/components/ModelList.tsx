@@ -165,7 +165,32 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
                   </Tooltip>
                 </TooltipProvider>
 
-                {/* Issues indicator */}
+                {/* Error rate badge */}
+                {model.errorRate !== undefined && model.errorRate > 0 ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant={
+                            model.errorRate > 20
+                              ? 'destructive'
+                              : model.errorRate > 10
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                          className="text-[10px] font-medium"
+                        >
+                          {model.errorRate.toFixed(1)}%
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Error rate: {model.errorRate.toFixed(1)}%</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : null}
+
+                {/* Issues count */}
                 {hasIssues && (
                   <TooltipProvider>
                     <Tooltip>

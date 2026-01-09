@@ -37,11 +37,11 @@ function IssuesPageContent() {
     <section className="scroll-mt-16 sm:mt-4">
       <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Reported Issues</h2>
       <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
-        Track reported issues for free LLM models including rate limits, availability problems, and errors.
+        Community-reported model reliability data based on both successful requests and reported issues.
       </p>
       <p className="mb-8 text-sm text-muted-foreground sm:mb-12 sm:text-base">
-        This data is collected from API users who report issues when models fail.
-        Models with fewer reported issues are generally more reliable for your use case.
+        Error rates show the percentage of failed requests relative to total reports. Lower percentages indicate more reliable models.
+        Help improve this data by reporting both successes and issues via the API.
       </p>
 
       {/* Controls */}

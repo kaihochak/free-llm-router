@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import {
+  type TimeRange,
+  VALID_TIME_WINDOWS_WITH_LABELS,
+  TIME_WINDOW_DEFINITIONS,
+} from '@/lib/api-definitions';
 
-export type TimeRange = '15m' | '1h' | '6h' | '24h' | '7d' | '30d';
+// Re-export TimeRange for backwards compatibility
+export type { TimeRange };
 
 export interface IssueData {
   modelId: string;
@@ -10,6 +16,8 @@ export interface IssueData {
   unavailable: number;
   error: number;
   total: number;
+  successCount: number;
+  errorRate: number;
 }
 
 export interface TimelinePoint {
@@ -25,14 +33,11 @@ interface IssuesResponse {
   count: number;
 }
 
-export const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
-  { value: '15m', label: 'Last 15 minutes' },
-  { value: '1h', label: 'Last 1 hour' },
-  { value: '6h', label: 'Last 6 hours' },
-  { value: '24h', label: 'Last 24 hours' },
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-];
+// Export TIME_RANGE_OPTIONS for backward compatibility
+// Filters to only display UI-relevant time windows (excludes 'all')
+export const TIME_RANGE_OPTIONS = TIME_WINDOW_DEFINITIONS.filter(tw =>
+  VALID_TIME_WINDOWS_WITH_LABELS.includes(tw.value)
+).map(tw => ({ value: tw.value as TimeRange, label: `Last ${tw.label}` }));
 
 export const issueKeys = {
   all: ['issues'] as const,

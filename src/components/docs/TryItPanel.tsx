@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ModelControls } from '@/components/ModelControls';
 import { type FilterType, type SortType } from '@/hooks/useModels';
 import { Loader2 } from 'lucide-react';
+import { DEFAULT_SORT } from '@/lib/api-definitions';
 
 const BASE_URL = 'https://free-models-api.pages.dev';
 
@@ -22,7 +23,7 @@ export function TryItPanel({
   exampleResponse,
 }: TryItPanelProps) {
   const [activeFilters, setActiveFilters] = useState<FilterType[]>([]);
-  const [activeSort, setActiveSort] = useState<SortType>('contextLength');
+  const [activeSort, setActiveSort] = useState<SortType>(DEFAULT_SORT);
   const [activeLimit, setActiveLimit] = useState<number | undefined>(undefined);
   const [apiKey, setApiKey] = useState('');
   const [response, setResponse] = useState<string | null>(null);

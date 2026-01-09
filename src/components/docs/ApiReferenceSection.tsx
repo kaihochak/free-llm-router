@@ -1,144 +1,128 @@
 import { TryItPanel } from './TryItPanel';
+import { ApiEndpoint } from './ApiEndpoint';
+import { EndpointHeader } from './EndpointHeader';
+import { ParamsTable } from './ParamsTable';
+import { ResponseTable } from './ResponseTable';
+import { ErrorsList } from './ErrorsList';
+import { CacheNote } from './CacheNote';
 import { codeExamples } from '@/lib/code-examples';
-import { Button } from '@/components/ui/button';
-import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
-
-const BASE_URL = 'https://free-models-api.pages.dev';
-
-function CopyEndpointButton({ endpoint }: { endpoint: string }) {
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(`${BASE_URL}${endpoint}`);
-    toast.success('Endpoint URL copied');
-  };
-
-  return (
-    <Button variant="ghost" size="icon" onClick={handleCopy} className="shrink-0 h-8 w-8">
-      <Copy className="h-4 w-4" />
-    </Button>
-  );
-}
+import {
+  VALID_FILTERS,
+  VALID_SORTS,
+  VALID_TIME_WINDOWS_WITH_LABELS,
+  DEFAULT_EXCLUDE_WITH_ISSUES,
+  DEFAULT_TIME_WINDOW,
+} from '@/lib/api-definitions';
 
 export function ApiReferenceSection() {
   return (
     <section id="api-reference" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">API Reference</h2>
       <p className="mb-12 text-muted-foreground">
-        Complete reference for all available endpoints. See <a href="#filters-sorting" className="text-primary hover:underline">Filters & Sorting</a> for query parameter details.
+        Complete reference for all available endpoints. See{' '}
+        <a href="#filters-sorting" className="text-primary hover:underline">
+          Filters & Sorting
+        </a>{' '}
+        for query parameter details.
       </p>
 
       <div className="space-y-16">
-        {/* GET /api/v1/models/ids - IDs only */}
-        <div id="api-get-models" className="scroll-mt-20 space-y-6">
-          {/* Header - spans full width, above columns */}
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  GET
-                </span>
-                <h3 className="font-mono text-lg font-medium">/api/v1/models/ids</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Lightweight endpoint returning only model IDs. Fast and small payload - use this in production.
-              </p>
-            </div>
-            <CopyEndpointButton endpoint="/api/v1/models/ids" />
-          </div>
+        {/* GET /api/v1/models/ids */}
+        <ApiEndpoint id="api-get-models">
+          <EndpointHeader
+            method="GET"
+            endpoint="/api/v1/models/ids"
+            description="Lightweight endpoint returning only model IDs. Fast and small payload - use this in production."
+          />
 
-          {/* Two columns below */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Documentation */}
             <div className="space-y-6">
-              <div>
-                <h4 className="mb-3 font-medium">Query Parameters</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2 pr-4 text-left font-medium">Parameter</th>
-                        <th className="py-2 pr-4 text-left font-medium">Type</th>
-                        <th className="py-2 text-left font-medium">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-muted-foreground">
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">filter</td>
-                        <td className="py-2 pr-4">string</td>
-                        <td className="py-2">
-                          Comma-separated:{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">chat</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">vision</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">coding</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">longContext</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">reasoning</code>
-                        </td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">sort</td>
-                        <td className="py-2 pr-4">string</td>
-                        <td className="py-2">
-                          One of:{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">contextLength</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">maxOutput</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">capable</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">leastIssues</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">newest</code>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 pr-4 font-mono text-xs">limit</td>
-                        <td className="py-2 pr-4">number</td>
-                        <td className="py-2">Max models to return (1-100)</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <ParamsTable
+                type="query"
+                params={[
+                  {
+                    name: 'filter',
+                    type: 'string',
+                    description: (
+                      <>
+                        Comma-separated: {VALID_FILTERS.map((filter, idx) => (
+                          <span key={filter}>
+                            {idx > 0 && ', '}
+                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{filter}</code>
+                          </span>
+                        ))}
+                      </>
+                    ),
+                  },
+                  {
+                    name: 'sort',
+                    type: 'string',
+                    description: (
+                      <>
+                        One of: {VALID_SORTS.map((sort, idx) => (
+                          <span key={sort}>
+                            {idx > 0 && ', '}
+                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{sort}</code>
+                          </span>
+                        ))}
+                      </>
+                    ),
+                  },
+                  {
+                    name: 'limit',
+                    type: 'number',
+                    description: 'Max models to return (1-100)',
+                  },
+                  {
+                    name: 'excludeWithIssues',
+                    type: 'number',
+                    description: (
+                      <>
+                        Exclude models with more than N reported issues. Default:{' '}
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                          {DEFAULT_EXCLUDE_WITH_ISSUES}
+                        </code>
+                        . Set to 0 to disable filtering.
+                      </>
+                    ),
+                  },
+                  {
+                    name: 'timeWindow',
+                    type: 'string',
+                    description: (
+                      <>
+                        Time period for error rates: {VALID_TIME_WINDOWS_WITH_LABELS.map((tw, idx) => (
+                          <span key={tw}>
+                            {idx > 0 && ', '}
+                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{tw}</code>
+                          </span>
+                        ))}
+                        . Default:{' '}
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">{DEFAULT_TIME_WINDOW}</code>.
+                      </>
+                    ),
+                  },
+                  {
+                    name: 'userOnly',
+                    type: 'boolean',
+                    description:
+                      'If true, show feedback counts from only your own reported issues (requires API key). Default: false (shows all community reports).',
+                  },
+                ]}
+              />
 
-              <div>
-                <h4 className="mb-3 font-medium">Response</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2 pr-4 text-left font-medium">Field</th>
-                        <th className="py-2 pr-4 text-left font-medium">Type</th>
-                        <th className="py-2 text-left font-medium">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-muted-foreground">
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">ids</td>
-                        <td className="py-2 pr-4">string[]</td>
-                        <td className="py-2">Array of model IDs</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 pr-4 font-mono text-xs">count</td>
-                        <td className="py-2 pr-4">number</td>
-                        <td className="py-2">Number of IDs returned</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <ResponseTable
+                fields={[
+                  { name: 'ids', type: 'string[]', description: 'Array of model IDs' },
+                  { name: 'count', type: 'number', description: 'Number of IDs returned' },
+                ]}
+              />
 
-              <div>
-                <h4 className="mb-3 font-medium">Errors</h4>
-                <ul className="list-inside list-disc text-sm text-muted-foreground space-y-1">
-                  <li>
-                    <code className="bg-muted px-1 py-0.5 rounded">500</code> - Server error
-                  </li>
-                </ul>
-              </div>
+              <ErrorsList errors={[{ code: 500, description: 'Server error' }]} />
 
-              <p className="text-xs text-muted-foreground">
-                <code className="bg-muted px-1 py-0.5 rounded">Cache-Control: private, max-age=60</code>
-                {' '}- Responses are cached for 60 seconds at the HTTP layer and 15 minutes in the SDK.
-              </p>
+              <CacheNote maxAge={60} sdkTtl={15} />
             </div>
 
-            {/* Right: Try It Panel */}
             <div className="lg:sticky lg:top-20 lg:self-start">
               <TryItPanel
                 endpoint="/api/v1/models/ids"
@@ -147,94 +131,75 @@ export function ApiReferenceSection() {
               />
             </div>
           </div>
-        </div>
+        </ApiEndpoint>
 
-        {/* GET /api/v1/models/full - Full model objects */}
-        <div id="api-get-models-full" className="scroll-mt-20 space-y-6">
-          {/* Header - spans full width, above columns */}
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  GET
-                </span>
-                <h3 className="font-mono text-lg font-medium">/api/v1/models/full</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Full model objects with metadata, feedback counts, and timestamps. Use for browsing or debugging.
-              </p>
-            </div>
-            <CopyEndpointButton endpoint="/api/v1/models/full" />
-          </div>
+        {/* GET /api/v1/models/full */}
+        <ApiEndpoint id="api-get-models-full">
+          <EndpointHeader
+            method="GET"
+            endpoint="/api/v1/models/full"
+            description="Full model objects with metadata, feedback counts, and timestamps. Use for browsing or debugging."
+          />
 
-          {/* Two columns below */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Documentation */}
             <div className="space-y-6">
               <div>
                 <h4 className="mb-3 font-medium">Query Parameters</h4>
-                <p className="text-sm text-muted-foreground">
-                  Same as <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code> - supports{' '}
+                <p className="text-sm text-muted-foreground mb-3">
+                  Same parameters as{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code>:{' '}
                   <code className="bg-muted px-1 py-0.5 rounded">filter</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">sort</code>, and{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">limit</code>.
+                  <code className="bg-muted px-1 py-0.5 rounded">sort</code>,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">limit</code>,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">excludeWithIssues</code>,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">timeWindow</code>, and{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">userOnly</code>.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  See <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code> documentation
+                  above for parameter details.
                 </p>
               </div>
 
-              <div>
-                <h4 className="mb-3 font-medium">Response</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2 pr-4 text-left font-medium">Field</th>
-                        <th className="py-2 pr-4 text-left font-medium">Type</th>
-                        <th className="py-2 text-left font-medium">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-muted-foreground">
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">models</td>
-                        <td className="py-2 pr-4">Model[]</td>
-                        <td className="py-2">Full model objects with all metadata</td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">feedbackCounts</td>
-                        <td className="py-2 pr-4">object</td>
-                        <td className="py-2">Feedback counts per model ID</td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">lastUpdated</td>
-                        <td className="py-2 pr-4">string</td>
-                        <td className="py-2">ISO 8601 timestamp of last sync</td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">filters</td>
-                        <td className="py-2 pr-4">string[]</td>
-                        <td className="py-2">Applied filter values</td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">sort</td>
-                        <td className="py-2 pr-4">string</td>
-                        <td className="py-2">Applied sort value</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 pr-4 font-mono text-xs">count</td>
-                        <td className="py-2 pr-4">number</td>
-                        <td className="py-2">Total number of models returned</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <ResponseTable
+                fields={[
+                  {
+                    name: 'models',
+                    type: 'Model[]',
+                    description: 'Full model objects with all metadata',
+                  },
+                  {
+                    name: 'feedbackCounts',
+                    type: 'object',
+                    description:
+                      'Per-model feedback: issue counts, success count, and error rate (percentage). Error rate shows % of failed requests.',
+                  },
+                  {
+                    name: 'lastUpdated',
+                    type: 'string',
+                    description: 'ISO 8601 timestamp of last sync',
+                  },
+                  {
+                    name: 'filters',
+                    type: 'string[]',
+                    description: 'Applied filter values',
+                  },
+                  {
+                    name: 'sort',
+                    type: 'string',
+                    description: 'Applied sort value',
+                  },
+                  {
+                    name: 'count',
+                    type: 'number',
+                    description: 'Total number of models returned',
+                  },
+                ]}
+              />
 
-              <p className="text-xs text-muted-foreground">
-                <code className="bg-muted px-1 py-0.5 rounded">Cache-Control: private, max-age=60</code>
-                {' '}- Responses are cached for 60 seconds at the HTTP layer and 15 minutes in the SDK.
-              </p>
+              <CacheNote maxAge={60} sdkTtl={15} />
             </div>
 
-            {/* Right: Try It Panel */}
             <div className="lg:sticky lg:top-20 lg:self-start">
               <TryItPanel
                 endpoint="/api/v1/models/full"
@@ -243,131 +208,101 @@ export function ApiReferenceSection() {
               />
             </div>
           </div>
-        </div>
+        </ApiEndpoint>
 
         {/* POST /api/v1/models/feedback */}
-        <div id="api-post-feedback" className="scroll-mt-20 space-y-6">
-          {/* Header - spans full width, above columns */}
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">
-                  POST
-                </span>
-                <h3 className="font-mono text-lg font-medium">/api/v1/models/feedback</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Report issues with a model (rate limiting, errors, unavailability).{' '}
+        <ApiEndpoint id="api-post-feedback">
+          <EndpointHeader
+            method="POST"
+            endpoint="/api/v1/models/feedback"
+            description={
+              <>
+                Report model feedback: successes or issues (rate limiting, errors, unavailability).{' '}
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                   Does not count towards your rate limit.
                 </span>
-              </p>
-            </div>
-            <CopyEndpointButton endpoint="/api/v1/models/feedback" />
-          </div>
+              </>
+            }
+          />
 
-          {/* Two columns below */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Documentation */}
             <div className="space-y-6">
-              <div>
-                <h4 className="mb-3 font-medium">Request Body</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2 pr-4 text-left font-medium">Field</th>
-                        <th className="py-2 pr-4 text-left font-medium">Type</th>
-                        <th className="py-2 pr-4 text-left font-medium">Required</th>
-                        <th className="py-2 text-left font-medium">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-muted-foreground">
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">modelId</td>
-                        <td className="py-2 pr-4">string</td>
-                        <td className="py-2 pr-4">Yes</td>
-                        <td className="py-2">The model ID to report</td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">issue</td>
-                        <td className="py-2 pr-4">string</td>
-                        <td className="py-2 pr-4">Yes</td>
-                        <td className="py-2">
-                          One of:{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">rate_limited</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">unavailable</code>,{' '}
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">error</code>
-                        </td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">details</td>
-                        <td className="py-2 pr-4">string</td>
-                        <td className="py-2 pr-4">No</td>
-                        <td className="py-2">Optional description of the issue</td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="py-2 pr-4 font-mono text-xs">dryRun</td>
-                        <td className="py-2 pr-4">boolean</td>
-                        <td className="py-2 pr-4">No</td>
-                        <td className="py-2">If true, validates request but doesn't save (for testing)</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <ParamsTable
+                type="body"
+                params={[
+                  {
+                    name: 'modelId',
+                    type: 'string',
+                    required: true,
+                    description: 'The model ID to report',
+                  },
+                  {
+                    name: 'success',
+                    type: 'boolean',
+                    required: false,
+                    description:
+                      'Set to true to report successful request. If omitted, reports an issue (requires issue field).',
+                  },
+                  {
+                    name: 'issue',
+                    type: 'string',
+                    required: true,
+                    description: (
+                      <>
+                        Required if success is false/omitted. One of:{' '}
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">rate_limited</code>,{' '}
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">unavailable</code>,{' '}
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">error</code>
+                      </>
+                    ),
+                  },
+                  {
+                    name: 'details',
+                    type: 'string',
+                    required: false,
+                    description: 'Optional description of the issue',
+                  },
+                  {
+                    name: 'dryRun',
+                    type: 'boolean',
+                    required: false,
+                    description: 'If true, validates request but doesn\'t save (for testing)',
+                  },
+                ]}
+              />
 
-              <div>
-                <h4 className="mb-3 font-medium">Response</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2 pr-4 text-left font-medium">Field</th>
-                        <th className="py-2 pr-4 text-left font-medium">Type</th>
-                        <th className="py-2 text-left font-medium">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-muted-foreground">
-                      <tr>
-                        <td className="py-2 pr-4 font-mono text-xs">received</td>
-                        <td className="py-2 pr-4">boolean</td>
-                        <td className="py-2">Whether feedback was recorded</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <ResponseTable
+                fields={[
+                  {
+                    name: 'received',
+                    type: 'boolean',
+                    description: 'Whether feedback was recorded',
+                  },
+                ]}
+              />
 
-              <div>
-                <h4 className="mb-3 font-medium">Errors</h4>
-                <ul className="list-inside list-disc text-sm text-muted-foreground space-y-1">
-                  <li>
-                    <code className="bg-muted px-1 py-0.5 rounded">400</code> - Missing modelId or invalid issue type
-                  </li>
-                  <li>
-                    <code className="bg-muted px-1 py-0.5 rounded">500</code> - Server error
-                  </li>
-                </ul>
-              </div>
+              <ErrorsList
+                errors={[
+                  { code: 400, description: 'Missing modelId or invalid issue type' },
+                  { code: 500, description: 'Server error' },
+                ]}
+              />
             </div>
 
-            {/* Right: Try It Panel */}
             <div className="lg:sticky lg:top-20 lg:self-start">
               <TryItPanel
                 endpoint="/api/v1/models/feedback"
                 method="POST"
                 defaultBody={{
                   modelId: 'google/gemini-2.0-flash-exp:free',
-                  issue: 'rate_limited',
-                  details: 'Getting 429 after ~10 requests',
+                  success: true,
                   dryRun: true,
                 }}
                 exampleResponse={codeExamples.feedbackResponse}
               />
             </div>
           </div>
-        </div>
+        </ApiEndpoint>
       </div>
     </section>
   );

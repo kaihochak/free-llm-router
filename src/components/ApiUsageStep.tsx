@@ -16,10 +16,16 @@ interface ApiUsageStepProps {
   activeFilters: FilterType[];
   activeSort: SortType;
   activeLimit: number | undefined;
+  activeExcludeWithIssues?: number;
+  activeTimeWindow?: string;
+  activeUserOnly?: boolean;
   lastUpdated?: string | null;
   onToggleFilter: (filter: FilterType | 'all') => void;
   onSortChange: (sort: SortType) => void;
   onLimitChange: (limit: number | undefined) => void;
+  onExcludeWithIssuesChange?: (value: number) => void;
+  onTimeWindowChange?: (value: string) => void;
+  onUserOnlyChange?: (value: boolean) => void;
   modelCount?: number;
   showBrowseModels?: boolean;
   children?: React.ReactNode;
@@ -34,10 +40,16 @@ export function ApiUsageStep({
   activeFilters,
   activeSort,
   activeLimit,
+  activeExcludeWithIssues,
+  activeTimeWindow,
+  activeUserOnly,
   lastUpdated,
   onToggleFilter,
   onSortChange,
   onLimitChange,
+  onExcludeWithIssuesChange,
+  onTimeWindowChange,
+  onUserOnlyChange,
   modelCount,
   showBrowseModels = true,
   children,
@@ -85,9 +97,15 @@ export function ApiUsageStep({
             activeFilters={activeFilters}
             activeSort={activeSort}
             activeLimit={activeLimit}
+            activeExcludeWithIssues={activeExcludeWithIssues}
+            activeTimeWindow={activeTimeWindow}
+            activeUserOnly={activeUserOnly}
             onToggleFilter={onToggleFilter}
             onSortChange={onSortChange}
             onLimitChange={onLimitChange}
+            onExcludeWithIssuesChange={onExcludeWithIssuesChange}
+            onTimeWindowChange={onTimeWindowChange}
+            onUserOnlyChange={onUserOnlyChange}
           />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -154,7 +172,7 @@ export function ApiUsageStep({
           <h3 className="text-xl font-semibold sm:text-2xl">Copy <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">free-models.ts</code></h3>
         </div>
         <p className="text-muted-foreground">
-          This helper fetches free model IDs from our API and reports issues back. It's a single file with no dependencies.
+          This helper fetches free model IDs from our API, reports both successes and issues back, and handles caching automatically. It's a single file with no dependencies.
         </p>
         <CodeBlock code={snippet} copyLabel="Copy" />
       </div>
@@ -172,9 +190,15 @@ export function ApiUsageStep({
           activeFilters={activeFilters}
           activeSort={activeSort}
           activeLimit={activeLimit}
+          activeExcludeWithIssues={activeExcludeWithIssues}
+          activeTimeWindow={activeTimeWindow}
+          activeUserOnly={activeUserOnly}
           onToggleFilter={onToggleFilter}
           onSortChange={onSortChange}
           onLimitChange={onLimitChange}
+          onExcludeWithIssuesChange={onExcludeWithIssuesChange}
+          onTimeWindowChange={onTimeWindowChange}
+          onUserOnlyChange={onUserOnlyChange}
         />
         <CodeBlock
           code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit)}
