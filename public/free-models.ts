@@ -10,26 +10,43 @@
  *
  * Usage:
  *   const ids = await getModelIds(['tools']);
- *   const fresh = await getModelIds(['chat'], 'capable', 5, { cache: 'no-store' });
+ *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { cache: 'no-store' });
  */
 
 const API = 'https://free-models-api.pages.dev/api/v1';
 const API_KEY = process.env.FREE_MODELS_API_KEY;
 
-type Filter = 'chat' | 'vision' | 'coding' | 'tools' | 'longContext' | 'reasoning';
-type Sort = 'contextLength' | 'maxOutput' | 'name' | 'provider' | 'capable';
+/**
+ * Type definitions for SDK parameters.
+ * IMPORTANT: Keep these in sync with src/lib/api-definitions.ts
+ * - Filter: see VALID_FILTERS
+ * - Sort: see VALID_SORTS
+ * - TimeWindow: see VALID_TIME_WINDOWS
+ */
+type Filter = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
+type Sort = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'newest';
 type CacheMode = 'default' | 'no-store';
+type TimeWindow = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'all';
 
 // In-memory cache - 15 minute TTL (matches server refresh rate)
 // NOTE: Cache is per-instance and resets on serverless cold starts
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
 const cache = new Map<string, { data: string[]; timestamp: number }>();
 
+/**
+ * Get available free model IDs with optional filtering and sorting.
+ * Default sort is 'contextLength' (largest context window first).
+ * Default excludeWithIssues is 5, timeWindow is '24h'.
+ */
 export async function getModelIds(
   filter?: Filter[],
-  sort: Sort = 'capable',
+  sort: Sort = 'contextLength',
   limit?: number,
-  options?: { cache?: CacheMode }
+  options?: {
+    cache?: CacheMode;
+    excludeWithIssues?: number;
+    timeWindow?: TimeWindow;
+  }
 ): Promise<string[]> {
   // Sort filter array for deterministic cache keys (avoid fragmentation)
   const normalizedFilter = filter ? [...filter].sort() : undefined;
@@ -39,6 +56,8 @@ export async function getModelIds(
     filter: normalizedFilter,
     sort,
     limit,
+    excludeWithIssues: options?.excludeWithIssues,
+    timeWindow: options?.timeWindow,
   });
 
   const cached = cache.get(cacheKey);
@@ -54,6 +73,12 @@ export async function getModelIds(
     const params = new URLSearchParams({ sort });
     if (normalizedFilter) params.set('filter', normalizedFilter.join(','));
     if (limit) params.set('limit', String(limit));
+    if (options?.excludeWithIssues !== undefined) {
+      params.set('excludeWithIssues', String(options.excludeWithIssues));
+    }
+    if (options?.timeWindow) {
+      params.set('timeWindow', options.timeWindow);
+    }
 
     const { ids } = await fetch(`${API}/models/ids?${params}`, {
       headers: { Authorization: `Bearer ${API_KEY}` },
@@ -85,8 +110,24 @@ export function reportIssue(
 ) {
   fetch(`${API}/models/feedback`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ modelId, issue, details }),
+  }).catch(() => {}); // Fire-and-forget, don't block on errors
+}
+
+// Report successful model usage to improve reliability metrics.
+// This does NOT count towards your rate limit - you're contributing!
+export function reportSuccess(modelId: string, details?: string) {
+  fetch(`${API}/models/feedback`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ modelId, success: true, details }),
   }).catch(() => {}); // Fire-and-forget, don't block on errors
 }
 

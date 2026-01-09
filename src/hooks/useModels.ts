@@ -11,6 +11,13 @@ import {
   filterModels,
   sortModels,
 } from '@/lib/model-types';
+import {
+  DEFAULT_SORT,
+  DEFAULT_LIMIT,
+  DEFAULT_EXCLUDE_WITH_ISSUES,
+  DEFAULT_TIME_WINDOW,
+  DEFAULT_USER_ONLY,
+} from '@/lib/api-definitions';
 
 export interface Model {
   id: string;
@@ -25,6 +32,7 @@ export interface Model {
   isModerated: boolean | null;
   createdAt?: string | null;
   issueCount?: number;
+  errorRate?: number;
 }
 
 interface FeedbackCounts {
@@ -32,6 +40,8 @@ interface FeedbackCounts {
     rateLimited: number;
     unavailable: number;
     error: number;
+    successCount: number;
+    errorRate: number;
   };
 }
 
@@ -76,13 +86,14 @@ async function fetchAllModels(): Promise<ModelsResponse> {
   }
   const data: ApiResponse = await response.json();
 
-  // Attach issue counts to each model
+  // Attach issue counts and error rates to each model
   const models = data.models.map((model) => {
     const feedback = data.feedbackCounts[model.id];
     const issueCount = feedback
       ? feedback.rateLimited + feedback.unavailable + feedback.error
       : 0;
-    return { ...model, issueCount };
+    const errorRate = feedback ? feedback.errorRate : 0;
+    return { ...model, issueCount, errorRate };
   });
 
   return {
@@ -107,8 +118,11 @@ export function getFullApiUrl(apiUrl: string): string {
 
 export function useModels() {
   const [activeFilters, setActiveFilters] = useLocalStorage<FilterType[]>('freeModels:filters', []);
-  const [activeSort, setActiveSort] = useLocalStorage<SortType>('freeModels:sort', 'contextLength');
-  const [activeLimit, setActiveLimit] = useLocalStorage<number | undefined>('freeModels:limit', 5);
+  const [activeSort, setActiveSort] = useLocalStorage<SortType>('freeModels:sort', DEFAULT_SORT);
+  const [activeLimit, setActiveLimit] = useLocalStorage<number | undefined>('freeModels:limit', DEFAULT_LIMIT);
+  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useLocalStorage<number>('freeModels:excludeWithIssues', DEFAULT_EXCLUDE_WITH_ISSUES);
+  const [activeTimeWindow, setActiveTimeWindow] = useLocalStorage<string>('freeModels:timeWindow', DEFAULT_TIME_WINDOW);
+  const [activeUserOnly, setActiveUserOnly] = useLocalStorage<boolean>('freeModels:userOnly', DEFAULT_USER_ONLY);
 
   // Fetch all models once
   const {
@@ -148,10 +162,16 @@ export function useModels() {
     activeFilters,
     activeSort,
     activeLimit,
+    activeExcludeWithIssues,
+    activeTimeWindow,
+    activeUserOnly,
     lastUpdated: modelsResponse.lastUpdated,
     apiUrl,
     setActiveSort,
     setActiveLimit,
+    setActiveExcludeWithIssues,
+    setActiveTimeWindow,
+    setActiveUserOnly,
     toggleFilter,
   };
 }

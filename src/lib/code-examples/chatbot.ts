@@ -1,4 +1,4 @@
-export const chatbot = `import { getModelIds, reportIssue, issueFromStatus } from './free-models';
+export const chatbot = `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-models';
 import OpenAI from 'openai';
 
 // OpenAI SDK works with OpenRouter's API
@@ -25,6 +25,8 @@ async function chat(userMessage: string) {
         });
         const reply = res.choices[0].message.content;
         messages.push({ role: 'assistant', content: reply });
+        // Report success - helps other users know this model works!
+        reportSuccess(id);
         return reply;
       } catch (e) {
         // Report with correct issue type - free, doesn't use quota

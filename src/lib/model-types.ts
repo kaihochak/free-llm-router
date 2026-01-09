@@ -1,52 +1,23 @@
 /**
  * Shared types and logic for model filtering and sorting.
- * Single source of truth for both frontend and backend.
+ *
+ * This file focuses on business logic. Parameter definitions are now centralized
+ * in api-definitions.ts as a single source of truth.
  */
 
-// Filter types supported by the API
-export type FilterType = 'chat' | 'vision' | 'coding' | 'longContext' | 'reasoning';
-
-// Sort types supported by the API
-export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'newest';
-
-// Valid filter values (for runtime validation)
-export const VALID_FILTERS: FilterType[] = ['chat', 'vision', 'coding', 'longContext', 'reasoning'];
-
-// Valid sort values (for runtime validation)
-export const VALID_SORTS: SortType[] = ['contextLength', 'maxOutput', 'capable', 'leastIssues', 'newest'];
-
-// Filter definitions with labels and descriptions (for UI)
-export const FILTER_DEFINITIONS: { key: FilterType | 'all'; label: string; description: string }[] = [
-  { key: 'all', label: 'All', description: 'Show all available free models' },
-  { key: 'chat', label: 'Chat', description: 'Models optimized for conversation' },
-  { key: 'vision', label: 'Vision', description: 'Models that can analyze images' },
-  { key: 'coding', label: 'Tools', description: 'Models that support function/tool calling' },
-  { key: 'longContext', label: 'Long Context', description: 'Models with 100k+ token context windows' },
-  { key: 'reasoning', label: 'Reasoning', description: 'Models with advanced reasoning capabilities' },
-];
-
-// Sort definitions with labels and descriptions (for UI)
-export const SORT_DEFINITIONS: { key: SortType; label: string; description: string }[] = [
-  { key: 'contextLength', label: 'Context Length', description: 'Sort by maximum input tokens' },
-  { key: 'maxOutput', label: 'Max Output', description: 'Sort by maximum output tokens' },
-  { key: 'capable', label: 'Most Capable', description: 'Sort by most supported features' },
-  { key: 'leastIssues', label: 'Least Reported Issues', description: 'Sort by fewest reported issues' },
-  { key: 'newest', label: 'Newest First', description: 'Sort by when model was added' },
-];
-
-// Validation helpers
-export function validateFilters(value: string | null): FilterType[] {
-  if (!value) return [];
-  const filters = value.split(',').map((f) => f.trim());
-  return filters.filter((f) => VALID_FILTERS.includes(f as FilterType)) as FilterType[];
-}
-
-export function validateSort(value: string | null): SortType {
-  if (value && VALID_SORTS.includes(value as SortType)) {
-    return value as SortType;
-  }
-  return 'contextLength';
-}
+// Import types and definitions from api-definitions.ts (single source of truth)
+export {
+  type FilterType,
+  type SortType,
+  type FilterDefinition,
+  type SortDefinition,
+  VALID_FILTERS,
+  VALID_SORTS,
+  FILTER_DEFINITIONS,
+  SORT_DEFINITIONS,
+  validateFilters,
+  validateSort,
+} from './api-definitions';
 
 /**
  * Filter criteria constants - defines what each filter checks.
@@ -65,7 +36,7 @@ export const FILTER_CRITERIA = {
     field: 'inputModalities',
     includes: 'image',
   },
-  coding: {
+  tools: {
     // Check supportedParameters includes 'tools'
     field: 'supportedParameters',
     includes: 'tools',
@@ -116,7 +87,7 @@ export function matchesFilter<T extends FilterableModel>(model: T, filter: Filte
       return model.modality === 'text->text' || (model.outputModalities?.includes('text') ?? false);
     case 'vision':
       return model.inputModalities?.includes('image') ?? false;
-    case 'coding':
+    case 'tools':
       return model.supportedParameters?.includes('tools') ?? false;
     case 'longContext':
       return model.contextLength !== null && model.contextLength >= 100000;

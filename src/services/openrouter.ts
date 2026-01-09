@@ -8,9 +8,14 @@ import {
   filterModels,
   sortModels,
 } from '../lib/model-types';
+import {
+  type TimeRange,
+  TIME_RANGE_MS,
+} from '../lib/api-definitions';
 
 // Re-export types and validation functions for backwards compatibility
 export { type FilterType, type SortType, validateFilters, validateSort };
+export { type TimeRange };
 
 interface OpenRouterApiModel {
   id: string;
@@ -227,11 +232,30 @@ async function getActiveModelsWithFeedback(db: Database) {
 /**
  * Get filtered and sorted models using shared logic from model-types.ts.
  * Single source of truth - same functions used by frontend and backend.
+ * Optionally filters out models with too many reported issues.
  */
-export async function getFilteredModels(db: Database, filters: FilterType[], sort: SortType) {
+export async function getFilteredModels(
+  db: Database,
+  filters: FilterType[],
+  sort: SortType,
+  excludeWithIssues?: number,
+  timeWindow: TimeRange = '24h'
+) {
   const allModels = await getActiveModelsWithFeedback(db);
   const filtered = filterModels(allModels, filters);
   const sorted = sortModels(filtered, sort);
+
+  // Apply issue threshold filtering if specified
+  if (excludeWithIssues !== undefined && excludeWithIssues > 0) {
+    const feedbackCounts = await getRecentFeedbackCounts(db, timeWindow);
+    return sorted.filter((model) => {
+      const feedback = feedbackCounts[model.id];
+      if (!feedback) return true; // No feedback = keep model
+      const issueCount = feedback.rateLimited + feedback.unavailable + feedback.error;
+      return issueCount <= excludeWithIssues;
+    });
+  }
+
   return sorted;
 }
 
@@ -243,51 +267,63 @@ export interface FeedbackCounts {
     rateLimited: number;
     unavailable: number;
     error: number;
+    successCount: number;
+    errorRate: number;
   };
 }
 
-export async function getRecentFeedbackCounts(db: Database): Promise<FeedbackCounts> {
-  const cutoff = new Date(Date.now() - FEEDBACK_WINDOW_MS);
+export async function getRecentFeedbackCounts(
+  db: Database,
+  timeWindow: TimeRange = '24h',
+  userId?: string
+): Promise<FeedbackCounts> {
+  const windowMs = TIME_RANGE_MS[timeWindow];
+  const cutoff = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
+
+  const whereConditions = [gte(modelFeedback.createdAt, cutoff)];
+  if (userId) {
+    whereConditions.push(eq(modelFeedback.source, userId));
+  }
 
   const results = await db
     .select({
       modelId: modelFeedback.modelId,
       issue: modelFeedback.issue,
+      isSuccess: modelFeedback.isSuccess,
       count: sql<number>`count(*)::int`,
     })
     .from(modelFeedback)
-    .where(gte(modelFeedback.createdAt, cutoff))
-    .groupBy(modelFeedback.modelId, modelFeedback.issue);
+    .where(and(...whereConditions))
+    .groupBy(modelFeedback.modelId, modelFeedback.issue, modelFeedback.isSuccess);
 
   const counts: FeedbackCounts = {};
 
   for (const row of results) {
     if (!counts[row.modelId]) {
-      counts[row.modelId] = { rateLimited: 0, unavailable: 0, error: 0 };
+      counts[row.modelId] = { rateLimited: 0, unavailable: 0, error: 0, successCount: 0, errorRate: 0 };
     }
-    if (row.issue === 'rate_limited') {
-      counts[row.modelId].rateLimited = row.count;
+
+    if (row.isSuccess) {
+      counts[row.modelId].successCount += row.count;
+    } else if (row.issue === 'rate_limited') {
+      counts[row.modelId].rateLimited += row.count;
     } else if (row.issue === 'unavailable') {
-      counts[row.modelId].unavailable = row.count;
+      counts[row.modelId].unavailable += row.count;
     } else if (row.issue === 'error') {
-      counts[row.modelId].error = row.count;
+      counts[row.modelId].error += row.count;
     }
+  }
+
+  // Calculate error rates
+  for (const modelId in counts) {
+    const c = counts[modelId];
+    const errorCount = c.rateLimited + c.unavailable + c.error;
+    const total = c.successCount + errorCount;
+    c.errorRate = total > 0 ? Math.round((errorCount / total) * 10000) / 100 : 0;
   }
 
   return counts;
 }
-
-// Time range options for issues page
-export type TimeRange = '15m' | '1h' | '6h' | '24h' | '7d' | '30d';
-
-const TIME_RANGE_MS: Record<TimeRange, number> = {
-  '15m': 15 * 60 * 1000,
-  '1h': 60 * 60 * 1000,
-  '6h': 6 * 60 * 60 * 1000,
-  '24h': 24 * 60 * 60 * 1000,
-  '7d': 7 * 24 * 60 * 60 * 1000,
-  '30d': 30 * 24 * 60 * 60 * 1000,
-};
 
 export interface IssueSummary {
   modelId: string;
@@ -296,29 +332,40 @@ export interface IssueSummary {
   unavailable: number;
   error: number;
   total: number;
+  successCount: number;
+  errorRate: number; // percentage 0-100
 }
 
 export async function getFeedbackCountsByRange(
   db: Database,
-  range: TimeRange
+  range: TimeRange,
+  userId?: string
 ): Promise<IssueSummary[]> {
   const windowMs = TIME_RANGE_MS[range];
+
+  // Build where conditions
+  const whereConditions: any[] = [];
+  if (windowMs !== null) {
+    whereConditions.push(gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)));
+  }
+  if (userId) {
+    whereConditions.push(eq(modelFeedback.source, userId));
+  }
 
   const baseQuery = db
     .select({
       modelId: modelFeedback.modelId,
       modelName: freeModels.name,
       issue: modelFeedback.issue,
+      isSuccess: modelFeedback.isSuccess,
       count: sql<number>`count(*)::int`,
     })
     .from(modelFeedback)
     .leftJoin(freeModels, eq(modelFeedback.modelId, freeModels.id))
-    .groupBy(modelFeedback.modelId, freeModels.name, modelFeedback.issue);
+    .groupBy(modelFeedback.modelId, freeModels.name, modelFeedback.issue, modelFeedback.isSuccess);
 
-  const results =
-    windowMs !== null
-      ? await baseQuery.where(gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)))
-      : await baseQuery;
+  const query = whereConditions.length > 0 ? baseQuery.where(and(...whereConditions)) : baseQuery;
+  const results = await query;
 
   // Aggregate into IssueSummary array
   const summaryMap: Record<string, IssueSummary> = {};
@@ -332,16 +379,30 @@ export async function getFeedbackCountsByRange(
         unavailable: 0,
         error: 0,
         total: 0,
+        successCount: 0,
+        errorRate: 0,
       };
     }
-    if (row.issue === 'rate_limited') {
-      summaryMap[row.modelId].rateLimited = row.count;
+
+    if (row.isSuccess) {
+      summaryMap[row.modelId].successCount += row.count;
+    } else if (row.issue === 'rate_limited') {
+      summaryMap[row.modelId].rateLimited += row.count;
+      summaryMap[row.modelId].total += row.count;
     } else if (row.issue === 'unavailable') {
-      summaryMap[row.modelId].unavailable = row.count;
+      summaryMap[row.modelId].unavailable += row.count;
+      summaryMap[row.modelId].total += row.count;
     } else if (row.issue === 'error') {
-      summaryMap[row.modelId].error = row.count;
+      summaryMap[row.modelId].error += row.count;
+      summaryMap[row.modelId].total += row.count;
     }
-    summaryMap[row.modelId].total += row.count;
+  }
+
+  // Calculate error rates
+  for (const modelId in summaryMap) {
+    const summary = summaryMap[modelId];
+    const totalReports = summary.successCount + summary.total;
+    summary.errorRate = totalReports > 0 ? Math.round((summary.total / totalReports) * 10000) / 100 : 0;
   }
 
   // Sort by total issues descending
@@ -462,7 +523,7 @@ export async function getFeedbackTimeline(
       count: sql<number>`count(*)::int`,
     })
     .from(modelFeedback)
-    .where(gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)))
+    .where(windowMs !== null ? gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)) : undefined)
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
 
