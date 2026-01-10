@@ -1,16 +1,14 @@
 import type { APIContext } from 'astro';
 import { type Database, createDb } from '@/db';
 import {
-  type FilterType,
+  type UseCaseType,
   type SortType,
   type TimeRange,
-  validateFilters,
+  validateUseCases,
   validateSort,
-  validateLimit,
-  validateExcludeWithIssues,
-  validateTimeWindow,
-  DEFAULT_EXCLUDE_WITH_ISSUES,
-  DEFAULT_TIME_WINDOW,
+  validateTopN,
+  validateMaxErrorRate,
+  validateTimeRange,
 } from '@/lib/api-definitions';
 import {
   validateApiKey,
@@ -20,11 +18,12 @@ import {
 } from '@/lib/api-auth';
 
 export interface ParsedModelParams {
-  filters: FilterType[];
+  useCases: UseCaseType[];
   sort: SortType;
-  limit?: number;
-  excludeWithIssues: number;
-  timeWindow: TimeRange;
+  topN?: number;
+  maxErrorRate?: number;
+  timeRange: TimeRange;
+  myReports: boolean;
 }
 
 export interface RequestContext {
@@ -39,13 +38,14 @@ export interface RequestContext {
  * Uses unified validators from api-definitions.ts (single source of truth)
  */
 export function parseModelParams(searchParams: URLSearchParams): ParsedModelParams {
-  const filters = validateFilters(searchParams.get('filter'));
+  const useCases = validateUseCases(searchParams.get('useCase'));
   const sort = validateSort(searchParams.get('sort'));
-  const limit = validateLimit(searchParams.get('limit'));
-  const excludeWithIssues = validateExcludeWithIssues(searchParams.get('excludeWithIssues'));
-  const timeWindow = validateTimeWindow(searchParams.get('timeWindow'));
+  const topN = validateTopN(searchParams.get('topN'));
+  const maxErrorRate = validateMaxErrorRate(searchParams.get('maxErrorRate'));
+  const timeRange = validateTimeRange(searchParams.get('timeRange'));
+  const myReports = searchParams.get('myReports') === 'true';
 
-  return { filters, sort, limit, excludeWithIssues, timeWindow };
+  return { useCases, sort, topN, maxErrorRate, timeRange, myReports };
 }
 
 /**
@@ -95,11 +95,11 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
 }
 
 /**
- * Handle userOnly parameter: validates optional user context
- * Returns userId if userOnly=true, else undefined
+ * Handle myReports parameter: validates optional user context
+ * Returns userId if myReports=true, else undefined
  */
-export async function getUserIdIfUserOnly(context: APIContext, userOnly: boolean): Promise<string | undefined> {
-  if (!userOnly) return undefined;
+export async function getUserIdIfMyReports(context: APIContext, myReports: boolean): Promise<string | undefined> {
+  if (!myReports) return undefined;
 
   const validation = await validateApiKeyOnly(context);
   if (!validation.valid) {

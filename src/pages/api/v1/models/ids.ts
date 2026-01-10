@@ -19,16 +19,16 @@ export const GET: APIRoute = async (context) => {
 
   try {
     const { db, params, validation } = req;
-    const { filters, sort, limit, excludeWithIssues, timeWindow } = params;
+    const { useCases, sort, topN, maxErrorRate, timeRange } = params;
 
     // Lazy refresh if stale
     await ensureFreshModels(db);
 
     // Fetch filtered and sorted models
-    const allModels = await getFilteredModels(db, filters, sort, excludeWithIssues, timeWindow);
+    const allModels = await getFilteredModels(db, useCases, sort, maxErrorRate, timeRange);
 
-    // Apply limit and extract IDs only
-    const models = limit ? allModels.slice(0, limit) : allModels;
+    // Apply topN and extract IDs only
+    const models = topN ? allModels.slice(0, topN) : allModels;
     const ids = models.map((m) => m.id);
 
     return new Response(

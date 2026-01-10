@@ -7,11 +7,10 @@ import { ErrorsList } from './ErrorsList';
 import { CacheNote } from './CacheNote';
 import { codeExamples } from '@/lib/code-examples';
 import {
-  VALID_FILTERS,
+  VALID_USE_CASES,
   VALID_SORTS,
-  VALID_TIME_WINDOWS_WITH_LABELS,
-  DEFAULT_EXCLUDE_WITH_ISSUES,
-  DEFAULT_TIME_WINDOW,
+  VALID_TIME_RANGES_WITH_LABELS,
+  DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
 
 export function ApiReferenceSection() {
@@ -20,10 +19,10 @@ export function ApiReferenceSection() {
       <h2 className="mb-4 text-5xl font-bold">API Reference</h2>
       <p className="mb-12 text-muted-foreground">
         Complete reference for all available endpoints. See{' '}
-        <a href="#filters-sorting" className="text-primary hover:underline">
-          Filters & Sorting
+        <a href="#query-params" className="text-primary hover:underline">
+          Query Parameters
         </a>{' '}
-        for query parameter details.
+        for parameter details.
       </p>
 
       <div className="space-y-16">
@@ -41,14 +40,14 @@ export function ApiReferenceSection() {
                 type="query"
                 params={[
                   {
-                    name: 'filter',
+                    name: 'useCase',
                     type: 'string',
                     description: (
                       <>
-                        Comma-separated: {VALID_FILTERS.map((filter, idx) => (
-                          <span key={filter}>
+                        Comma-separated: {VALID_USE_CASES.map((useCase, idx) => (
+                          <span key={useCase}>
                             {idx > 0 && ', '}
-                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{filter}</code>
+                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{useCase}</code>
                           </span>
                         ))}
                       </>
@@ -69,44 +68,36 @@ export function ApiReferenceSection() {
                     ),
                   },
                   {
-                    name: 'limit',
+                    name: 'topN',
                     type: 'number',
-                    description: 'Max models to return (1-100)',
+                    description: 'Return top N models based on sort order (1-100)',
                   },
                   {
-                    name: 'excludeWithIssues',
+                    name: 'maxErrorRate',
                     type: 'number',
-                    description: (
-                      <>
-                        Exclude models with more than N reported issues. Default:{' '}
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                          {DEFAULT_EXCLUDE_WITH_ISSUES}
-                        </code>
-                        . Set to 0 to disable filtering.
-                      </>
-                    ),
+                    description: 'Exclude models with error rate above this percentage (0-100)',
                   },
                   {
-                    name: 'timeWindow',
+                    name: 'timeRange',
                     type: 'string',
                     description: (
                       <>
-                        Time period for error rates: {VALID_TIME_WINDOWS_WITH_LABELS.map((tw, idx) => (
-                          <span key={tw}>
+                        Time window for error rates: {VALID_TIME_RANGES_WITH_LABELS.map((tr, idx) => (
+                          <span key={tr}>
                             {idx > 0 && ', '}
-                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{tw}</code>
+                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{tr}</code>
                           </span>
                         ))}
                         . Default:{' '}
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">{DEFAULT_TIME_WINDOW}</code>.
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">{DEFAULT_TIME_RANGE}</code>.
                       </>
                     ),
                   },
                   {
-                    name: 'userOnly',
+                    name: 'myReports',
                     type: 'boolean',
                     description:
-                      'If true, show feedback counts from only your own reported issues (requires API key). Default: false (shows all community reports).',
+                      'If true, calculate error rates from only your own reports (requires API key). Default: false.',
                   },
                 ]}
               />
@@ -148,12 +139,12 @@ export function ApiReferenceSection() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Same parameters as{' '}
                   <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code>:{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">filter</code>,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">useCase</code>,{' '}
                   <code className="bg-muted px-1 py-0.5 rounded">sort</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">limit</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">excludeWithIssues</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">timeWindow</code>, and{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">userOnly</code>.
+                  <code className="bg-muted px-1 py-0.5 rounded">topN</code>,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">maxErrorRate</code>,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">timeRange</code>, and{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">myReports</code>.
                 </p>
                 <p className="text-xs text-muted-foreground">
                   See <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code> documentation
@@ -180,9 +171,9 @@ export function ApiReferenceSection() {
                     description: 'ISO 8601 timestamp of last sync',
                   },
                   {
-                    name: 'filters',
+                    name: 'useCases',
                     type: 'string[]',
-                    description: 'Applied filter values',
+                    description: 'Applied use case values',
                   },
                   {
                     name: 'sort',

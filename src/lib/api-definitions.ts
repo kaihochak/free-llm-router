@@ -5,20 +5,20 @@
  * Separates parameter DEFINITIONS (this file) from business logic (model-types.ts)
  */
 
-// ==================== FILTER PARAMETER ====================
+// ==================== USE CASE PARAMETER ====================
 
-export type FilterType = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
+export type UseCaseType = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
 
-export const VALID_FILTERS: FilterType[] = ['chat', 'vision', 'tools', 'longContext', 'reasoning'];
+export const VALID_USE_CASES: UseCaseType[] = ['chat', 'vision', 'tools', 'longContext', 'reasoning'];
 
-export interface FilterDefinition {
-  key: FilterType | 'all';
+export interface UseCaseDefinition {
+  key: UseCaseType | 'all';
   label: string;
   description: string;
   docDescription?: string; // For detailed documentation
 }
 
-export const FILTER_DEFINITIONS: FilterDefinition[] = [
+export const USE_CASE_DEFINITIONS: UseCaseDefinition[] = [
   {
     key: 'all',
     label: 'All',
@@ -103,30 +103,30 @@ export const SORT_DEFINITIONS: SortDefinition[] = [
   },
 ];
 
-// ==================== TIME WINDOW PARAMETER ====================
+// ==================== TIME RANGE PARAMETER ====================
 
 export type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'all';
 
-export const VALID_TIME_WINDOWS: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d', 'all'];
+export const VALID_TIME_RANGES: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d', 'all'];
 
-// Time windows with labels (for UI display - used in useIssues.ts)
-export const VALID_TIME_WINDOWS_WITH_LABELS: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d'];
+// Time ranges with labels (for UI display - used in useIssues.ts)
+export const VALID_TIME_RANGES_WITH_LABELS: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d'];
 
-export interface TimeWindowDefinition {
+export interface TimeRangeDefinition {
   value: TimeRange;
   label: string;
-  useCase: string;
+  description: string;
 }
 
-export const TIME_WINDOW_DEFINITIONS: TimeWindowDefinition[] = [
-  { value: '15m', label: '15m', useCase: '15 minutes' },
-  { value: '30m', label: '30m', useCase: '30 minutes' },
-  { value: '1h', label: '1h', useCase: '1 hour' },
-  { value: '6h', label: '6h', useCase: '6 hours' },
-  { value: '24h', label: '24h', useCase: '24 hours (recommended)' },
-  { value: '7d', label: '7d', useCase: '7 days' },
-  { value: '30d', label: '30d', useCase: '30 days' },
-  { value: 'all', label: 'All', useCase: 'All-time' },
+export const TIME_RANGE_DEFINITIONS: TimeRangeDefinition[] = [
+  { value: '15m', label: '15m', description: '15 minutes' },
+  { value: '30m', label: '30m', description: '30 minutes' },
+  { value: '1h', label: '1h', description: '1 hour' },
+  { value: '6h', label: '6h', description: '6 hours' },
+  { value: '24h', label: '24h', description: '24 hours (recommended)' },
+  { value: '7d', label: '7d', description: '7 days' },
+  { value: '30d', label: '30d', description: '30 days' },
+  { value: 'all', label: 'All', description: 'All-time' },
 ];
 
 // Time range to milliseconds conversion
@@ -142,45 +142,48 @@ export const TIME_RANGE_MS: Record<TimeRange, number | null> = {
   'all': null,
 };
 
-// ==================== LIMIT PARAMETER ====================
+// ==================== TOP N PARAMETER ====================
 
-export type LimitOption = 3 | 5 | 10 | undefined;
+export type TopNOption = 3 | 5 | 10 | undefined;
 
-export interface LimitDefinition {
+export interface TopNDefinition {
   value: string; // "3", "5", "10", "all"
   label: string;
   numeric: number | undefined; // 3, 5, 10, undefined
 }
 
-export const LIMIT_DEFINITIONS: LimitDefinition[] = [
+export const TOP_N_DEFINITIONS: TopNDefinition[] = [
   { value: '3', label: '3', numeric: 3 },
   { value: '5', label: '5', numeric: 5 },
   { value: '10', label: '10', numeric: 10 },
   { value: 'all', label: 'All', numeric: undefined },
 ];
 
-export const LIMIT_MIN = 1;
-export const LIMIT_MAX = 100;
+export const TOP_N_MIN = 1;
+export const TOP_N_MAX = 100;
 
-// ==================== EXCLUDE WITH ISSUES PARAMETER ====================
+// ==================== MAX ERROR RATE PARAMETER ====================
 
-// Free-form integer input - no predefined options
+// Percentage (0-100) - models with error rate above this are excluded
+export const MAX_ERROR_RATE_MIN = 0;
+export const MAX_ERROR_RATE_MAX = 100;
 
 // ==================== DEFAULT VALUES ====================
 
-export const DEFAULT_FILTER: FilterType[] = [];
+export const DEFAULT_USE_CASE: UseCaseType[] = [];
 export const DEFAULT_SORT: SortType = 'contextLength';
-export const DEFAULT_LIMIT: number = 5;
-export const DEFAULT_EXCLUDE_WITH_ISSUES: number = 5;
-export const DEFAULT_TIME_WINDOW: TimeRange = '15m';
-export const DEFAULT_USER_ONLY: boolean = false;
+export const DEFAULT_TOP_N: number | undefined = undefined;
+export const DEFAULT_MAX_ERROR_RATE: number | undefined = undefined;
+export const DEFAULT_TIME_RANGE: TimeRange = '24h';
+export const DEFAULT_MY_REPORTS: boolean = false;
+export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = false;
 
 // ==================== VALIDATION UTILITIES ====================
 
-export function validateFilters(value: string | null): FilterType[] {
+export function validateUseCases(value: string | null): UseCaseType[] {
   if (!value) return [];
-  const filters = value.split(',').map((f) => f.trim());
-  return filters.filter((f) => VALID_FILTERS.includes(f as FilterType)) as FilterType[];
+  const useCases = value.split(',').map((f) => f.trim());
+  return useCases.filter((f) => VALID_USE_CASES.includes(f as UseCaseType)) as UseCaseType[];
 }
 
 export function validateSort(value: string | null): SortType {
@@ -190,25 +193,25 @@ export function validateSort(value: string | null): SortType {
   return DEFAULT_SORT;
 }
 
-export function validateTimeWindow(value: string | null): TimeRange {
-  if (value && VALID_TIME_WINDOWS.includes(value as TimeRange)) {
+export function validateTimeRange(value: string | null): TimeRange {
+  if (value && VALID_TIME_RANGES.includes(value as TimeRange)) {
     return value as TimeRange;
   }
-  return DEFAULT_TIME_WINDOW;
+  return DEFAULT_TIME_RANGE;
 }
 
-export function validateLimit(value: string | null): number | undefined {
+export function validateTopN(value: string | null): number | undefined {
   if (!value) return undefined;
   const parsed = parseInt(value, 10);
   if (isNaN(parsed)) return undefined;
-  return Math.min(Math.max(LIMIT_MIN, parsed), LIMIT_MAX);
+  return Math.min(Math.max(TOP_N_MIN, parsed), TOP_N_MAX);
 }
 
-export function validateExcludeWithIssues(value: string | null): number {
-  if (value === null) return DEFAULT_EXCLUDE_WITH_ISSUES;
+export function validateMaxErrorRate(value: string | null): number | undefined {
+  if (value === null || value === '') return undefined;
   const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) return DEFAULT_EXCLUDE_WITH_ISSUES;
-  return Math.max(0, parsed);
+  if (isNaN(parsed)) return undefined;
+  return Math.min(Math.max(MAX_ERROR_RATE_MIN, parsed), MAX_ERROR_RATE_MAX);
 }
 
 // ==================== HELPER UTILITIES ====================

@@ -3,15 +3,16 @@ import { CodeBlock } from '@/components/ui/code-block';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ModelControls } from '@/components/ModelControls';
-import type { FilterType, SortType } from '@/lib/api-definitions';
+import type { UseCaseType, SortType } from '@/lib/api-definitions';
 import { Loader2 } from 'lucide-react';
 import {
   DEFAULT_SORT,
-  DEFAULT_FILTER,
-  DEFAULT_LIMIT,
-  DEFAULT_EXCLUDE_WITH_ISSUES,
-  DEFAULT_TIME_WINDOW,
-  DEFAULT_USER_ONLY,
+  DEFAULT_USE_CASE,
+  DEFAULT_TOP_N,
+  DEFAULT_MAX_ERROR_RATE,
+  DEFAULT_TIME_RANGE,
+  DEFAULT_MY_REPORTS,
+  DEFAULT_RELIABILITY_FILTER_ENABLED,
 } from '@/lib/api-definitions';
 
 const BASE_URL = 'https://free-models-api.pages.dev';
@@ -29,36 +30,39 @@ export function TryItPanel({
   defaultBody,
   exampleResponse,
 }: TryItPanelProps) {
-  const [activeFilters, setActiveFilters] = useState<FilterType[]>(DEFAULT_FILTER);
+  const [activeUseCases, setActiveUseCases] = useState<UseCaseType[]>(DEFAULT_USE_CASE);
   const [activeSort, setActiveSort] = useState<SortType>(DEFAULT_SORT);
-  const [activeLimit, setActiveLimit] = useState<number | undefined>(DEFAULT_LIMIT);
-  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useState<number | undefined>(DEFAULT_EXCLUDE_WITH_ISSUES);
-  const [activeTimeWindow, setActiveTimeWindow] = useState(DEFAULT_TIME_WINDOW);
-  const [activeUserOnly, setActiveUserOnly] = useState(DEFAULT_USER_ONLY);
+  const [activeTopN, setActiveTopN] = useState<number | undefined>(DEFAULT_TOP_N);
+  const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useState(DEFAULT_RELIABILITY_FILTER_ENABLED);
+  const [activeMaxErrorRate, setActiveMaxErrorRate] = useState<number | undefined>(DEFAULT_MAX_ERROR_RATE);
+  const [activeTimeRange, setActiveTimeRange] = useState(DEFAULT_TIME_RANGE);
+  const [activeMyReports, setActiveMyReports] = useState(DEFAULT_MY_REPORTS);
   const [apiKey, setApiKey] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [statusCode, setStatusCode] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const canSend = apiKey.trim().length > 0;
 
-  const toggleFilter = (filter: FilterType | 'all') => {
-    if (filter === 'all') {
-      setActiveFilters([]);
+  const toggleUseCase = (useCase: UseCaseType | 'all') => {
+    if (useCase === 'all') {
+      setActiveUseCases([]);
     } else {
-      setActiveFilters((prev) =>
-        prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
+      setActiveUseCases((prev) =>
+        prev.includes(useCase) ? prev.filter((uc) => uc !== useCase) : [...prev, useCase]
       );
     }
   };
 
   const buildUrl = () => {
     const params = new URLSearchParams();
-    if (activeFilters.length > 0) params.set('filter', activeFilters.join(','));
+    if (activeUseCases.length > 0) params.set('useCase', activeUseCases.join(','));
     params.set('sort', activeSort);
-    if (activeLimit) params.set('limit', String(activeLimit));
-    if (activeExcludeWithIssues !== undefined) params.set('excludeWithIssues', String(activeExcludeWithIssues));
-    if (activeTimeWindow !== '24h') params.set('timeWindow', activeTimeWindow);
-    if (activeUserOnly) params.set('userOnly', 'true');
+    if (activeTopN) params.set('topN', String(activeTopN));
+    if (reliabilityFilterEnabled) {
+      if (activeMaxErrorRate !== undefined) params.set('maxErrorRate', String(activeMaxErrorRate));
+      if (activeTimeRange !== '24h') params.set('timeRange', activeTimeRange);
+      if (activeMyReports) params.set('myReports', 'true');
+    }
     return `${endpoint}?${params.toString()}`;
   };
 
@@ -135,22 +139,24 @@ export function TryItPanel({
           )}
         </div>
 
-        {/* Filter/Sort selectors (for GET) */}
+        {/* Use Case/Sort selectors (for GET) */}
         {method === 'GET' && (
           <div className="px-4 py-3 border-b">
             <ModelControls
-              activeFilters={activeFilters}
+              activeUseCases={activeUseCases}
               activeSort={activeSort}
-              activeLimit={activeLimit}
-              activeExcludeWithIssues={activeExcludeWithIssues}
-              activeTimeWindow={activeTimeWindow}
-              activeUserOnly={activeUserOnly}
-              onToggleFilter={toggleFilter}
+              activeTopN={activeTopN}
+              reliabilityFilterEnabled={reliabilityFilterEnabled}
+              activeMaxErrorRate={activeMaxErrorRate}
+              activeTimeRange={activeTimeRange}
+              activeMyReports={activeMyReports}
+              onToggleUseCase={toggleUseCase}
               onSortChange={setActiveSort}
-              onLimitChange={setActiveLimit}
-              onExcludeWithIssuesChange={setActiveExcludeWithIssues}
-              onTimeWindowChange={(value) => setActiveTimeWindow(value as any)}
-              onUserOnlyChange={setActiveUserOnly}
+              onTopNChange={setActiveTopN}
+              onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
+              onMaxErrorRateChange={setActiveMaxErrorRate}
+              onTimeRangeChange={(value) => setActiveTimeRange(value as any)}
+              onMyReportsChange={setActiveMyReports}
               size="sm"
             />
           </div>

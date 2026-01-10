@@ -9,7 +9,7 @@ import {
   rateLimitHeaders,
   corsHeaders,
 } from '@/lib/api-auth';
-import { initializeRequest, getUserIdIfUserOnly } from '@/lib/api-params';
+import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
 
 /**
  * Full model endpoint - returns complete model objects with all metadata
@@ -24,14 +24,13 @@ export const GET: APIRoute = async (context) => {
 
   try {
     const { db, params, validation } = req;
-    const { filters, sort, limit, excludeWithIssues, timeWindow } = params;
+    const { useCases, sort, topN, maxErrorRate, timeRange, myReports } = params;
 
-    // Parse userOnly parameter (default: false, shows all community reports)
-    const userOnly = context.url.searchParams.get('userOnly') === 'true';
+    // Get userId if myReports is enabled
     let userId: string | undefined;
 
     try {
-      userId = await getUserIdIfUserOnly(context, userOnly);
+      userId = await getUserIdIfMyReports(context, myReports);
     } catch (error) {
       return new Response(JSON.stringify({ error: (error as Error).message || 'Invalid API key' }), {
         status: 401,
@@ -44,20 +43,20 @@ export const GET: APIRoute = async (context) => {
 
     // Fetch filtered and sorted models + feedback counts
     const [allModels, feedbackCounts, updatedAt] = await Promise.all([
-      getFilteredModels(db, filters, sort, excludeWithIssues, timeWindow),
-      getRecentFeedbackCounts(db, timeWindow, userId),
+      getFilteredModels(db, useCases, sort, maxErrorRate, timeRange),
+      getRecentFeedbackCounts(db, timeRange, userId),
       getLastUpdated(db),
     ]);
 
-    // Apply limit if specified
-    const models = limit ? allModels.slice(0, limit) : allModels;
+    // Apply topN if specified
+    const models = topN ? allModels.slice(0, topN) : allModels;
 
     return new Response(
       JSON.stringify({
         models,
         feedbackCounts,
         lastUpdated: updatedAt?.toISOString() ?? new Date().toISOString(),
-        filters: filters.length > 0 ? filters : undefined,
+        useCases: useCases.length > 0 ? useCases : undefined,
         sort,
         count: models.length,
       }),

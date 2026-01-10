@@ -21,7 +21,7 @@ export function GetStartedSection() {
       </p>
       <p className="mb-12 text-base text-muted-foreground">
         We maintain a live-updated list of available free models so you don't have to track availability yourself.
-        Set your preferences using filters and sorting, fetch the list from our API, and pass the model IDs to{' '}
+        Set your preferences using use case and sorting, fetch the list from our API, and pass the model IDs to{' '}
         <a
           href="https://openrouter.ai"
           target="_blank"

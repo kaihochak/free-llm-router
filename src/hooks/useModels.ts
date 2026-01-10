@@ -4,19 +4,20 @@ import { useQuery } from '@tanstack/react-query';
 import { FREE_MODELS_SDK as FREE_MODELS_FILE } from '@/lib/code-examples/index';
 import { useLocalStorage } from './useLocalStorage';
 import {
-  type FilterType as ApiFilterType,
+  type UseCaseType as ApiUseCaseType,
   type SortType as ApiSortType,
-  FILTER_DEFINITIONS,
+  USE_CASE_DEFINITIONS,
   SORT_DEFINITIONS,
-  filterModels,
+  filterModelsByUseCase,
   sortModels,
 } from '@/lib/model-types';
 import {
   DEFAULT_SORT,
-  DEFAULT_LIMIT,
-  DEFAULT_EXCLUDE_WITH_ISSUES,
-  DEFAULT_TIME_WINDOW,
-  DEFAULT_USER_ONLY,
+  DEFAULT_TOP_N,
+  DEFAULT_MAX_ERROR_RATE,
+  DEFAULT_TIME_RANGE,
+  DEFAULT_MY_REPORTS,
+  DEFAULT_RELIABILITY_FILTER_ENABLED,
 } from '@/lib/api-definitions';
 
 export interface Model {
@@ -52,11 +53,11 @@ interface ApiResponse {
 }
 
 // Use shared types from model-types.ts (single source of truth)
-export type FilterType = ApiFilterType;
+export type UseCaseType = ApiUseCaseType;
 export type SortType = ApiSortType;
 
-// Re-export filter and sort definitions for UI components
-export const FILTERS = FILTER_DEFINITIONS;
+// Re-export use case and sort definitions for UI components
+export const USE_CASES = USE_CASE_DEFINITIONS;
 export const SORT_OPTIONS = SORT_DEFINITIONS;
 
 const API_BASE = 'https://free-models-api.pages.dev';
@@ -67,9 +68,9 @@ export const modelKeys = {
 };
 
 // Build API URL for the code snippet (what users will copy)
-function buildApiUrl(filters: FilterType[], sort: SortType): string {
+function buildApiUrl(useCases: UseCaseType[], sort: SortType): string {
   const params = new URLSearchParams();
-  if (filters.length > 0) params.set('filter', filters.join(','));
+  if (useCases.length > 0) params.set('useCase', useCases.join(','));
   params.set('sort', sort); // Always include sort
   return `/api/v1/models/ids?${params.toString()}`;
 }
@@ -102,7 +103,7 @@ async function fetchAllModels(): Promise<ModelsResponse> {
   };
 }
 
-// filterModels and sortModels are imported from @/lib/model-types (single source of truth)
+// filterModelsByUseCase and sortModels are imported from @/lib/model-types (single source of truth)
 
 // FREE_MODELS_FILE is imported from /public/free-models.ts at build time (see top of file)
 // This ensures users always get the latest SDK with caching built-in
@@ -117,12 +118,13 @@ export function getFullApiUrl(apiUrl: string): string {
 }
 
 export function useModels() {
-  const [activeFilters, setActiveFilters] = useLocalStorage<FilterType[]>('freeModels:filters', []);
+  const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>('freeModels:useCases', []);
   const [activeSort, setActiveSort] = useLocalStorage<SortType>('freeModels:sort', DEFAULT_SORT);
-  const [activeLimit, setActiveLimit] = useLocalStorage<number | undefined>('freeModels:limit', DEFAULT_LIMIT);
-  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useLocalStorage<number | undefined>('freeModels:excludeWithIssues', DEFAULT_EXCLUDE_WITH_ISSUES);
-  const [activeTimeWindow, setActiveTimeWindow] = useLocalStorage<string>('freeModels:timeWindow', DEFAULT_TIME_WINDOW);
-  const [activeUserOnly, setActiveUserOnly] = useLocalStorage<boolean>('freeModels:userOnly', DEFAULT_USER_ONLY);
+  const [activeTopN, setActiveTopN] = useLocalStorage<number | undefined>('freeModels:topN', DEFAULT_TOP_N);
+  const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useLocalStorage<boolean>('freeModels:reliabilityFilterEnabled', DEFAULT_RELIABILITY_FILTER_ENABLED);
+  const [activeMaxErrorRate, setActiveMaxErrorRate] = useLocalStorage<number | undefined>('freeModels:maxErrorRate', DEFAULT_MAX_ERROR_RATE);
+  const [activeTimeRange, setActiveTimeRange] = useLocalStorage<string>('freeModels:timeRange', DEFAULT_TIME_RANGE);
+  const [activeMyReports, setActiveMyReports] = useLocalStorage<boolean>('freeModels:myReports', DEFAULT_MY_REPORTS);
 
   // Fetch all models once
   const {
@@ -137,21 +139,21 @@ export function useModels() {
 
   // Filter and sort on frontend
   const models = useMemo(() => {
-    const filtered = filterModels(modelsResponse.models, activeFilters);
+    const filtered = filterModelsByUseCase(modelsResponse.models, activeUseCases);
     return sortModels(filtered, activeSort);
-  }, [modelsResponse.models, activeFilters, activeSort]);
+  }, [modelsResponse.models, activeUseCases, activeSort]);
 
-  // API URL for the code snippet (reflects current filters/sort)
-  const apiUrl = useMemo(() => buildApiUrl(activeFilters, activeSort), [activeFilters, activeSort]);
+  // API URL for the code snippet (reflects current use cases/sort)
+  const apiUrl = useMemo(() => buildApiUrl(activeUseCases, activeSort), [activeUseCases, activeSort]);
 
-  const toggleFilter = (filter: FilterType | 'all') => {
-    if (filter === 'all') {
-      setActiveFilters([]);
+  const toggleUseCase = (useCase: UseCaseType | 'all') => {
+    if (useCase === 'all') {
+      setActiveUseCases([]);
     } else {
-      const newFilters = activeFilters.includes(filter)
-        ? activeFilters.filter((f) => f !== filter)
-        : [...activeFilters, filter];
-      setActiveFilters(newFilters);
+      const newUseCases = activeUseCases.includes(useCase)
+        ? activeUseCases.filter((uc) => uc !== useCase)
+        : [...activeUseCases, useCase];
+      setActiveUseCases(newUseCases);
     }
   };
 
@@ -159,19 +161,21 @@ export function useModels() {
     models,
     loading,
     error: error instanceof Error ? error.message : error ? String(error) : null,
-    activeFilters,
+    activeUseCases,
     activeSort,
-    activeLimit,
-    activeExcludeWithIssues,
-    activeTimeWindow,
-    activeUserOnly,
+    activeTopN,
+    reliabilityFilterEnabled,
+    activeMaxErrorRate,
+    activeTimeRange,
+    activeMyReports,
     lastUpdated: modelsResponse.lastUpdated,
     apiUrl,
     setActiveSort,
-    setActiveLimit,
-    setActiveExcludeWithIssues,
-    setActiveTimeWindow,
-    setActiveUserOnly,
-    toggleFilter,
+    setActiveTopN,
+    setReliabilityFilterEnabled,
+    setActiveMaxErrorRate,
+    setActiveTimeRange,
+    setActiveMyReports,
+    toggleUseCase,
   };
 }

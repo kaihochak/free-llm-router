@@ -4,21 +4,21 @@ import {
   getFeedbackTimeline,
   type TimeRange,
 } from '@/services/openrouter';
-import { initializeDb, getUserIdIfUserOnly } from '@/lib/api-params';
+import { initializeDb, getUserIdIfMyReports } from '@/lib/api-params';
 import { corsHeaders } from '@/lib/api-auth';
 import {
-  VALID_TIME_WINDOWS_WITH_LABELS,
-  validateTimeWindow,
-  DEFAULT_TIME_WINDOW,
+  VALID_TIME_RANGES_WITH_LABELS,
+  validateTimeRange,
+  DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
 
 function validateRange(value: string | null): TimeRange {
-  const validated = validateTimeWindow(value);
-  // Only allow UI-relevant time windows (not 'all')
-  if (VALID_TIME_WINDOWS_WITH_LABELS.includes(validated as any)) {
+  const validated = validateTimeRange(value);
+  // Only allow UI-relevant time ranges (not 'all')
+  if (VALID_TIME_RANGES_WITH_LABELS.includes(validated as any)) {
     return validated as TimeRange;
   }
-  return DEFAULT_TIME_WINDOW as TimeRange;
+  return DEFAULT_TIME_RANGE as TimeRange;
 }
 
 /**
@@ -33,12 +33,12 @@ export const GET: APIRoute = async (context) => {
 
     const range = validateRange(context.url.searchParams.get('range'));
 
-    // Optional userOnly filter
-    const userOnly = context.url.searchParams.get('userOnly') === 'true';
+    // Optional myReports filter
+    const myReports = context.url.searchParams.get('myReports') === 'true';
     let userId: string | undefined;
 
     try {
-      userId = await getUserIdIfUserOnly(context, userOnly);
+      userId = await getUserIdIfMyReports(context, myReports);
     } catch (error) {
       return new Response(JSON.stringify({ error: (error as Error).message || 'Invalid API key' }), {
         status: 401,

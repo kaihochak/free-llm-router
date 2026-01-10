@@ -45,15 +45,15 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Query Parameters',
-    href: '#filters-sorting',
+    href: '#query-params',
     icon: Settings,
     items: [
-      { title: 'filter', href: '#param-filter' },
+      { title: 'useCase', href: '#param-useCase' },
       { title: 'sort', href: '#param-sort' },
-      { title: 'limit', href: '#param-limit' },
-      { title: 'excludeWithIssues', href: '#param-exclude-issues' },
-      { title: 'timeWindow', href: '#param-time-window' },
-      { title: 'userOnly', href: '#param-user-only' },
+      { title: 'topN', href: '#param-topN' },
+      { title: 'maxErrorRate', href: '#param-maxErrorRate' },
+      { title: 'timeRange', href: '#param-timeRange' },
+      { title: 'myReports', href: '#param-myReports' },
     ],
   },
   {

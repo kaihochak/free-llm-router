@@ -1,11 +1,11 @@
 import { eq, and, notInArray, gte, sql } from 'drizzle-orm';
 import { freeModels, modelFeedback, syncMeta, type Database } from '../db';
 import {
-  type FilterType,
+  type UseCaseType,
   type SortType,
-  validateFilters,
+  validateUseCases,
   validateSort,
-  filterModels,
+  filterModelsByUseCase,
   sortModels,
 } from '../lib/model-types';
 import {
@@ -14,7 +14,7 @@ import {
 } from '../lib/api-definitions';
 
 // Re-export types and validation functions for backwards compatibility
-export { type FilterType, type SortType, validateFilters, validateSort };
+export { type UseCaseType, type SortType, validateUseCases, validateSort };
 export { type TimeRange };
 
 interface OpenRouterApiModel {
@@ -232,27 +232,31 @@ async function getActiveModelsWithFeedback(db: Database) {
 /**
  * Get filtered and sorted models using shared logic from model-types.ts.
  * Single source of truth - same functions used by frontend and backend.
- * Optionally filters out models with too many reported issues.
+ * Optionally filters out models with error rate above the threshold.
+ *
+ * @param useCases - Use cases to filter by (chat, vision, tools, etc.)
+ * @param sort - Sort order
+ * @param maxErrorRate - Maximum error rate percentage (0-100). Models with higher error rate are excluded.
+ * @param timeRange - Time range for calculating error rates
  */
 export async function getFilteredModels(
   db: Database,
-  filters: FilterType[],
+  useCases: UseCaseType[],
   sort: SortType,
-  excludeWithIssues?: number,
-  timeWindow: TimeRange = '24h'
+  maxErrorRate?: number,
+  timeRange: TimeRange = '24h'
 ) {
   const allModels = await getActiveModelsWithFeedback(db);
-  const filtered = filterModels(allModels, filters);
+  const filtered = filterModelsByUseCase(allModels, useCases);
   const sorted = sortModels(filtered, sort);
 
-  // Apply issue threshold filtering if specified
-  if (excludeWithIssues !== undefined && excludeWithIssues > 0) {
-    const feedbackCounts = await getRecentFeedbackCounts(db, timeWindow);
+  // Apply error rate threshold filtering if specified
+  if (maxErrorRate !== undefined) {
+    const feedbackCounts = await getRecentFeedbackCounts(db, timeRange);
     return sorted.filter((model) => {
       const feedback = feedbackCounts[model.id];
-      if (!feedback) return true; // No feedback = keep model
-      const issueCount = feedback.rateLimited + feedback.unavailable + feedback.error;
-      return issueCount <= excludeWithIssues;
+      if (!feedback) return true; // No feedback = keep model (0% error rate)
+      return feedback.errorRate <= maxErrorRate;
     });
   }
 
@@ -274,10 +278,10 @@ export interface FeedbackCounts {
 
 export async function getRecentFeedbackCounts(
   db: Database,
-  timeWindow: TimeRange = '24h',
+  timeRange: TimeRange = '24h',
   userId?: string
 ): Promise<FeedbackCounts> {
-  const windowMs = TIME_RANGE_MS[timeWindow];
+  const windowMs = TIME_RANGE_MS[timeRange];
   const cutoff = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
 
   const whereConditions = [gte(modelFeedback.createdAt, cutoff)];
