@@ -5,7 +5,7 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { eq, count } from 'drizzle-orm';
 import { apiKeys } from '@/db/schema';
 
-const MAX_KEYS_PER_USER = 3;
+const MAX_KEYS_PER_USER = 10;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
