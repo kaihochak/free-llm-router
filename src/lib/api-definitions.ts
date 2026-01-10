@@ -164,7 +164,7 @@ export const LIMIT_MAX = 100;
 
 // ==================== EXCLUDE WITH ISSUES PARAMETER ====================
 
-export type ExcludeWithIssuesOption = 0 | 3 | 5 | 10;
+export type ExcludeWithIssuesOption = 3 | 5 | 10;
 
 export interface ExcludeWithIssuesDefinition {
   value: string;
@@ -173,7 +173,6 @@ export interface ExcludeWithIssuesDefinition {
 }
 
 export const EXCLUDE_WITH_ISSUES_DEFINITIONS: ExcludeWithIssuesDefinition[] = [
-  { value: '0', label: 'All', numeric: 0 },
   { value: '3', label: '3', numeric: 3 },
   { value: '5', label: '5', numeric: 5 },
   { value: '10', label: '10', numeric: 10 },

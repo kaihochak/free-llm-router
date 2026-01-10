@@ -84,7 +84,7 @@ export function ModelControls({
       <div className={`flex flex-col ${gapClass}`}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Filter:</span>
+            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Filter</span>
           </TooltipTrigger>
           <TooltipContent>Filter models by capability (chat, vision, coding, long context, reasoning)</TooltipContent>
         </Tooltip>
@@ -119,7 +119,7 @@ export function ModelControls({
       <div className={`flex flex-col ${gapClass}`}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Sort:</span>
+            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Sort</span>
           </TooltipTrigger>
           <TooltipContent>Sort models by context length, max output, name, provider, or capabilities</TooltipContent>
         </Tooltip>
@@ -141,7 +141,7 @@ export function ModelControls({
         <div className={`flex flex-col ${gapClass} `}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Limit:</span>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Limit</span>
             </TooltipTrigger>
             <TooltipContent>Maximum number of models to display</TooltipContent>
           </Tooltip>
@@ -167,7 +167,7 @@ export function ModelControls({
         <div className={`flex flex-col ${gapClass}`}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Max Issues:</span>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Max Issues</span>
             </TooltipTrigger>
             <TooltipContent>Exclude models with more reported issues than this threshold</TooltipContent>
           </Tooltip>
@@ -193,7 +193,7 @@ export function ModelControls({
         <div className={`flex flex-col ${gapClass}`}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Time:</span>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Time</span>
             </TooltipTrigger>
             <TooltipContent>Time window for tracking model issues and feedback</TooltipContent>
           </Tooltip>
@@ -216,7 +216,7 @@ export function ModelControls({
         <div className={`flex flex-col ${gapClass}`}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>My Reports:</span>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>My Reports Only</span>
             </TooltipTrigger>
             <TooltipContent>Show only issues you have reported</TooltipContent>
           </Tooltip>
