@@ -28,6 +28,7 @@ export interface ParsedModelParams {
 
 export interface RequestContext {
   db: Database;
+  databaseUrl: string;
   params: ParsedModelParams;
   validation: ApiKeyValidation;
   userId?: string;
@@ -91,7 +92,7 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
   // Parse parameters
   const params = parseModelParams(context.url.searchParams);
 
-  return { db, params, validation };
+  return { db, databaseUrl, params, validation };
 }
 
 /**
@@ -129,7 +130,9 @@ export async function initializeDb(context: APIContext): Promise<Database | Resp
 
 export interface AuthOnlyContext {
   db: Database;
+  databaseUrl: string;
   userId: string | undefined;
+  keyId: string | undefined;
 }
 
 /**
@@ -158,5 +161,5 @@ export async function initializeAuthOnly(context: APIContext): Promise<AuthOnlyC
   }
 
   const db = createDb(databaseUrl);
-  return { db, userId: validation.userId };
+  return { db, databaseUrl, userId: validation.userId, keyId: validation.keyId };
 }
