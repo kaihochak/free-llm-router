@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -20,67 +21,71 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip';
-import type { FilterType, SortType } from '@/lib/api-definitions';
+import type { UseCaseType, SortType } from '@/lib/api-definitions';
 import {
-  FILTER_DEFINITIONS,
+  USE_CASE_DEFINITIONS,
   SORT_DEFINITIONS,
-  VALID_TIME_WINDOWS_WITH_LABELS,
-  TIME_WINDOW_DEFINITIONS,
-  DEFAULT_TIME_WINDOW,
-  DEFAULT_USER_ONLY,
+  VALID_TIME_RANGES_WITH_LABELS,
+  TIME_RANGE_DEFINITIONS,
+  DEFAULT_TIME_RANGE,
+  DEFAULT_MY_REPORTS,
 } from '@/lib/api-definitions';
 import { ChevronDown } from 'lucide-react';
 
 interface ModelControlsProps {
-  activeFilters: FilterType[];
+  activeUseCases: UseCaseType[];
   activeSort: SortType;
-  activeLimit?: number;
-  activeExcludeWithIssues?: number;
-  activeTimeWindow?: string;
-  activeUserOnly?: boolean;
-  onToggleFilter: (filter: FilterType | 'all') => void;
+  activeTopN?: number;
+  reliabilityFilterEnabled?: boolean;
+  activeMaxErrorRate?: number;
+  activeTimeRange?: string;
+  activeMyReports?: boolean;
+  onToggleUseCase: (useCase: UseCaseType | 'all') => void;
   onSortChange: (sort: SortType) => void;
-  onLimitChange?: (limit: number | undefined) => void;
-  onExcludeWithIssuesChange?: (value: number | undefined) => void;
-  onTimeWindowChange?: (value: string) => void;
-  onUserOnlyChange?: (value: boolean) => void;
+  onTopNChange?: (topN: number | undefined) => void;
+  onReliabilityFilterEnabledChange?: (enabled: boolean) => void;
+  onMaxErrorRateChange?: (value: number | undefined) => void;
+  onTimeRangeChange?: (value: string) => void;
+  onMyReportsChange?: (value: boolean) => void;
   size?: 'sm' | 'lg';
 }
 
 export function ModelControls({
-  activeFilters,
+  activeUseCases,
   activeSort,
-  activeLimit,
-  activeExcludeWithIssues,
-  activeTimeWindow = DEFAULT_TIME_WINDOW,
-  activeUserOnly = DEFAULT_USER_ONLY,
-  onToggleFilter,
+  activeTopN,
+  reliabilityFilterEnabled = false,
+  activeMaxErrorRate,
+  activeTimeRange = DEFAULT_TIME_RANGE,
+  activeMyReports = DEFAULT_MY_REPORTS,
+  onToggleUseCase,
   onSortChange,
-  onLimitChange,
-  onExcludeWithIssuesChange,
-  onTimeWindowChange,
-  onUserOnlyChange,
+  onTopNChange,
+  onReliabilityFilterEnabledChange,
+  onMaxErrorRateChange,
+  onTimeRangeChange,
+  onMyReportsChange,
   size = 'lg',
 }: ModelControlsProps) {
   const isSmall = size === 'sm';
 
-  // Local state for limit input to allow free typing
-  const [limitInput, setLimitInput] = useState(activeLimit?.toString() ?? '');
+  // Local state for topN input to allow free typing
+  const [topNInput, setTopNInput] = useState(activeTopN?.toString() ?? '');
   useEffect(() => {
-    setLimitInput(activeLimit?.toString() ?? '');
-  }, [activeLimit]);
+    setTopNInput(activeTopN?.toString() ?? '');
+  }, [activeTopN]);
 
-  // Local state for excludeWithIssues input
-  const [issuesInput, setIssuesInput] = useState(activeExcludeWithIssues?.toString() ?? '');
+  // Local state for maxErrorRate input
+  const [errorRateInput, setErrorRateInput] = useState(activeMaxErrorRate?.toString() ?? '');
   useEffect(() => {
-    setIssuesInput(activeExcludeWithIssues?.toString() ?? '');
-  }, [activeExcludeWithIssues]);
+    setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
+  }, [activeMaxErrorRate]);
 
-  const filterLabel = activeFilters.length === 0
+  const useCaseLabel = activeUseCases.length === 0
     ? 'All'
-    : activeFilters.length === 1
-      ? FILTER_DEFINITIONS.find(f => f.key === activeFilters[0])?.label || activeFilters[0]
-      : `${activeFilters.length} selected`;
+    : activeUseCases.length === 1
+      ? USE_CASE_DEFINITIONS.find(uc => uc.key === activeUseCases[0])?.label || activeUseCases[0]
+      : `${activeUseCases.length} selected`;
 
   const sortLabel = SORT_DEFINITIONS.find(s => s.key === activeSort)?.label || activeSort;
 
@@ -89,49 +94,54 @@ export function ModelControls({
   const buttonClass = isSmall ? 'h-10! min-w-[20px]' : 'h-12! min-w-[20px]';
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
 
+  // Check if reliability filter controls should be shown
+  const showReliabilitySubControls = reliabilityFilterEnabled && onMaxErrorRateChange && onTimeRangeChange && onMyReportsChange;
+
   return (
     <div className={`flex flex-wrap ${isSmall ? 'gap-4' : 'gap-6'}`}>
+      {/* Use Case dropdown */}
       <div className={`flex flex-col ${gapClass}`}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Filter</span>
+            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Use Case</span>
           </TooltipTrigger>
-          <TooltipContent>Filter models by capability (chat, vision, coding, long context, reasoning)</TooltipContent>
+          <TooltipContent>Select models by use case (chat, vision, tools, long context, reasoning)</TooltipContent>
         </Tooltip>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size={size} className={`${buttonClass} gap-2`}>
-              {filterLabel}
+              {useCaseLabel}
               <ChevronDown className={`${chevronClass} opacity-50`} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuCheckboxItem
-              checked={activeFilters.length === 0}
-              onCheckedChange={() => onToggleFilter('all')}
+              checked={activeUseCases.length === 0}
+              onCheckedChange={() => onToggleUseCase('all')}
             >
               All
             </DropdownMenuCheckboxItem>
             <DropdownMenuSeparator />
-            {FILTER_DEFINITIONS.filter(f => f.key !== 'all').map((filter) => (
+            {USE_CASE_DEFINITIONS.filter(uc => uc.key !== 'all').map((useCase) => (
               <DropdownMenuCheckboxItem
-                key={filter.key}
-                checked={activeFilters.includes(filter.key as FilterType)}
-                onCheckedChange={() => onToggleFilter(filter.key as FilterType)}
+                key={useCase.key}
+                checked={activeUseCases.includes(useCase.key as UseCaseType)}
+                onCheckedChange={() => onToggleUseCase(useCase.key as UseCaseType)}
               >
-                {filter.label}
+                {useCase.label}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
+      {/* Sort dropdown */}
       <div className={`flex flex-col ${gapClass}`}>
         <Tooltip>
           <TooltipTrigger asChild>
             <span className={`text-muted-foreground ${labelClass} cursor-help`}>Sort</span>
           </TooltipTrigger>
-          <TooltipContent>Sort models by context length, max output, name, provider, or capabilities</TooltipContent>
+          <TooltipContent>Sort models by context length, max output, capabilities, or reliability</TooltipContent>
         </Tooltip>
         <Select value={activeSort} onValueChange={(value) => onSortChange(value as SortType)}>
           <SelectTrigger className={`w-auto ${buttonClass}`}>
@@ -147,121 +157,106 @@ export function ModelControls({
         </Select>
       </div>
 
-      {onLimitChange && (
+      {/* Top N control */}
+      {onTopNChange && (
+        <div className={`flex flex-col ${gapClass}`}>
+          <span className={`text-muted-foreground ${labelClass}`}>Top N</span>
+          <ButtonGroup>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTopN !== undefined ? 'default' : 'outline'}
+                  size={size}
+                  className={buttonClass}
+                  onClick={() => onTopNChange(activeTopN === undefined ? 5 : undefined)}
+                >
+                  {activeTopN !== undefined ? 'On' : 'Off'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Return only the top N models based on sort order</TooltipContent>
+            </Tooltip>
+            {activeTopN !== undefined && (
+              <Input
+                type="number"
+                min="1"
+                max="100"
+                value={topNInput}
+                onChange={(e) => setTopNInput(e.target.value)}
+                onBlur={() => {
+                  const value = parseInt(topNInput, 10);
+                  if (!isNaN(value) && value >= 1) {
+                    onTopNChange(Math.min(100, value));
+                  } else {
+                    setTopNInput(activeTopN?.toString() ?? '');
+                  }
+                }}
+                className={`w-16 ${buttonClass}`}
+              />
+            )}
+          </ButtonGroup>
+        </div>
+      )}
+
+      {/* Reliability Filter group */}
+      {onReliabilityFilterEnabledChange && (
         <div className={`flex flex-col ${gapClass}`}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Limit</span>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Reliability Filter</span>
             </TooltipTrigger>
-            <TooltipContent>Maximum number of models to display</TooltipContent>
+            <TooltipContent>Filter out unreliable models based on error rate</TooltipContent>
           </Tooltip>
-          <div className="flex gap-2">
+          <ButtonGroup>
             <Button
-              variant={activeLimit !== undefined ? 'default' : 'outline'}
+              variant={reliabilityFilterEnabled ? 'default' : 'outline'}
               size={size}
               className={buttonClass}
-              onClick={() => onLimitChange(activeLimit === undefined ? 5 : undefined)}
+              onClick={() => onReliabilityFilterEnabledChange(!reliabilityFilterEnabled)}
             >
-              {activeLimit !== undefined ? 'On' : 'Off'}
+              {reliabilityFilterEnabled ? 'On' : 'Off'}
             </Button>
-            <Input
-              type="number"
-              min="1"
-              max="100"
-              value={limitInput}
-              onChange={(e) => setLimitInput(e.target.value)}
-              onBlur={() => {
-                const value = parseInt(limitInput, 10);
-                if (!isNaN(value) && value >= 1) {
-                  onLimitChange(Math.min(100, value));
-                } else {
-                  // Reset to current value if invalid
-                  setLimitInput(activeLimit?.toString() ?? '');
-                }
-              }}
-              disabled={activeLimit === undefined}
-              className={`w-16 ${buttonClass}`}
-            />
-          </div>
-        </div>
-      )}
-
-      {onExcludeWithIssuesChange && (
-        <div className={`flex flex-col ${gapClass}`}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Max Issues</span>
-            </TooltipTrigger>
-            <TooltipContent>Exclude models with more reported issues than this threshold</TooltipContent>
-          </Tooltip>
-          <div className="flex gap-2">
-            <Button
-              variant={activeExcludeWithIssues !== undefined ? 'default' : 'outline'}
-              size={size}
-              className={buttonClass}
-              onClick={() => onExcludeWithIssuesChange(activeExcludeWithIssues === undefined ? 5 : undefined)}
-            >
-              {activeExcludeWithIssues !== undefined ? 'On' : 'Off'}
-            </Button>
-            <Input
-              type="number"
-              min="1"
-              value={issuesInput}
-              onChange={(e) => setIssuesInput(e.target.value)}
-              onBlur={() => {
-                const value = parseInt(issuesInput, 10);
-                if (!isNaN(value) && value >= 1) {
-                  onExcludeWithIssuesChange(value);
-                } else {
-                  setIssuesInput(activeExcludeWithIssues?.toString() ?? '');
-                }
-              }}
-              disabled={activeExcludeWithIssues === undefined}
-              className={`w-16 ${buttonClass}`}
-            />
-          </div>
-        </div>
-      )}
-
-      {onTimeWindowChange && (
-        <div className={`flex flex-col ${gapClass}`}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Time</span>
-            </TooltipTrigger>
-            <TooltipContent>Time window for tracking model issues and feedback</TooltipContent>
-          </Tooltip>
-          <Select value={activeTimeWindow} onValueChange={onTimeWindowChange}>
-            <SelectTrigger className={`w-20 ${buttonClass}`}>
-              <SelectValue>{activeTimeWindow}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_WINDOW_DEFINITIONS.filter(tw => VALID_TIME_WINDOWS_WITH_LABELS.includes(tw.value)).map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {onUserOnlyChange && (
-        <div className={`flex flex-col ${gapClass}`}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>My Reports Only</span>
-            </TooltipTrigger>
-            <TooltipContent>Show only issues you have reported</TooltipContent>
-          </Tooltip>
-          <Button
-            variant={activeUserOnly ? 'default' : 'outline'}
-            size={size}
-            className={buttonClass}
-            onClick={() => onUserOnlyChange(!activeUserOnly)}
-          >
-            {activeUserOnly ? 'On' : 'Off'}
-          </Button>
+            {showReliabilitySubControls && (
+              <>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={errorRateInput}
+                  onChange={(e) => setErrorRateInput(e.target.value)}
+                  onBlur={() => {
+                    const value = parseInt(errorRateInput, 10);
+                    if (!isNaN(value) && value >= 0 && value <= 100) {
+                      onMaxErrorRateChange(value);
+                    } else {
+                      setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
+                    }
+                  }}
+                  placeholder="20"
+                  className={`w-16 ${buttonClass}`}
+                />
+                <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>
+                  <SelectTrigger className={`w-20 ${buttonClass}`}>
+                    <SelectValue>{activeTimeRange}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_RANGE_DEFINITIONS.filter(tr => VALID_TIME_RANGES_WITH_LABELS.includes(tr.value)).map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant={activeMyReports ? 'default' : 'outline'}
+                  size={size}
+                  className={buttonClass}
+                  onClick={() => onMyReportsChange(!activeMyReports)}
+                >
+                  {activeMyReports ? 'Mine' : 'All'}
+                </Button>
+              </>
+            )}
+          </ButtonGroup>
         </div>
       )}
     </div>

@@ -23,26 +23,28 @@ export function ApiUsageStep({
     models,
     loading,
     error,
-    activeFilters,
+    activeUseCases,
     activeSort,
-    activeLimit,
-    activeExcludeWithIssues,
-    activeTimeWindow,
-    activeUserOnly,
+    activeTopN,
+    reliabilityFilterEnabled,
+    activeMaxErrorRate,
+    activeTimeRange,
+    activeMyReports,
     lastUpdated,
     apiUrl,
-    toggleFilter,
+    toggleUseCase,
     setActiveSort,
-    setActiveLimit,
-    setActiveExcludeWithIssues,
-    setActiveTimeWindow,
-    setActiveUserOnly,
+    setActiveTopN,
+    setReliabilityFilterEnabled,
+    setActiveMaxErrorRate,
+    setActiveTimeRange,
+    setActiveMyReports,
   } = useModels();
 
   const snippet = generateSnippet(apiUrl);
 
-  // Apply limit to models
-  const limitedModels = activeLimit ? models.slice(0, activeLimit) : models;
+  // Apply topN to models
+  const limitedModels = activeTopN ? models.slice(0, activeTopN) : models;
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,23 +84,25 @@ export function ApiUsageStep({
           <h3 className="text-xl font-semibold sm:text-2xl">Preview Your Model List</h3>
         </div>
           <p className="text-muted-foreground">
-            Configure filters and sorting to customize which models you'll get. This is a live preview - your app will fetch these dynamically.
+            Configure use case and sorting to customize which models you'll get. This is a live preview - your app will fetch these dynamically.
           </p>
 
-          {/* Large Filter & Sort Controls */}
+          {/* Model Controls */}
           <ModelControls
-            activeFilters={activeFilters}
+            activeUseCases={activeUseCases}
             activeSort={activeSort}
-            activeLimit={activeLimit}
-            activeExcludeWithIssues={activeExcludeWithIssues}
-            activeTimeWindow={activeTimeWindow}
-            activeUserOnly={activeUserOnly}
-            onToggleFilter={toggleFilter}
+            activeTopN={activeTopN}
+            reliabilityFilterEnabled={reliabilityFilterEnabled}
+            activeMaxErrorRate={activeMaxErrorRate}
+            activeTimeRange={activeTimeRange}
+            activeMyReports={activeMyReports}
+            onToggleUseCase={toggleUseCase}
             onSortChange={setActiveSort}
-            onLimitChange={setActiveLimit}
-            onExcludeWithIssuesChange={setActiveExcludeWithIssues}
-            onTimeWindowChange={setActiveTimeWindow}
-            onUserOnlyChange={setActiveUserOnly}
+            onTopNChange={setActiveTopN}
+            onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
+            onMaxErrorRateChange={setActiveMaxErrorRate}
+            onTimeRangeChange={setActiveTimeRange}
+            onMyReportsChange={setActiveMyReports}
           />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -183,24 +187,33 @@ export function ApiUsageStep({
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
         <p className="text-muted-foreground">
-          This is the exact `getModelIds` call for your current filters, sort, and limit.
+          This is the exact `getModelIds` call for your current use case, sort, and top N.
         </p>
         <ModelControls
-          activeFilters={activeFilters}
+          activeUseCases={activeUseCases}
           activeSort={activeSort}
-          activeLimit={activeLimit}
-          activeExcludeWithIssues={activeExcludeWithIssues}
-          activeTimeWindow={activeTimeWindow}
-          activeUserOnly={activeUserOnly}
-          onToggleFilter={toggleFilter}
+          activeTopN={activeTopN}
+          reliabilityFilterEnabled={reliabilityFilterEnabled}
+          activeMaxErrorRate={activeMaxErrorRate}
+          activeTimeRange={activeTimeRange}
+          activeMyReports={activeMyReports}
+          onToggleUseCase={toggleUseCase}
           onSortChange={setActiveSort}
-          onLimitChange={setActiveLimit}
-          onExcludeWithIssuesChange={setActiveExcludeWithIssues}
-          onTimeWindowChange={setActiveTimeWindow}
-          onUserOnlyChange={setActiveUserOnly}
+          onTopNChange={setActiveTopN}
+          onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
+          onMaxErrorRateChange={setActiveMaxErrorRate}
+          onTimeRangeChange={setActiveTimeRange}
+          onMyReportsChange={setActiveMyReports}
         />
         <CodeBlock
-          code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow, activeUserOnly)}
+          code={codeExamples.getModelIdsCall(
+            activeUseCases,
+            activeSort,
+            activeTopN,
+            reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
+            reliabilityFilterEnabled ? activeTimeRange : undefined,
+            reliabilityFilterEnabled ? activeMyReports : undefined
+          )}
           language="typescript"
           className="text-sm"
         />
@@ -208,7 +221,17 @@ export function ApiUsageStep({
           Loop through models until one succeeds. Free models may be rate-limited, so we try multiple and optionally fall back to stable models you trust. See{' '}
           <a href="#code-examples" className="text-primary hover:underline">Code Examples</a> for more patterns.
         </p>
-        <CodeBlock code={codeExamples.basicUsage(activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow, activeUserOnly)} copyLabel="Copy" />
+        <CodeBlock
+          code={codeExamples.basicUsage(
+            activeUseCases,
+            activeSort,
+            activeTopN,
+            reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
+            reliabilityFilterEnabled ? activeTimeRange : undefined,
+            reliabilityFilterEnabled ? activeMyReports : undefined
+          )}
+          copyLabel="Copy"
+        />
       </div>
     </div>
   );

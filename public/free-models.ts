@@ -10,7 +10,7 @@
  *
  * Usage:
  *   const ids = await getModelIds(['tools']);
- *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { excludeWithIssues: 5, timeWindow: '24h', userOnly: true, cache: 'no-store' });
+ *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { maxErrorRate: 20, timeRange: '24h', myReports: true, cache: 'no-store' });
  */
 
 const API = 'https://free-models-api.pages.dev/api/v1';
@@ -19,14 +19,14 @@ const API_KEY = process.env.FREE_MODELS_API_KEY;
 /**
  * Type definitions for SDK parameters.
  * IMPORTANT: Keep these in sync with src/lib/api-definitions.ts
- * - Filter: see VALID_FILTERS
+ * - UseCase: see VALID_USE_CASES
  * - Sort: see VALID_SORTS
- * - TimeWindow: see VALID_TIME_WINDOWS
+ * - TimeRange: see VALID_TIME_RANGES
  */
-type Filter = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
+type UseCase = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
 type Sort = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'newest';
 type CacheMode = 'default' | 'no-store';
-type TimeWindow = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'all';
+type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'all';
 
 // In-memory cache - 15 minute TTL (matches server refresh rate)
 // NOTE: Cache is per-instance and resets on serverless cold starts
@@ -36,30 +36,30 @@ const cache = new Map<string, { data: string[]; timestamp: number }>();
 /**
  * Get available free model IDs with optional filtering and sorting.
  * Default sort is 'contextLength' (largest context window first).
- * Default excludeWithIssues is 5, timeWindow is '24h', userOnly is false.
+ * Default maxErrorRate is undefined (no filtering), timeRange is '24h', myReports is false.
  */
 export async function getModelIds(
-  filter?: Filter[],
+  useCase?: UseCase[],
   sort: Sort = 'contextLength',
-  limit?: number,
+  topN?: number,
   options?: {
     cache?: CacheMode;
-    excludeWithIssues?: number;
-    timeWindow?: TimeWindow;
-    userOnly?: boolean;
+    maxErrorRate?: number;
+    timeRange?: TimeRange;
+    myReports?: boolean;
   }
 ): Promise<string[]> {
-  // Sort filter array for deterministic cache keys (avoid fragmentation)
-  const normalizedFilter = filter ? [...filter].sort() : undefined;
+  // Sort useCase array for deterministic cache keys (avoid fragmentation)
+  const normalizedUseCase = useCase ? [...useCase].sort() : undefined;
 
   // Generate cache key from normalized params
   const cacheKey = JSON.stringify({
-    filter: normalizedFilter,
+    useCase: normalizedUseCase,
     sort,
-    limit,
-    excludeWithIssues: options?.excludeWithIssues,
-    timeWindow: options?.timeWindow,
-    userOnly: options?.userOnly,
+    topN,
+    maxErrorRate: options?.maxErrorRate,
+    timeRange: options?.timeRange,
+    myReports: options?.myReports,
   });
 
   const cached = cache.get(cacheKey);
@@ -73,16 +73,16 @@ export async function getModelIds(
   // Fetch fresh data
   try {
     const params = new URLSearchParams({ sort });
-    if (normalizedFilter) params.set('filter', normalizedFilter.join(','));
-    if (limit) params.set('limit', String(limit));
-    if (options?.excludeWithIssues !== undefined) {
-      params.set('excludeWithIssues', String(options.excludeWithIssues));
+    if (normalizedUseCase) params.set('useCase', normalizedUseCase.join(','));
+    if (topN) params.set('topN', String(topN));
+    if (options?.maxErrorRate !== undefined) {
+      params.set('maxErrorRate', String(options.maxErrorRate));
     }
-    if (options?.timeWindow) {
-      params.set('timeWindow', options.timeWindow);
+    if (options?.timeRange) {
+      params.set('timeRange', options.timeRange);
     }
-    if (options?.userOnly) {
-      params.set('userOnly', 'true');
+    if (options?.myReports) {
+      params.set('myReports', 'true');
     }
 
     const { ids } = await fetch(`${API}/models/ids?${params}`, {

@@ -6,24 +6,26 @@
  */
 
 // Import types and definitions from api-definitions.ts (single source of truth)
+import type { UseCaseType, SortType } from './api-definitions';
+
 export {
-  type FilterType,
+  type UseCaseType,
   type SortType,
-  type FilterDefinition,
+  type UseCaseDefinition,
   type SortDefinition,
-  VALID_FILTERS,
+  VALID_USE_CASES,
   VALID_SORTS,
-  FILTER_DEFINITIONS,
+  USE_CASE_DEFINITIONS,
   SORT_DEFINITIONS,
-  validateFilters,
+  validateUseCases,
   validateSort,
 } from './api-definitions';
 
 /**
- * Filter criteria constants - defines what each filter checks.
+ * Use case criteria constants - defines what each use case checks.
  * Used by both frontend (JS) and backend (SQL) implementations.
  */
-export const FILTER_CRITERIA = {
+export const USE_CASE_CRITERIA = {
   chat: {
     // Check modality is text->text OR outputModalities includes 'text'
     field: 'modality',
@@ -78,11 +80,11 @@ export interface FilterableModel {
 }
 
 /**
- * Check if a model matches a single filter criteria.
- * Single source of truth for filter logic - used by frontend.
+ * Check if a model matches a single use case criteria.
+ * Single source of truth for use case logic - used by frontend.
  */
-export function matchesFilter<T extends FilterableModel>(model: T, filter: FilterType): boolean {
-  switch (filter) {
+export function matchesUseCase<T extends FilterableModel>(model: T, useCase: UseCaseType): boolean {
+  switch (useCase) {
     case 'chat':
       return model.modality === 'text->text' || (model.outputModalities?.includes('text') ?? false);
     case 'vision':
@@ -103,12 +105,12 @@ export function matchesFilter<T extends FilterableModel>(model: T, filter: Filte
 }
 
 /**
- * Filter models by multiple criteria (AND logic).
+ * Filter models by multiple use case criteria (AND logic).
  * Single source of truth for filtering - used by frontend.
  */
-export function filterModels<T extends FilterableModel>(models: T[], filters: FilterType[]): T[] {
-  if (filters.length === 0) return models;
-  return models.filter((model) => filters.every((filter) => matchesFilter(model, filter)));
+export function filterModelsByUseCase<T extends FilterableModel>(models: T[], useCases: UseCaseType[]): T[] {
+  if (useCases.length === 0) return models;
+  return models.filter((model) => useCases.every((useCase) => matchesUseCase(model, useCase)));
 }
 
 /**

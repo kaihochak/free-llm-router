@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
-import { FILTERS, type FilterType } from '@/hooks/useModels';
+import { USE_CASES, type UseCaseType } from '@/hooks/useModels';
 import { ChevronRight } from 'lucide-react';
 
 interface UseCaseSelectorProps {
-  activeFilters: FilterType[];
-  onToggleFilter: (filter: FilterType | 'all') => void;
+  activeFilters: UseCaseType[];
+  onToggleFilter: (useCase: UseCaseType | 'all') => void;
   onConfirm?: () => void;
 }
 
@@ -15,19 +15,19 @@ export function UseCaseSelector({
 }: UseCaseSelectorProps) {
   return (
     <div className="space-y-6">
-      {/* Filter Buttons + Continue */}
+      {/* Use Case Buttons + Continue */}
       <div className="flex flex-wrap justify-center items-center gap-2">
-        {FILTERS.map((filter) => {
+        {USE_CASES.map((useCase) => {
           const isActive =
-            filter.key === 'all' ? activeFilters.length === 0 : activeFilters.includes(filter.key as FilterType);
+            useCase.key === 'all' ? activeFilters.length === 0 : activeFilters.includes(useCase.key as UseCaseType);
           return (
             <Button
-              key={filter.key}
+              key={useCase.key}
               variant={isActive ? 'secondary' : 'outline'}
               size="xl"
-              onClick={() => onToggleFilter(filter.key)}
+              onClick={() => onToggleFilter(useCase.key)}
             >
-              {filter.label}
+              {useCase.label}
             </Button>
           );
         })}

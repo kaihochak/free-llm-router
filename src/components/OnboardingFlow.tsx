@@ -43,10 +43,10 @@ export function OnboardingFlow() {
     models,
     loading,
     error,
-    activeFilters,
+    activeUseCases,
     activeSort,
     lastUpdated,
-    toggleFilter,
+    toggleUseCase,
     setActiveSort,
   } = useModels();
 
@@ -74,11 +74,11 @@ export function OnboardingFlow() {
   const steps = [
     {
       title: 'What are you building?',
-      description: 'Filter models by capability',
+      description: 'Select models by use case',
       content: (
         <UseCaseSelector
-          activeFilters={activeFilters}
-          onToggleFilter={toggleFilter}
+          activeFilters={activeUseCases}
+          onToggleFilter={toggleUseCase}
           onConfirm={goToNextStep}
         />
       ),
