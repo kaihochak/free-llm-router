@@ -119,14 +119,14 @@ export interface TimeWindowDefinition {
 }
 
 export const TIME_WINDOW_DEFINITIONS: TimeWindowDefinition[] = [
-  { value: '15m', label: '15m', useCase: 'Real-time incident detection' },
-  { value: '30m', label: '30m', useCase: 'Short-term monitoring' },
-  { value: '1h', label: '1h', useCase: 'Hourly trends' },
-  { value: '6h', label: '6h', useCase: 'Short-term trending' },
-  { value: '24h', label: '24h', useCase: 'Daily reliability (recommended)' },
-  { value: '7d', label: '7d', useCase: 'Weekly patterns' },
-  { value: '30d', label: '30d', useCase: 'Long-term stability' },
-  { value: 'all', label: 'All', useCase: 'Complete history (all-time)' },
+  { value: '15m', label: '15m', useCase: '15 minutes' },
+  { value: '30m', label: '30m', useCase: '30 minutes' },
+  { value: '1h', label: '1h', useCase: '1 hour' },
+  { value: '6h', label: '6h', useCase: '6 hours' },
+  { value: '24h', label: '24h', useCase: '24 hours (recommended)' },
+  { value: '7d', label: '7d', useCase: '7 days' },
+  { value: '30d', label: '30d', useCase: '30 days' },
+  { value: 'all', label: 'All', useCase: 'All-time' },
 ];
 
 // Time range to milliseconds conversion
