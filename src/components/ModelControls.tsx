@@ -171,23 +171,30 @@ export function ModelControls({
             </TooltipTrigger>
             <TooltipContent>Exclude models with more reported issues than this threshold</TooltipContent>
           </Tooltip>
-          <Input
-            type="number"
-            min="1"
-            value={activeExcludeWithIssues}
-            onChange={(e) => {
-              if (e.target.value === '') {
-                onExcludeWithIssuesChange(Infinity);
-              } else {
-                const value = parseInt(e.target.value, 10);
-                if (!isNaN(value) && value >= 1) {
-                  onExcludeWithIssuesChange(value);
-                }
-              }
-            }}
-            className={`w-20 ${buttonClass}`}
-            placeholder="Unlimited"
-          />
+          <div className="flex gap-2">
+            <Button
+              variant={activeExcludeWithIssues !== Infinity ? 'default' : 'outline'}
+              size={size}
+              className={buttonClass}
+              onClick={() => onExcludeWithIssuesChange(activeExcludeWithIssues === Infinity ? 5 : Infinity)}
+            >
+              {activeExcludeWithIssues !== Infinity ? 'On' : 'Off'}
+            </Button>
+            {activeExcludeWithIssues !== Infinity && (
+              <Input
+                type="number"
+                min="1"
+                value={activeExcludeWithIssues}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  if (!isNaN(value) && value >= 1) {
+                    onExcludeWithIssuesChange(value);
+                  }
+                }}
+                className={`w-16 ${buttonClass}`}
+              />
+            )}
+          </div>
         </div>
       )}
 
