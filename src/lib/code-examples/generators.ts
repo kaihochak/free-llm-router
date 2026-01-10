@@ -31,8 +31,30 @@ throw new Error('All models failed');`;
 };
 
 // getModelIds call generator
-export const getModelIdsCall = (filters: string[], sort: string, limit?: number) => {
+export const getModelIdsCall = (
+  filters: string[],
+  sort: string,
+  limit?: number,
+  excludeWithIssues?: number,
+  timeWindow?: string
+) => {
   const filterStr = filters.length > 0 ? `[${filters.map((f) => `'${f}'`).join(', ')}]` : '[]';
   const limitStr = limit !== undefined ? `, ${limit}` : ''; // Only include limit if explicitly set
-  return `getModelIds(${filterStr}, '${sort}'${limitStr})`;
+
+  // Build options object if any optional params are set
+  const hasOptions = excludeWithIssues !== undefined || timeWindow !== undefined;
+  let optionsStr = '';
+
+  if (hasOptions) {
+    const optionParts: string[] = [];
+    if (excludeWithIssues !== undefined) {
+      optionParts.push(`excludeWithIssues: ${excludeWithIssues}`);
+    }
+    if (timeWindow !== undefined) {
+      optionParts.push(`timeWindow: '${timeWindow}'`);
+    }
+    optionsStr = `, { ${optionParts.join(', ')} }`;
+  }
+
+  return `getModelIds(${filterStr}, '${sort}'${limitStr}${optionsStr})`;
 };

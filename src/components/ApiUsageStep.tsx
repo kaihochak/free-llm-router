@@ -185,7 +185,7 @@ export function ApiUsageStep({
           onUserOnlyChange={setActiveUserOnly}
         />
         <CodeBlock
-          code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit)}
+          code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow)}
           language="typescript"
           className="text-sm"
         />
