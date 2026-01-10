@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
+import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -29,6 +29,10 @@ import {
   TIME_RANGE_DEFINITIONS,
   DEFAULT_TIME_RANGE,
   DEFAULT_MY_REPORTS,
+  TOOLTIP_USE_CASE,
+  TOOLTIP_SORT,
+  TOOLTIP_TOP_N,
+  TOOLTIP_RELIABILITY_FILTER,
 } from '@/lib/api-definitions';
 import { ChevronDown } from 'lucide-react';
 
@@ -105,7 +109,7 @@ export function ModelControls({
           <TooltipTrigger asChild>
             <span className={`text-muted-foreground ${labelClass} cursor-help`}>Use Case</span>
           </TooltipTrigger>
-          <TooltipContent>Select models by use case (chat, vision, tools, long context, reasoning)</TooltipContent>
+          <TooltipContent>{TOOLTIP_USE_CASE}</TooltipContent>
         </Tooltip>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -141,7 +145,7 @@ export function ModelControls({
           <TooltipTrigger asChild>
             <span className={`text-muted-foreground ${labelClass} cursor-help`}>Sort</span>
           </TooltipTrigger>
-          <TooltipContent>Sort models by context length, max output, capabilities, or reliability</TooltipContent>
+          <TooltipContent>{TOOLTIP_SORT}</TooltipContent>
         </Tooltip>
         <Select value={activeSort} onValueChange={(value) => onSortChange(value as SortType)}>
           <SelectTrigger className={`w-auto ${buttonClass}`}>
@@ -160,21 +164,21 @@ export function ModelControls({
       {/* Top N control */}
       {onTopNChange && (
         <div className={`flex flex-col ${gapClass}`}>
-          <span className={`text-muted-foreground ${labelClass}`}>Top N</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Top N</span>
+            </TooltipTrigger>
+            <TooltipContent>{TOOLTIP_TOP_N}</TooltipContent>
+          </Tooltip>
           <ButtonGroup>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={activeTopN !== undefined ? 'default' : 'outline'}
-                  size={size}
-                  className={buttonClass}
-                  onClick={() => onTopNChange(activeTopN === undefined ? 5 : undefined)}
-                >
-                  {activeTopN !== undefined ? 'On' : 'Off'}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Return only the top N models based on sort order</TooltipContent>
-            </Tooltip>
+            <Button
+              variant={activeTopN !== undefined ? 'default' : 'outline'}
+              size={size}
+              className={buttonClass}
+              onClick={() => onTopNChange(activeTopN === undefined ? 5 : undefined)}
+            >
+              {activeTopN !== undefined ? 'On' : 'Off'}
+            </Button>
             {activeTopN !== undefined && (
               <Input
                 type="number"
@@ -204,7 +208,7 @@ export function ModelControls({
             <TooltipTrigger asChild>
               <span className={`text-muted-foreground ${labelClass} cursor-help`}>Reliability Filter</span>
             </TooltipTrigger>
-            <TooltipContent>Filter out unreliable models based on error rate</TooltipContent>
+            <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
           </Tooltip>
           <ButtonGroup>
             <Button
@@ -231,9 +235,9 @@ export function ModelControls({
                       setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
                     }
                   }}
-                  placeholder="20"
-                  className={`w-16 ${buttonClass}`}
+                  className={`w-14 ${buttonClass} border-r-0!`}
                 />
+                <ButtonGroupText className={`pr-3 pl-0 bg-background shadow-xs border-l-0! dark:bg-input/30 dark:border-input ${buttonClass}`}>%</ButtonGroupText>
                 <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>
                   <SelectTrigger className={`w-20 ${buttonClass}`}>
                     <SelectValue>{activeTimeRange}</SelectValue>

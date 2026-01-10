@@ -178,6 +178,13 @@ export const DEFAULT_TIME_RANGE: TimeRange = '24h';
 export const DEFAULT_MY_REPORTS: boolean = false;
 export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = false;
 
+// ==================== UI TOOLTIP CONTENT ====================
+
+export const TOOLTIP_USE_CASE = 'Select models by use case (chat, vision, tools, long context, reasoning)';
+export const TOOLTIP_SORT = 'Sort models by context length, max output, capabilities, or reliability';
+export const TOOLTIP_TOP_N = 'Return only the top N models based on sort order';
+export const TOOLTIP_RELIABILITY_FILTER = 'Filter out unreliable models by tweaking error rate threshold and time range';
+
 // ==================== VALIDATION UTILITIES ====================
 
 export function validateUseCases(value: string | null): UseCaseType[] {
