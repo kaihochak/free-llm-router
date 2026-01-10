@@ -185,7 +185,7 @@ export function ApiUsageStep({
           onUserOnlyChange={setActiveUserOnly}
         />
         <CodeBlock
-          code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow)}
+          code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow, activeUserOnly)}
           language="typescript"
           className="text-sm"
         />
@@ -193,7 +193,7 @@ export function ApiUsageStep({
           Loop through models until one succeeds. Free models may be rate-limited, so we try multiple and optionally fall back to stable models you trust. See{' '}
           <a href="#code-examples" className="text-primary hover:underline">Code Examples</a> for more patterns.
         </p>
-        <CodeBlock code={codeExamples.basicUsage(activeFilters, activeSort, activeLimit)} copyLabel="Copy" />
+        <CodeBlock code={codeExamples.basicUsage(activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow, activeUserOnly)} copyLabel="Copy" />
       </div>
     </div>
   );
