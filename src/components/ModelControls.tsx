@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -23,10 +24,9 @@ import {
   FILTER_DEFINITIONS,
   SORT_DEFINITIONS,
   LIMIT_DEFINITIONS,
-  EXCLUDE_WITH_ISSUES_DEFINITIONS,
   VALID_TIME_WINDOWS_WITH_LABELS,
   TIME_WINDOW_DEFINITIONS,
-  DEFAULT_LIMIT,  
+  DEFAULT_LIMIT,
   DEFAULT_EXCLUDE_WITH_ISSUES,
   DEFAULT_TIME_WINDOW,
   DEFAULT_USER_ONLY,
@@ -171,21 +171,19 @@ export function ModelControls({
             </TooltipTrigger>
             <TooltipContent>Exclude models with more reported issues than this threshold</TooltipContent>
           </Tooltip>
-          <Select
-            value={activeExcludeWithIssues.toString()}
-            onValueChange={(value) => onExcludeWithIssuesChange(parseInt(value, 10))}
-          >
-            <SelectTrigger className={`w-20 ${buttonClass}`}>
-              <SelectValue>{activeExcludeWithIssues}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {EXCLUDE_WITH_ISSUES_DEFINITIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            type="number"
+            min="0"
+            value={activeExcludeWithIssues}
+            onChange={(e) => {
+              const value = parseInt(e.target.value, 10);
+              if (!isNaN(value)) {
+                onExcludeWithIssuesChange(Math.max(0, value));
+              }
+            }}
+            className={`w-20 ${buttonClass}`}
+            placeholder="0"
+          />
         </div>
       )}
 

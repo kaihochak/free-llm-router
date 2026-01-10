@@ -164,19 +164,7 @@ export const LIMIT_MAX = 100;
 
 // ==================== EXCLUDE WITH ISSUES PARAMETER ====================
 
-export type ExcludeWithIssuesOption = 3 | 5 | 10;
-
-export interface ExcludeWithIssuesDefinition {
-  value: string;
-  label: string;
-  numeric: number;
-}
-
-export const EXCLUDE_WITH_ISSUES_DEFINITIONS: ExcludeWithIssuesDefinition[] = [
-  { value: '3', label: '3', numeric: 3 },
-  { value: '5', label: '5', numeric: 5 },
-  { value: '10', label: '10', numeric: 10 },
-];
+// Free-form integer input - no predefined options
 
 // ==================== DEFAULT VALUES ====================
 
