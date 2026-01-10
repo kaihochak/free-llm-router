@@ -23,7 +23,6 @@ import type { FilterType, SortType } from '@/lib/api-definitions';
 import {
   FILTER_DEFINITIONS,
   SORT_DEFINITIONS,
-  LIMIT_DEFINITIONS,
   VALID_TIME_WINDOWS_WITH_LABELS,
   TIME_WINDOW_DEFINITIONS,
   DEFAULT_LIMIT,
@@ -138,28 +137,37 @@ export function ModelControls({
       </div>
 
       {onLimitChange && (
-        <div className={`flex flex-col ${gapClass} `}>
+        <div className={`flex flex-col ${gapClass}`}>
           <Tooltip>
             <TooltipTrigger asChild>
               <span className={`text-muted-foreground ${labelClass} cursor-help`}>Limit</span>
             </TooltipTrigger>
             <TooltipContent>Maximum number of models to display</TooltipContent>
           </Tooltip>
-          <Select
-            value={activeLimit?.toString() ?? 'all'}
-            onValueChange={(value) => onLimitChange(value === 'all' ? undefined : parseInt(value, 10))}
-          >
-            <SelectTrigger className={`w-20 ${buttonClass}`}>
-              <SelectValue>{activeLimit ?? 'All'}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {LIMIT_DEFINITIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Button
+              variant={activeLimit !== undefined ? 'default' : 'outline'}
+              size={size}
+              className={buttonClass}
+              onClick={() => onLimitChange(activeLimit === undefined ? 5 : undefined)}
+            >
+              {activeLimit !== undefined ? 'On' : 'Off'}
+            </Button>
+            <Input
+              type="number"
+              min="1"
+              max="100"
+              value={activeLimit === undefined ? '' : activeLimit}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                if (!isNaN(value) && value >= 1 && value <= 100) {
+                  onLimitChange(value);
+                }
+              }}
+              disabled={activeLimit === undefined}
+              className={`w-16 ${buttonClass}`}
+            />
+          </div>
         </div>
       )}
 
