@@ -177,8 +177,8 @@ export function ModelControls({
             value={activeExcludeWithIssues}
             onChange={(e) => {
               const value = parseInt(e.target.value, 10);
-              if (!isNaN(value)) {
-                onExcludeWithIssuesChange(Math.max(0, value));
+              if (!isNaN(value) && value >= 0) {
+                onExcludeWithIssuesChange(value);
               }
             }}
             className={`w-20 ${buttonClass}`}
