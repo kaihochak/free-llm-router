@@ -13,8 +13,6 @@ import {
 } from '@/lib/model-types';
 import {
   DEFAULT_SORT,
-  DEFAULT_LIMIT,
-  DEFAULT_EXCLUDE_WITH_ISSUES,
   DEFAULT_TIME_WINDOW,
   DEFAULT_USER_ONLY,
 } from '@/lib/api-definitions';
@@ -119,8 +117,8 @@ export function getFullApiUrl(apiUrl: string): string {
 export function useModels() {
   const [activeFilters, setActiveFilters] = useLocalStorage<FilterType[]>('freeModels:filters', []);
   const [activeSort, setActiveSort] = useLocalStorage<SortType>('freeModels:sort', DEFAULT_SORT);
-  const [activeLimit, setActiveLimit] = useLocalStorage<number | undefined>('freeModels:limit', DEFAULT_LIMIT);
-  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useLocalStorage<number>('freeModels:excludeWithIssues', DEFAULT_EXCLUDE_WITH_ISSUES);
+  const [activeLimit, setActiveLimit] = useLocalStorage<number | undefined>('freeModels:limit', undefined);
+  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useLocalStorage<number>('freeModels:excludeWithIssues', Infinity);
   const [activeTimeWindow, setActiveTimeWindow] = useLocalStorage<string>('freeModels:timeWindow', DEFAULT_TIME_WINDOW);
   const [activeUserOnly, setActiveUserOnly] = useLocalStorage<boolean>('freeModels:userOnly', DEFAULT_USER_ONLY);
 
