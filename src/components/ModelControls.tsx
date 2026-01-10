@@ -169,32 +169,25 @@ export function ModelControls({
             <TooltipTrigger asChild>
               <span className={`text-muted-foreground ${labelClass} cursor-help`}>Max Issues</span>
             </TooltipTrigger>
-            <TooltipContent>Exclude models with more reported issues than this threshold</TooltipContent>
+            <TooltipContent>Exclude models with more reported issues than this threshold (leave empty for no limit)</TooltipContent>
           </Tooltip>
-          <div className="flex gap-2">
-            <Button
-              variant={activeExcludeWithIssues !== Infinity ? 'default' : 'outline'}
-              size={size}
-              className={buttonClass}
-              onClick={() => onExcludeWithIssuesChange(activeExcludeWithIssues === Infinity ? 5 : Infinity)}
-            >
-              {activeExcludeWithIssues !== Infinity ? 'On' : 'Off'}
-            </Button>
-            {activeExcludeWithIssues !== Infinity && (
-              <Input
-                type="number"
-                min="1"
-                value={activeExcludeWithIssues}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
-                  if (!isNaN(value) && value >= 1) {
-                    onExcludeWithIssuesChange(value);
-                  }
-                }}
-                className={`w-16 ${buttonClass}`}
-              />
-            )}
-          </div>
+          <Input
+            type="number"
+            min="1"
+            value={activeExcludeWithIssues === Infinity ? '' : activeExcludeWithIssues}
+            onChange={(e) => {
+              if (e.target.value === '') {
+                onExcludeWithIssuesChange(Infinity);
+              } else {
+                const value = parseInt(e.target.value, 10);
+                if (!isNaN(value) && value >= 1) {
+                  onExcludeWithIssuesChange(value);
+                }
+              }
+            }}
+            className={`w-20 ${buttonClass}`}
+            placeholder="No limit"
+          />
         </div>
       )}
 
