@@ -13,12 +13,12 @@ export const basicUsage = (
   const limitStr = limit !== undefined ? `, ${limit}` : ''; // Only include limit if explicitly set
 
   // Build options object if any optional params are set
-  const hasOptions = excludeWithIssues !== undefined || timeWindow !== undefined || userOnly;
+  const hasOptions = (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) || timeWindow !== undefined || userOnly;
   let optionsStr = '';
 
   if (hasOptions) {
     const optionParts: string[] = [];
-    if (excludeWithIssues !== undefined) {
+    if (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) {
       optionParts.push(`excludeWithIssues: ${excludeWithIssues}`);
     }
     if (timeWindow !== undefined) {
@@ -45,8 +45,8 @@ try {
       reportSuccess(id); // Helps improve reliability metrics
       return res;
     } catch (e) {
-      const status = e.status || e.response?.status; // Helps us identify issue type
-      reportIssue(id, issueFromStatus(status), e.message);
+      const status = e.status || e.response?.status; 
+      reportIssue(id, issueFromStatus(status), e.message); // Helps improve reliability metrics
     }
   }
 } catch {
@@ -69,12 +69,12 @@ export const getModelIdsCall = (
   const limitStr = limit !== undefined ? `, ${limit}` : ''; // Only include limit if explicitly set
 
   // Build options object if any optional params are set
-  const hasOptions = excludeWithIssues !== undefined || timeWindow !== undefined || userOnly;
+  const hasOptions = (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) || timeWindow !== undefined || userOnly;
   let optionsStr = '';
 
   if (hasOptions) {
     const optionParts: string[] = [];
-    if (excludeWithIssues !== undefined) {
+    if (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) {
       optionParts.push(`excludeWithIssues: ${excludeWithIssues}`);
     }
     if (timeWindow !== undefined) {
@@ -86,5 +86,6 @@ export const getModelIdsCall = (
     optionsStr = `, { ${optionParts.join(', ')} }`;
   }
 
-  return `getModelIds(${filterStr}, '${sort}'${limitStr}${optionsStr})`;
+  return `// This is how you fetch free model IDs
+getModelIds(${filterStr}, '${sort}'${limitStr}${optionsStr})`;
 };
