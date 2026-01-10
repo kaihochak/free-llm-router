@@ -2,7 +2,7 @@ import type { APIContext } from 'astro';
 import { base64Url } from '@better-auth/utils/base64';
 import { type AuthEnv } from './auth';
 import { eq, and, sql } from 'drizzle-orm';
-import { createDb, apiKeys, users } from '@/db';
+import { createDb, apiKeys, users, apiRequestLogs } from '@/db';
 
 export interface ApiKeyValidation {
   valid: boolean;
@@ -330,6 +330,39 @@ export function serverErrorResponse(error: string): Response {
     status: 500,
     headers: { 'Content-Type': 'application/json', ...corsHeaders },
   });
+}
+
+/**
+ * Logs an API request to the apiRequestLogs table.
+ * Call this after processing the request to capture status code.
+ */
+export async function logApiRequest(
+  databaseUrl: string,
+  params: {
+    userId: string;
+    apiKeyId: string;
+    endpoint: string;
+    method: string;
+    statusCode: number;
+    responseTimeMs?: number;
+  }
+): Promise<void> {
+  try {
+    const db = createDb(databaseUrl);
+    await db.insert(apiRequestLogs).values({
+      id: crypto.randomUUID(),
+      userId: params.userId,
+      apiKeyId: params.apiKeyId,
+      endpoint: params.endpoint,
+      method: params.method,
+      statusCode: params.statusCode,
+      responseTimeMs: params.responseTimeMs ?? null,
+      createdAt: new Date(),
+    });
+  } catch (error) {
+    // Log but don't fail the request if logging fails
+    console.error('[API Auth] Failed to log request:', error);
+  }
 }
 
 /**

@@ -4,7 +4,7 @@ import {
   ensureFreshModels,
 } from '@/services/openrouter';
 import { initializeRequest } from '@/lib/api-params';
-import { rateLimitHeaders, corsHeaders } from '@/lib/api-auth';
+import { rateLimitHeaders, corsHeaders, logApiRequest } from '@/lib/api-auth';
 
 /**
  * Lightweight endpoint that returns only model IDs
@@ -12,13 +12,14 @@ import { rateLimitHeaders, corsHeaders } from '@/lib/api-auth';
  * Requires API key authentication
  */
 export const GET: APIRoute = async (context) => {
+  const startTime = performance.now();
   const req = await initializeRequest(context);
 
   // If error response, return it
   if (req instanceof Response) return req;
 
   try {
-    const { db, params, validation } = req;
+    const { db, databaseUrl, params, validation } = req;
     const { useCases, sort, topN, maxErrorRate, timeRange } = params;
 
     // Lazy refresh if stale
@@ -30,6 +31,16 @@ export const GET: APIRoute = async (context) => {
     // Apply topN and extract IDs only
     const models = topN ? allModels.slice(0, topN) : allModels;
     const ids = models.map((m) => m.id);
+
+    // Log request
+    logApiRequest(databaseUrl, {
+      userId: validation.userId!,
+      apiKeyId: validation.keyId!,
+      endpoint: '/api/v1/models/ids',
+      method: 'GET',
+      statusCode: 200,
+      responseTimeMs: Math.round(performance.now() - startTime),
+    });
 
     return new Response(
       JSON.stringify({
@@ -48,6 +59,17 @@ export const GET: APIRoute = async (context) => {
     );
   } catch (error) {
     console.error('[API/models/ids] Error:', error);
+
+    // Log error request
+    logApiRequest(req.databaseUrl, {
+      userId: req.validation.userId!,
+      apiKeyId: req.validation.keyId!,
+      endpoint: '/api/v1/models/ids',
+      method: 'GET',
+      statusCode: 500,
+      responseTimeMs: Math.round(performance.now() - startTime),
+    });
+
     return new Response(JSON.stringify({ error: 'Failed to fetch model IDs' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

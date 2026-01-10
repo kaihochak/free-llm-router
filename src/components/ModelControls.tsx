@@ -235,7 +235,7 @@ export function ModelControls({
                       setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
                     }
                   }}
-                  className={`w-14 ${buttonClass} border-r-0!`}
+                  className={`pr-0! w-14 ${buttonClass} border-r-0!`}
                 />
                 <ButtonGroupText className={`pr-3 pl-0 bg-background shadow-xs border-l-0! dark:bg-input/30 dark:border-input ${buttonClass}`}>%</ButtonGroupText>
                 <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>

@@ -85,6 +85,21 @@ export const apiKeys = pgTable('api_keys', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// API Request Logs table for tracking individual API calls
+export const apiRequestLogs = pgTable('api_request_logs', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  apiKeyId: text('api_key_id')
+    .references(() => apiKeys.id, { onDelete: 'set null' }),
+  endpoint: text('endpoint').notNull(),
+  method: text('method').notNull(),
+  statusCode: integer('status_code').notNull(),
+  responseTimeMs: integer('response_time_ms'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -94,3 +109,5 @@ export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
+export type ApiRequestLog = typeof apiRequestLogs.$inferSelect;
+export type NewApiRequestLog = typeof apiRequestLogs.$inferInsert;

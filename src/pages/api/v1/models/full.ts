@@ -8,6 +8,7 @@ import {
 import {
   rateLimitHeaders,
   corsHeaders,
+  logApiRequest,
 } from '@/lib/api-auth';
 import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
 
@@ -17,13 +18,14 @@ import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
  * Requires API key authentication
  */
 export const GET: APIRoute = async (context) => {
+  const startTime = performance.now();
   const req = await initializeRequest(context);
 
   // If error response, return it
   if (req instanceof Response) return req;
 
   try {
-    const { db, params, validation } = req;
+    const { db, databaseUrl, params, validation } = req;
     const { useCases, sort, topN, maxErrorRate, timeRange, myReports } = params;
 
     // Get userId if myReports is enabled
@@ -51,6 +53,16 @@ export const GET: APIRoute = async (context) => {
     // Apply topN if specified
     const models = topN ? allModels.slice(0, topN) : allModels;
 
+    // Log request
+    logApiRequest(databaseUrl, {
+      userId: validation.userId!,
+      apiKeyId: validation.keyId!,
+      endpoint: '/api/v1/models/full',
+      method: 'GET',
+      statusCode: 200,
+      responseTimeMs: Math.round(performance.now() - startTime),
+    });
+
     return new Response(
       JSON.stringify({
         models,
@@ -72,6 +84,17 @@ export const GET: APIRoute = async (context) => {
     );
   } catch (error) {
     console.error('[API/models/full] Error:', error);
+
+    // Log error request
+    logApiRequest(req.databaseUrl, {
+      userId: req.validation.userId!,
+      apiKeyId: req.validation.keyId!,
+      endpoint: '/api/v1/models/full',
+      method: 'GET',
+      statusCode: 500,
+      responseTimeMs: Math.round(performance.now() - startTime),
+    });
+
     return new Response(JSON.stringify({ error: 'Failed to fetch models' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
