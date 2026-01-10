@@ -50,6 +50,22 @@ function getEnv(context: APIContext): Partial<AuthEnv> & { missing: string[] } {
 }
 
 /**
+ * Tracks per-key usage statistics (no rate limiting, just tracking).
+ * Increments requestCount and updates lastRequest timestamp.
+ */
+async function trackKeyUsage(keyId: string, databaseUrl: string): Promise<void> {
+  const db = createDb(databaseUrl);
+  await db
+    .update(apiKeys)
+    .set({
+      requestCount: sql`COALESCE(${apiKeys.requestCount}, 0) + 1`,
+      lastRequest: sql`NOW()`,
+      updatedAt: sql`NOW()`,
+    })
+    .where(eq(apiKeys.id, keyId));
+}
+
+/**
  * Checks and updates user-level rate limits.
  * Enforces 200 requests/24 hours per user across all API keys.
  * Uses PostgreSQL row locking for atomic enforcement (zero overage).
@@ -236,6 +252,9 @@ export async function validateApiKey(context: APIContext): Promise<ApiKeyValidat
         errorCode: rateLimitCheck.errorCode,
       };
     }
+
+    // Track per-key usage (no rate limiting, just stats)
+    await trackKeyUsage(key.id, authEnv.databaseUrl);
 
     return {
       valid: true,

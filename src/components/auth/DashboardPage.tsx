@@ -100,7 +100,7 @@ export function DashboardPage() {
     await signOut({ fetchOptions: { onSuccess: () => { window.location.href = '/'; } } });
   };
 
-  const MAX_KEYS = 3;
+  const MAX_KEYS = 10;
   const canCreateKey = apiKeys.length < MAX_KEYS;
 
   const handleCreateKey = async (e: React.FormEvent) => {
@@ -312,6 +312,7 @@ export function DashboardPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Key</TableHead>
+                    <TableHead>Requests</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
@@ -325,6 +326,9 @@ export function DashboardPage() {
                         <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
                           {key.prefix || key.start || 'fma_'}...
                         </code>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {key.requestCount ?? 0}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(key.createdAt).toLocaleDateString()}
