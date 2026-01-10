@@ -13,12 +13,12 @@ export const basicUsage = (
   const limitStr = limit !== undefined ? `, ${limit}` : ''; // Only include limit if explicitly set
 
   // Build options object if any optional params are set
-  const hasOptions = (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) || timeWindow !== undefined || userOnly;
+  const hasOptions = (excludeWithIssues !== undefined) || timeWindow !== undefined || userOnly;
   let optionsStr = '';
 
   if (hasOptions) {
     const optionParts: string[] = [];
-    if (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) {
+    if (excludeWithIssues !== undefined) {
       optionParts.push(`excludeWithIssues: ${excludeWithIssues}`);
     }
     if (timeWindow !== undefined) {
@@ -69,12 +69,12 @@ export const getModelIdsCall = (
   const limitStr = limit !== undefined ? `, ${limit}` : ''; // Only include limit if explicitly set
 
   // Build options object if any optional params are set
-  const hasOptions = (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) || timeWindow !== undefined || userOnly;
+  const hasOptions = (excludeWithIssues !== undefined) || timeWindow !== undefined || userOnly;
   let optionsStr = '';
 
   if (hasOptions) {
     const optionParts: string[] = [];
-    if (excludeWithIssues !== undefined && excludeWithIssues !== Infinity) {
+    if (excludeWithIssues !== undefined) {
       optionParts.push(`excludeWithIssues: ${excludeWithIssues}`);
     }
     if (timeWindow !== undefined) {

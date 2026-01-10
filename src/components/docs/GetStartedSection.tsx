@@ -1,23 +1,7 @@
-import { useState } from 'react';
-import { useModels } from '@/hooks/useModels';
 import { ApiUsageStep } from '@/components/ApiUsageStep';
-import { ModelList } from '@/components/ModelList';
 import { QueryProvider } from '@/components/QueryProvider';
 
-const ITEMS_PER_PAGE = 5;
-
 export function GetStartedSection() {
-  const { models, loading, error, activeLimit } = useModels();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const effectiveModelCount = activeLimit ? Math.min(models.length, activeLimit) : models.length;
-  const totalPages = Math.ceil(effectiveModelCount / ITEMS_PER_PAGE);
-
-  // Reset to page 1 when models change (e.g., filter/sort changes)
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
-
   return (
     <section id="get-started" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">Get Started</h2>
@@ -48,19 +32,7 @@ export function GetStartedSection() {
         </a>.
         It will automatically try each model in the order you specified until one responds. No need to manage fallbacks or check which models are currently working.
       </p>
-      <ApiUsageStep
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      >
-        <ModelList
-          models={activeLimit ? models.slice(0, activeLimit) : models}
-          loading={loading}
-          error={error}
-          currentPage={currentPage}
-          itemsPerPage={ITEMS_PER_PAGE}
-        />
-      </ApiUsageStep>
+      <ApiUsageStep />
     </section>
   );
 }

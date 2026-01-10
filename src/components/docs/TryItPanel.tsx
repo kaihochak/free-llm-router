@@ -9,6 +9,7 @@ import {
   DEFAULT_SORT,
   DEFAULT_FILTER,
   DEFAULT_LIMIT,
+  DEFAULT_EXCLUDE_WITH_ISSUES,
   DEFAULT_TIME_WINDOW,
   DEFAULT_USER_ONLY,
 } from '@/lib/api-definitions';
@@ -31,7 +32,7 @@ export function TryItPanel({
   const [activeFilters, setActiveFilters] = useState<FilterType[]>(DEFAULT_FILTER);
   const [activeSort, setActiveSort] = useState<SortType>(DEFAULT_SORT);
   const [activeLimit, setActiveLimit] = useState<number | undefined>(DEFAULT_LIMIT);
-  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useState(Infinity);
+  const [activeExcludeWithIssues, setActiveExcludeWithIssues] = useState<number | undefined>(DEFAULT_EXCLUDE_WITH_ISSUES);
   const [activeTimeWindow, setActiveTimeWindow] = useState(DEFAULT_TIME_WINDOW);
   const [activeUserOnly, setActiveUserOnly] = useState(DEFAULT_USER_ONLY);
   const [apiKey, setApiKey] = useState('');
@@ -55,7 +56,7 @@ export function TryItPanel({
     if (activeFilters.length > 0) params.set('filter', activeFilters.join(','));
     params.set('sort', activeSort);
     if (activeLimit) params.set('limit', String(activeLimit));
-    if (activeExcludeWithIssues !== Infinity) params.set('excludeWithIssues', String(activeExcludeWithIssues));
+    if (activeExcludeWithIssues !== undefined) params.set('excludeWithIssues', String(activeExcludeWithIssues));
     if (activeTimeWindow !== '24h') params.set('timeWindow', activeTimeWindow);
     if (activeUserOnly) params.set('userOnly', 'true');
     return `${endpoint}?${params.toString()}`;

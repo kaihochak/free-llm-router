@@ -1,31 +1,28 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
 import { useModels, generateSnippet } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
+import { ModelList } from '@/components/ModelList';
 import { useCachedSession } from '@/lib/auth-client';
 import { ModelControls } from '@/components/ModelControls';
 import { ChevronDown } from 'lucide-react';
 
+const ITEMS_PER_PAGE = 5;
+
 interface ApiUsageStepProps {
   showBrowseModels?: boolean;
-  children?: React.ReactNode;
-  // Pagination props (optional)
-  currentPage?: number;
-  totalPages?: number;
-  onPageChange?: (page: number) => void;
 }
 
 export function ApiUsageStep({
   showBrowseModels = true,
-  children,
-  currentPage,
-  totalPages,
-  onPageChange,
 }: ApiUsageStepProps) {
   const { data: session } = useCachedSession();
   const {
     models,
+    loading,
+    error,
     activeFilters,
     activeSort,
     activeLimit,
@@ -43,6 +40,18 @@ export function ApiUsageStep({
   } = useModels();
 
   const snippet = generateSnippet(apiUrl);
+
+  // Apply limit to models
+  const limitedModels = activeLimit ? models.slice(0, activeLimit) : models;
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(limitedModels.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when models change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   return (
     <div className="w-full space-y-12">
@@ -93,15 +102,15 @@ export function ApiUsageStep({
           />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <ModelCountHeader count={models.length} lastUpdated={lastUpdated} />
+            <ModelCountHeader count={limitedModels.length} lastUpdated={lastUpdated} />
 
-            {totalPages && totalPages > 1 && onPageChange && currentPage && (
+            {totalPages > 1 && (
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronDown className="h-4 w-4 rotate-90" />
@@ -113,7 +122,7 @@ export function ApiUsageStep({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
                   <ChevronDown className="h-4 w-4 -rotate-90" />
@@ -122,8 +131,14 @@ export function ApiUsageStep({
             )}
           </div>
 
-          {/* Model List (passed as children) */}
-          {children}
+          {/* Model List */}
+          <ModelList
+            models={limitedModels}
+            loading={loading}
+            error={error}
+            currentPage={currentPage}
+            itemsPerPage={ITEMS_PER_PAGE}
+          />
         </div>
       )}
 
