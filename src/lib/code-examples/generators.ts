@@ -45,8 +45,7 @@ try {
       reportSuccess(id); // Helps improve reliability metrics
       return res;
     } catch (e) {
-      // Report issue - helps improve reliability metrics (doesn't use quota)
-      const status = e.status || e.response?.status;
+      const status = e.status || e.response?.status; // Helps us identify issue type
       reportIssue(id, issueFromStatus(status), e.message);
     }
   }
