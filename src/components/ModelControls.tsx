@@ -180,20 +180,19 @@ export function ModelControls({
             >
               {activeExcludeWithIssues !== Infinity ? 'On' : 'Off'}
             </Button>
-            {activeExcludeWithIssues !== Infinity && (
-              <Input
-                type="number"
-                min="1"
-                value={activeExcludeWithIssues}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
-                  if (!isNaN(value) && value >= 1) {
-                    onExcludeWithIssuesChange(value);
-                  }
-                }}
-                className={`w-16 ${buttonClass}`}
-              />
-            )}
+            <Input
+              type="number"
+              min="1"
+              value={activeExcludeWithIssues === Infinity ? '' : activeExcludeWithIssues}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                if (!isNaN(value) && value >= 1) {
+                  onExcludeWithIssuesChange(value);
+                }
+              }}
+              disabled={activeExcludeWithIssues === Infinity}
+              className={`w-16 ${buttonClass}`}
+            />
           </div>
         </div>
       )}
