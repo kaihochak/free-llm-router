@@ -1,7 +1,6 @@
 import {
   FILTER_DEFINITIONS,
   SORT_DEFINITIONS,
-  TIME_WINDOW_DEFINITIONS,
 } from '@/lib/api-definitions';
 
 export function FiltersSortingSection() {
@@ -87,26 +86,8 @@ export function FiltersSortingSection() {
         <div className="scroll-mt-20 space-y-3" id="param-time-window">
           <h3 className="text-xl font-semibold">timeWindow</h3>
           <p className="text-sm text-muted-foreground">
-            Time period for counting issues and calculating error rates. Controls both issue filtering and reliability metrics. Default: 24h.
+            Time period for counting issues and calculating error rates. Options: <code className="bg-muted px-1.5 py-0.5 rounded text-sm">15m</code>, <code className="bg-muted px-1.5 py-0.5 rounded text-sm">30m</code>, <code className="bg-muted px-1.5 py-0.5 rounded text-sm">1h</code>, <code className="bg-muted px-1.5 py-0.5 rounded text-sm">6h</code>, <code className="bg-muted px-1.5 py-0.5 rounded text-sm">24h</code>, <code className="bg-muted px-1.5 py-0.5 rounded text-sm">7d</code>, <code className="bg-muted px-1.5 py-0.5 rounded text-sm">30d</code>, <code className="bg-muted px-1.5 py-0.5 rounded text-sm">all</code>. Default: <code className="bg-muted px-1.5 py-0.5 rounded text-sm">24h</code>.
           </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 pr-4 text-left font-medium">Value</th>
-                  <th className="py-2 text-left font-medium">Use Case</th>
-                </tr>
-              </thead>
-              <tbody className="text-muted-foreground">
-                {TIME_WINDOW_DEFINITIONS.map((tw, index) => (
-                  <tr key={tw.value} className={index === TIME_WINDOW_DEFINITIONS.length - 1 ? '' : 'border-b'}>
-                    <td className="py-2 pr-4 font-mono text-xs">{tw.value}</td>
-                    <td className="py-2">{tw.useCase}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
 
         {/* userOnly parameter */}
