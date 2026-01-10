@@ -7,7 +7,7 @@ import { QueryProvider } from '@/components/QueryProvider';
 const ITEMS_PER_PAGE = 5;
 
 export function GetStartedSection() {
-  const { models, loading, error, activeFilters, activeSort, activeLimit, activeExcludeWithIssues, activeTimeWindow, activeUserOnly, lastUpdated, apiUrl, toggleFilter, setActiveSort, setActiveLimit, setActiveExcludeWithIssues, setActiveTimeWindow, setActiveUserOnly } = useModels();
+  const { models, loading, error, activeLimit } = useModels();
 
   const [currentPage, setCurrentPage] = useState(1);
   const effectiveModelCount = activeLimit ? Math.min(models.length, activeLimit) : models.length;
@@ -49,21 +49,6 @@ export function GetStartedSection() {
         It will automatically try each model in the order you specified until one responds. No need to manage fallbacks or check which models are currently working.
       </p>
       <ApiUsageStep
-        apiUrl={apiUrl}
-        activeFilters={activeFilters}
-        activeSort={activeSort}
-        activeLimit={activeLimit}
-        activeExcludeWithIssues={activeExcludeWithIssues}
-        activeTimeWindow={activeTimeWindow}
-        activeUserOnly={activeUserOnly}
-        lastUpdated={lastUpdated}
-        onToggleFilter={toggleFilter}
-        onSortChange={setActiveSort}
-        onLimitChange={setActiveLimit}
-        onExcludeWithIssuesChange={setActiveExcludeWithIssues}
-        onTimeWindowChange={setActiveTimeWindow}
-        onUserOnlyChange={setActiveUserOnly}
-        modelCount={effectiveModelCount}
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}

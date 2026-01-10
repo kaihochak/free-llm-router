@@ -1,10 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
-import {
-  generateSnippet,
-  type FilterType,
-  type SortType,
-} from '@/hooks/useModels';
+import { useModels, generateSnippet } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { useCachedSession } from '@/lib/auth-client';
@@ -12,21 +8,6 @@ import { ModelControls } from '@/components/ModelControls';
 import { ChevronDown } from 'lucide-react';
 
 interface ApiUsageStepProps {
-  apiUrl: string;
-  activeFilters: FilterType[];
-  activeSort: SortType;
-  activeLimit: number | undefined;
-  activeExcludeWithIssues?: number;
-  activeTimeWindow?: string;
-  activeUserOnly?: boolean;
-  lastUpdated?: string | null;
-  onToggleFilter: (filter: FilterType | 'all') => void;
-  onSortChange: (sort: SortType) => void;
-  onLimitChange: (limit: number | undefined) => void;
-  onExcludeWithIssuesChange?: (value: number) => void;
-  onTimeWindowChange?: (value: string) => void;
-  onUserOnlyChange?: (value: boolean) => void;
-  modelCount?: number;
   showBrowseModels?: boolean;
   children?: React.ReactNode;
   // Pagination props (optional)
@@ -36,21 +17,6 @@ interface ApiUsageStepProps {
 }
 
 export function ApiUsageStep({
-  apiUrl,
-  activeFilters,
-  activeSort,
-  activeLimit,
-  activeExcludeWithIssues,
-  activeTimeWindow,
-  activeUserOnly,
-  lastUpdated,
-  onToggleFilter,
-  onSortChange,
-  onLimitChange,
-  onExcludeWithIssuesChange,
-  onTimeWindowChange,
-  onUserOnlyChange,
-  modelCount,
   showBrowseModels = true,
   children,
   currentPage,
@@ -58,6 +24,24 @@ export function ApiUsageStep({
   onPageChange,
 }: ApiUsageStepProps) {
   const { data: session } = useCachedSession();
+  const {
+    models,
+    activeFilters,
+    activeSort,
+    activeLimit,
+    activeExcludeWithIssues,
+    activeTimeWindow,
+    activeUserOnly,
+    lastUpdated,
+    apiUrl,
+    toggleFilter,
+    setActiveSort,
+    setActiveLimit,
+    setActiveExcludeWithIssues,
+    setActiveTimeWindow,
+    setActiveUserOnly,
+  } = useModels();
+
   const snippet = generateSnippet(apiUrl);
 
   return (
@@ -100,16 +84,16 @@ export function ApiUsageStep({
             activeExcludeWithIssues={activeExcludeWithIssues}
             activeTimeWindow={activeTimeWindow}
             activeUserOnly={activeUserOnly}
-            onToggleFilter={onToggleFilter}
-            onSortChange={onSortChange}
-            onLimitChange={onLimitChange}
-            onExcludeWithIssuesChange={onExcludeWithIssuesChange}
-            onTimeWindowChange={onTimeWindowChange}
-            onUserOnlyChange={onUserOnlyChange}
+            onToggleFilter={toggleFilter}
+            onSortChange={setActiveSort}
+            onLimitChange={setActiveLimit}
+            onExcludeWithIssuesChange={setActiveExcludeWithIssues}
+            onTimeWindowChange={setActiveTimeWindow}
+            onUserOnlyChange={setActiveUserOnly}
           />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {modelCount !== undefined && <ModelCountHeader count={modelCount} lastUpdated={lastUpdated} />}
+            <ModelCountHeader count={models.length} lastUpdated={lastUpdated} />
 
             {totalPages && totalPages > 1 && onPageChange && currentPage && (
               <div className="flex items-center gap-1">
@@ -193,12 +177,12 @@ export function ApiUsageStep({
           activeExcludeWithIssues={activeExcludeWithIssues}
           activeTimeWindow={activeTimeWindow}
           activeUserOnly={activeUserOnly}
-          onToggleFilter={onToggleFilter}
-          onSortChange={onSortChange}
-          onLimitChange={onLimitChange}
-          onExcludeWithIssuesChange={onExcludeWithIssuesChange}
-          onTimeWindowChange={onTimeWindowChange}
-          onUserOnlyChange={onUserOnlyChange}
+          onToggleFilter={toggleFilter}
+          onSortChange={setActiveSort}
+          onLimitChange={setActiveLimit}
+          onExcludeWithIssuesChange={setActiveExcludeWithIssues}
+          onTimeWindowChange={setActiveTimeWindow}
+          onUserOnlyChange={setActiveUserOnly}
         />
         <CodeBlock
           code={codeExamples.getModelIdsCall(activeFilters, activeSort, activeLimit)}

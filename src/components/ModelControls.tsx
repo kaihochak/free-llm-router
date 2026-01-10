@@ -26,6 +26,7 @@ import {
   EXCLUDE_WITH_ISSUES_DEFINITIONS,
   VALID_TIME_WINDOWS_WITH_LABELS,
   TIME_WINDOW_DEFINITIONS,
+  DEFAULT_LIMIT,  
   DEFAULT_EXCLUDE_WITH_ISSUES,
   DEFAULT_TIME_WINDOW,
   DEFAULT_USER_ONLY,
@@ -51,7 +52,7 @@ interface ModelControlsProps {
 export function ModelControls({
   activeFilters,
   activeSort,
-  activeLimit,
+  activeLimit = DEFAULT_LIMIT,
   activeExcludeWithIssues = DEFAULT_EXCLUDE_WITH_ISSUES,
   activeTimeWindow = DEFAULT_TIME_WINDOW,
   activeUserOnly = DEFAULT_USER_ONLY,
