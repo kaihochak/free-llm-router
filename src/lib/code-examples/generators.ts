@@ -44,7 +44,7 @@ try {
       const res = await client.chat.completions.create({ model: id, messages });
       return res;
     } catch (e) {
-      // Report issue with correct type - free, doesn't use quota
+      // Report issue - helps improve reliability metrics (doesn't use quota)
       const status = e.status || e.response?.status;
       reportIssue(id, issueFromStatus(status), e.message);
     }
