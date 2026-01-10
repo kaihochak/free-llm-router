@@ -173,16 +173,20 @@ export function ModelControls({
           </Tooltip>
           <Input
             type="number"
-            min="0"
+            min="1"
             value={activeExcludeWithIssues}
             onChange={(e) => {
-              const value = parseInt(e.target.value, 10);
-              if (!isNaN(value) && value >= 0) {
-                onExcludeWithIssuesChange(value);
+              if (e.target.value === '') {
+                onExcludeWithIssuesChange(Infinity);
+              } else {
+                const value = parseInt(e.target.value, 10);
+                if (!isNaN(value) && value >= 1) {
+                  onExcludeWithIssuesChange(value);
+                }
               }
             }}
             className={`w-20 ${buttonClass}`}
-            placeholder="0"
+            placeholder="Unlimited"
           />
         </div>
       )}
