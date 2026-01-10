@@ -42,6 +42,7 @@ try {
   for (const id of models) {
     try {
       const res = await client.chat.completions.create({ model: id, messages });
+      reportSuccess(id); // Helps improve reliability metrics
       return res;
     } catch (e) {
       // Report issue - helps improve reliability metrics (doesn't use quota)
