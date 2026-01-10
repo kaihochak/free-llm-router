@@ -10,7 +10,7 @@
  *
  * Usage:
  *   const ids = await getModelIds(['tools']);
- *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { cache: 'no-store' });
+ *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { excludeWithIssues: 5, timeWindow: '24h', userOnly: true, cache: 'no-store' });
  */
 
 const API = 'https://free-models-api.pages.dev/api/v1';
@@ -36,7 +36,7 @@ const cache = new Map<string, { data: string[]; timestamp: number }>();
 /**
  * Get available free model IDs with optional filtering and sorting.
  * Default sort is 'contextLength' (largest context window first).
- * Default excludeWithIssues is 5, timeWindow is '24h'.
+ * Default excludeWithIssues is 5, timeWindow is '24h', userOnly is false.
  */
 export async function getModelIds(
   filter?: Filter[],
@@ -46,6 +46,7 @@ export async function getModelIds(
     cache?: CacheMode;
     excludeWithIssues?: number;
     timeWindow?: TimeWindow;
+    userOnly?: boolean;
   }
 ): Promise<string[]> {
   // Sort filter array for deterministic cache keys (avoid fragmentation)
@@ -58,6 +59,7 @@ export async function getModelIds(
     limit,
     excludeWithIssues: options?.excludeWithIssues,
     timeWindow: options?.timeWindow,
+    userOnly: options?.userOnly,
   });
 
   const cached = cache.get(cacheKey);
@@ -78,6 +80,9 @@ export async function getModelIds(
     }
     if (options?.timeWindow) {
       params.set('timeWindow', options.timeWindow);
+    }
+    if (options?.userOnly) {
+      params.set('userOnly', 'true');
     }
 
     const { ids } = await fetch(`${API}/models/ids?${params}`, {
