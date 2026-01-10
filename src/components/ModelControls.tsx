@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -25,8 +26,6 @@ import {
   SORT_DEFINITIONS,
   VALID_TIME_WINDOWS_WITH_LABELS,
   TIME_WINDOW_DEFINITIONS,
-  DEFAULT_LIMIT,
-  DEFAULT_EXCLUDE_WITH_ISSUES,
   DEFAULT_TIME_WINDOW,
   DEFAULT_USER_ONLY,
 } from '@/lib/api-definitions';
@@ -42,7 +41,7 @@ interface ModelControlsProps {
   onToggleFilter: (filter: FilterType | 'all') => void;
   onSortChange: (sort: SortType) => void;
   onLimitChange?: (limit: number | undefined) => void;
-  onExcludeWithIssuesChange?: (value: number) => void;
+  onExcludeWithIssuesChange?: (value: number | undefined) => void;
   onTimeWindowChange?: (value: string) => void;
   onUserOnlyChange?: (value: boolean) => void;
   size?: 'sm' | 'lg';
@@ -51,8 +50,8 @@ interface ModelControlsProps {
 export function ModelControls({
   activeFilters,
   activeSort,
-  activeLimit = DEFAULT_LIMIT,
-  activeExcludeWithIssues = DEFAULT_EXCLUDE_WITH_ISSUES,
+  activeLimit,
+  activeExcludeWithIssues,
   activeTimeWindow = DEFAULT_TIME_WINDOW,
   activeUserOnly = DEFAULT_USER_ONLY,
   onToggleFilter,
@@ -64,6 +63,18 @@ export function ModelControls({
   size = 'lg',
 }: ModelControlsProps) {
   const isSmall = size === 'sm';
+
+  // Local state for limit input to allow free typing
+  const [limitInput, setLimitInput] = useState(activeLimit?.toString() ?? '');
+  useEffect(() => {
+    setLimitInput(activeLimit?.toString() ?? '');
+  }, [activeLimit]);
+
+  // Local state for excludeWithIssues input
+  const [issuesInput, setIssuesInput] = useState(activeExcludeWithIssues?.toString() ?? '');
+  useEffect(() => {
+    setIssuesInput(activeExcludeWithIssues?.toString() ?? '');
+  }, [activeExcludeWithIssues]);
 
   const filterLabel = activeFilters.length === 0
     ? 'All'
@@ -79,7 +90,7 @@ export function ModelControls({
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
 
   return (
-    <div className={`flex flex-wrap ${isSmall ? 'gap-4' : 'gap-3'}`}>
+    <div className={`flex flex-wrap ${isSmall ? 'gap-4' : 'gap-6'}`}>
       <div className={`flex flex-col ${gapClass}`}>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -157,11 +168,15 @@ export function ModelControls({
               type="number"
               min="1"
               max="100"
-              value={activeLimit === undefined ? '' : activeLimit}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                if (!isNaN(value) && value >= 1 && value <= 100) {
-                  onLimitChange(value);
+              value={limitInput}
+              onChange={(e) => setLimitInput(e.target.value)}
+              onBlur={() => {
+                const value = parseInt(limitInput, 10);
+                if (!isNaN(value) && value >= 1) {
+                  onLimitChange(Math.min(100, value));
+                } else {
+                  // Reset to current value if invalid
+                  setLimitInput(activeLimit?.toString() ?? '');
                 }
               }}
               disabled={activeLimit === undefined}
@@ -181,24 +196,27 @@ export function ModelControls({
           </Tooltip>
           <div className="flex gap-2">
             <Button
-              variant={activeExcludeWithIssues !== Infinity ? 'default' : 'outline'}
+              variant={activeExcludeWithIssues !== undefined ? 'default' : 'outline'}
               size={size}
               className={buttonClass}
-              onClick={() => onExcludeWithIssuesChange(activeExcludeWithIssues === Infinity ? 5 : Infinity)}
+              onClick={() => onExcludeWithIssuesChange(activeExcludeWithIssues === undefined ? 5 : undefined)}
             >
-              {activeExcludeWithIssues !== Infinity ? 'On' : 'Off'}
+              {activeExcludeWithIssues !== undefined ? 'On' : 'Off'}
             </Button>
             <Input
               type="number"
               min="1"
-              value={activeExcludeWithIssues === Infinity ? '' : activeExcludeWithIssues}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
+              value={issuesInput}
+              onChange={(e) => setIssuesInput(e.target.value)}
+              onBlur={() => {
+                const value = parseInt(issuesInput, 10);
                 if (!isNaN(value) && value >= 1) {
                   onExcludeWithIssuesChange(value);
+                } else {
+                  setIssuesInput(activeExcludeWithIssues?.toString() ?? '');
                 }
               }}
-              disabled={activeExcludeWithIssues === Infinity}
+              disabled={activeExcludeWithIssues === undefined}
               className={`w-16 ${buttonClass}`}
             />
           </div>
