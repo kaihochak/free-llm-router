@@ -14,6 +14,10 @@ bun run db:studio    # Open Drizzle Studio for database inspection
 bun run db:generate  # Generate Drizzle migrations
 ```
 
+## Commit Policy
+
+Do not commit without my permission.
+
 ## Architecture
 
 This is an Astro site with server-side rendering deployed to Cloudflare Pages. It provides a public API for fetching free LLM models from OpenRouter.
