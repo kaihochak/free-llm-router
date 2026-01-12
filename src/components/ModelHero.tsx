@@ -6,8 +6,8 @@ import { QueryProvider } from '@/components/QueryProvider';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 export function ModelHero() {
-  const { models } = useModels();
-  const modelCount = models.length;
+  const { models, loading } = useModels();
+  const modelCount = loading ? '' : models?.length || null; 
 
   return (
     <div className="space-y-12">
@@ -24,7 +24,7 @@ export function ModelHero() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
           </span>
-          {modelCount !== null ? `${modelCount} Free Models Available` : 'Free AI Models API'}
+          {modelCount !== null ? `${modelCount} Free Models Available` : 'Free LLM Router'}
         </Badge>
         <h1 className="relative text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl">
           Models go down

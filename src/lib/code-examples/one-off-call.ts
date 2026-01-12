@@ -1,4 +1,4 @@
-export const oneOffCall = `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-models';
+export const oneOffCall = `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-llm-router';
 
 const prompt = 'Summarize this article in 3 bullet points: ...';
 

@@ -1,4 +1,4 @@
-export const toolCalling = `import { getModelIds, reportIssue, issueFromStatus } from './free-models';
+export const toolCalling = `import { getModelIds, reportIssue, issueFromStatus } from './free-llm-router';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 import { z } from 'zod';

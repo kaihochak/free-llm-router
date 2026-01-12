@@ -15,7 +15,7 @@ import {
   DEFAULT_RELIABILITY_FILTER_ENABLED,
 } from '@/lib/api-definitions';
 
-const BASE_URL = 'https://free-models-api.pages.dev';
+const BASE_URL = 'https://free-LLM-router.pages.dev';
 
 interface TryItPanelProps {
   endpoint: string;
@@ -51,6 +51,16 @@ export function TryItPanel({
         prev.includes(useCase) ? prev.filter((uc) => uc !== useCase) : [...prev, useCase]
       );
     }
+  };
+
+  const resetToDefaults = () => {
+    setActiveUseCases(DEFAULT_USE_CASE);
+    setActiveSort(DEFAULT_SORT);
+    setActiveTopN(DEFAULT_TOP_N);
+    setReliabilityFilterEnabled(DEFAULT_RELIABILITY_FILTER_ENABLED);
+    setActiveMaxErrorRate(DEFAULT_MAX_ERROR_RATE);
+    setActiveTimeRange(DEFAULT_TIME_RANGE);
+    setActiveMyReports(DEFAULT_MY_REPORTS);
   };
 
   const buildUrl = () => {
@@ -157,6 +167,7 @@ export function TryItPanel({
               onMaxErrorRateChange={setActiveMaxErrorRate}
               onTimeRangeChange={(value) => setActiveTimeRange(value as any)}
               onMyReportsChange={setActiveMyReports}
+              onReset={resetToDefaults}
               size="sm"
             />
           </div>

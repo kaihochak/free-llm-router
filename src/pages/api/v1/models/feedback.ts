@@ -6,7 +6,7 @@ import { corsHeaders, logApiRequest } from '@/lib/api-auth';
 const VALID_ISSUES = ['rate_limited', 'unavailable', 'error'] as const;
 
 /**
- * Submit feedback about a model (success or issue)
+ * Submit health feedback about a model (success or issue)
  * Requires API key authentication but does NOT count towards rate limit.
  * Can report either success (success: true) or an issue (issue: 'rate_limited' | 'unavailable' | 'error')
  */

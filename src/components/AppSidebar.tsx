@@ -36,6 +36,7 @@ const navItems: NavItem[] = [
     icon: Rocket,
     items: [
       { title: 'Overview', href: '#get-started' },
+      { title: 'Live Model Preview', href: '#live-preview' },
       { title: '1. Set Up OpenRouter', href: '#setup-openrouter' },
       { title: '2. Preview Models', href: '#models' },
       { title: '3. Get API Key', href: '#get-api-key' },

@@ -2,7 +2,7 @@
  * REFERENCE FILE - From CourseRater (Supabase version)
  *
  * This shows the database operations pattern using Supabase.
- * Adapt to Drizzle + Neon for free-models-api.
+ * Adapt to Drizzle + Neon for free-LLM-router.
  *
  * Key operations to implement:
  * 1. getActiveModels() - Get list of active model IDs

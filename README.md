@@ -1,14 +1,14 @@
-# Free Models API
+# Free LLM Router
 
-A public API providing curated, community-validated free LLM models from OpenRouter with real-time reliability metrics.
+A public API + SDK that surfaces the healthiest free LLM endpoints (OpenRouter today; adding more providers) with live health metrics and ordered model lists.
 
 ## Features
 
 - **Free Model Discovery** - Get currently available free models with filtering and sorting
-- **Reliability Metrics** - Community-reported error rates and issue tracking
-- **Smart Filtering** - Exclude unreliable models based on recent performance
+- **Health Metrics** - Community-reported success/issue signals rolled into health scores
+- **Smart Filtering** - Exclude unhealthy models based on recent performance
 - **Success Reporting** - Help the community by reporting both successes and failures
-- **Time Windows** - Configurable time ranges (15m to 30d) for reliability data
+- **Time Windows** - Configurable time ranges (15m to 30d) for health data
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ Lightweight endpoint returning only model IDs. Perfect for quick lookups.
 - `sort` - Sort order: `contextLength`, `maxOutput`, `capable`, `leastIssues`, `newest`
 - `limit` - Maximum models to return (1-100)
 - `excludeWithIssues` - Exclude models with >N issues (default: 5)
-- `timeWindow` - Time range for reliability: `15m`, `30m`, `1h`, `6h`, `24h`, `7d`, `30d`, `all` (default: 24h)
+- `timeWindow` - Time range for health: `15m`, `30m`, `1h`, `6h`, `24h`, `7d`, `30d`, `all` (default: 24h)
 
 **Response:**
 ```json
@@ -48,7 +48,7 @@ Lightweight endpoint returning only model IDs. Perfect for quick lookups.
 ```
 
 ### GET /api/v1/models/full
-Complete endpoint returning full model objects with metadata and reliability metrics.
+Complete endpoint returning full model objects with metadata and health metrics.
 
 **Query Parameters:** (Same as `/ids` endpoint, plus:)
 - `userOnly` - Show only your reported issues (default: false, requires auth)
@@ -110,21 +110,21 @@ Report model success or issues. **Does not count towards rate limit.**
 }
 ```
 
-### GET /api/issues
-Public dashboard endpoint for community issue tracking.
+### GET /api/health
+Public endpoint for community model health data.
 
 **Query Parameters:**
 - `range` - Time range: `24h`, `7d`, `30d` (default: 24h)
-- `userOnly` - Show only your reports (requires auth, default: false)
+- `myReports` - Show only your reports (requires auth, default: false)
 
 ## Usage Examples
 
 ### Basic Model Fetching
 
 ```typescript
-import { getModelIds } from './public/free-models';
+import { getModelIds } from './public/free-llm-router';
 
-// Get most reliable chat models from last 24 hours
+// Get healthiest chat models from last 24 hours
 const models = await getModelIds(
   ['chat'],
   'leastIssues',
@@ -138,7 +138,7 @@ console.log('Available models:', models);
 ### With Feedback Reporting
 
 ```typescript
-import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './public/free-models';
+import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './public/free-llm-router';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -165,10 +165,10 @@ for (const modelId of models) {
 }
 ```
 
-### Monitoring Model Reliability
+### Monitoring Model Health
 
 ```typescript
-import { getModelIds } from './public/free-models';
+import { getModelIds } from './public/free-llm-router';
 
 // Get models with error rates from last 7 days
 const models = await getModelIds(
@@ -180,7 +180,7 @@ const models = await getModelIds(
 
 // Check error rates in the response metadata
 const response = await fetch(
-  `https://free-models-api.pages.dev/api/v1/models/full?timeWindow=7d`,
+  `https://free-LLM-router.pages.dev/api/v1/models/full?timeWindow=7d`,
   {
     headers: { 'Authorization': `Bearer ${process.env.FREE_MODELS_API_KEY}` }
   }
@@ -198,12 +198,12 @@ data.models.forEach(model => {
 
 ## Authentication
 
-Get your free API key at https://free-models-api.pages.dev
+Get your free API key at https://free-LLM-router.pages.dev
 
 Use in API requests:
 ```bash
 curl -H "Authorization: Bearer fma_your_key_here" \
-  "https://free-models-api.pages.dev/api/v1/models/ids?filter=chat"
+  "https://free-LLM-router.pages.dev/api/v1/models/ids?filter=chat"
 ```
 
 Set in environment:
@@ -266,7 +266,7 @@ Deploy to Cloudflare Pages:
 
 ## Documentation
 
-- Full web documentation and interactive API explorer at https://free-models-api.pages.dev
+- Full web documentation and interactive API explorer at https://free-LLM-router.pages.dev
 - [PRD](./docs/PRD.md) - Product requirements and design
 - [Reference implementations](./reference/) - Example code for common patterns
 
@@ -276,9 +276,9 @@ Deploy to Cloudflare Pages:
 
 Error rates are only meaningful when we have both success and failure reports:
 
-- **10 errors out of 1000 attempts** = 1% error rate ✅ (reliable)
-- **10 errors out of 20 attempts** = 50% error rate ⚠️ (unreliable)
-- **10 errors, 0 successes** = Cannot calculate reliable rate (missing context)
+- **10 errors out of 1000 attempts** = 1% error rate ✅ (healthy)
+- **10 errors out of 20 attempts** = 50% error rate ⚠️ (unhealthy)
+- **10 errors, 0 successes** = Cannot calculate health rate (missing context)
 
 Help improve metrics by reporting both successes and failures.
 
@@ -300,12 +300,12 @@ Choose the appropriate time window for your use case:
 
 - **15m** - Real-time incident detection
 - **1h/6h** - Recent performance trends
-- **24h** - Daily reliability (recommended default)
+- **24h** - Daily health (recommended default)
 - **7d/30d** - Long-term stability patterns
 
 ## Contributing
 
-Help improve model reliability data by:
+Help improve model health data by:
 1. Using the API in your applications
 2. Reporting both successes and issues
 3. Sharing feedback on the models you use

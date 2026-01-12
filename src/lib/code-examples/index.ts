@@ -1,5 +1,5 @@
 // Single source of truth for SDK - imported at build time
-import FREE_MODELS_SDK from '../../../public/free-models.ts?raw';
+import FREE_MODELS_SDK from './free-llm-router.ts?raw';
 
 // Code examples - each in its own file for easier management
 import { oneOffCall } from './one-off-call';
