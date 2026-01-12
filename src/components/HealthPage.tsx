@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useHealth, TIME_RANGE_OPTIONS, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
-import { IssuesChart } from '@/components/IssuesChart';
+import { IssuesChart } from '@/components/HealthChart';
 import { QueryProvider } from '@/components/QueryProvider';
 import type { Model } from '@/hooks/useModels';
 import {
