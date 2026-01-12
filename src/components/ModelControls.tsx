@@ -34,7 +34,7 @@ import {
   TOOLTIP_TOP_N,
   TOOLTIP_RELIABILITY_FILTER,
 } from '@/lib/api-definitions';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, RotateCcw } from 'lucide-react';
 
 interface ModelControlsProps {
   activeUseCases: UseCaseType[];
@@ -51,6 +51,7 @@ interface ModelControlsProps {
   onMaxErrorRateChange?: (value: number | undefined) => void;
   onTimeRangeChange?: (value: string) => void;
   onMyReportsChange?: (value: boolean) => void;
+  onReset?: () => void;
   size?: 'sm' | 'lg';
 }
 
@@ -69,6 +70,7 @@ export function ModelControls({
   onMaxErrorRateChange,
   onTimeRangeChange,
   onMyReportsChange,
+  onReset,
   size = 'lg',
 }: ModelControlsProps) {
   const isSmall = size === 'sm';
@@ -102,7 +104,8 @@ export function ModelControls({
   const showReliabilitySubControls = reliabilityFilterEnabled && onMaxErrorRateChange && onTimeRangeChange && onMyReportsChange;
 
   return (
-    <div className={`flex flex-wrap ${isSmall ? 'gap-4' : 'gap-6'}`}>
+    <div className={`flex flex-wrap items-start mb-6 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}>
+      <div className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}>
       {/* Use Case dropdown */}
       <div className={`flex flex-col ${gapClass}`}>
         <Tooltip>
@@ -201,12 +204,12 @@ export function ModelControls({
         </div>
       )}
 
-      {/* Reliability Filter group */}
+      {/* Health Filter group */}
       {onReliabilityFilterEnabledChange && (
         <div className={`flex flex-col ${gapClass}`}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Reliability Filter</span>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Health Filter</span>
             </TooltipTrigger>
             <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
           </Tooltip>
@@ -261,6 +264,28 @@ export function ModelControls({
               </>
             )}
           </ButtonGroup>
+        </div>
+      )}
+      </div>
+
+      {/* Reset button */}
+      {onReset && (
+        <div className={`flex flex-col ${gapClass}`}>
+          <span className={`text-muted-foreground ${labelClass} invisible`}>Reset</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size={size}
+                className={`${buttonClass} gap-2`}
+                onClick={onReset}
+              >
+                {/* <RotateCcw className={chevronClass} /> */}
+                Reset
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Reset to defaults</TooltipContent>
+          </Tooltip>
         </div>
       )}
     </div>

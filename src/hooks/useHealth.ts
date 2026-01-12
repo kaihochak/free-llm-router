@@ -45,14 +45,14 @@ export const issueKeys = {
 };
 
 async function fetchIssues(range: TimeRange): Promise<IssuesResponse> {
-  const response = await fetch(`/api/issues?range=${range}`);
+  const response = await fetch(`/api/health?range=${range}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch issues');
+    throw new Error('Failed to fetch health data');
   }
   return response.json();
 }
 
-export function useIssues() {
+export function useHealth() {
   const [range, setRange] = useState<TimeRange>('24h');
 
   const {

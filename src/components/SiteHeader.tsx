@@ -18,14 +18,14 @@ export function SiteHeader({ showSidebarTrigger = true }: SiteHeaderProps) {
           {showSidebarTrigger && <SidebarTrigger className="md:hidden" />}
           <a href="/" className="flex items-center gap-2 font-semibold">
             <img src="/favicon.svg" alt="" className="h-5 w-5" />
-            <span className="hidden sm:inline text-sm sm:text-base">Free Models API</span>
+            <span className="hidden sm:inline text-sm sm:text-base">Free LLM Router</span>
           </a>
           <nav className="items-center gap-4 flex">
             <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
               Docs
             </a>
-            <a href="/issues" className="text-sm text-muted-foreground hover:text-foreground">
-              Issues
+            <a href="/health" className="text-sm text-muted-foreground hover:text-foreground">
+              Health
             </a>
             <FeedbackDialog />
           </nav>

@@ -3,7 +3,7 @@
  *
  * OpenRouter Client for making LLM calls.
  * This is for reference on how to use OpenRouter API -
- * not directly needed for the free-models-api, but useful context.
+ * not directly needed for the free-LLM-router, but useful context.
  */
 
 export interface OpenRouterCallParams {

@@ -18,6 +18,7 @@ import {
   DEFAULT_TIME_RANGE,
   DEFAULT_MY_REPORTS,
   DEFAULT_RELIABILITY_FILTER_ENABLED,
+  DEFAULT_USE_CASE,
 } from '@/lib/api-definitions';
 
 export interface Model {
@@ -60,7 +61,7 @@ export type SortType = ApiSortType;
 export const USE_CASES = USE_CASE_DEFINITIONS;
 export const SORT_OPTIONS = SORT_DEFINITIONS;
 
-const API_BASE = 'https://free-models-api.pages.dev';
+const API_BASE = 'https://free-LLM-router.pages.dev';
 
 export const modelKeys = {
   all: ['models'] as const,
@@ -105,7 +106,7 @@ async function fetchAllModels(): Promise<ModelsResponse> {
 
 // filterModelsByUseCase and sortModels are imported from @/lib/model-types (single source of truth)
 
-// FREE_MODELS_FILE is imported from /public/free-models.ts at build time (see top of file)
+// FREE_MODELS_FILE is imported from /public/free-llm-router.ts at build time (see top of file)
 // This ensures users always get the latest SDK with caching built-in
 export { FREE_MODELS_FILE };
 
@@ -157,6 +158,16 @@ export function useModels() {
     }
   };
 
+  const resetToDefaults = () => {
+    setActiveUseCases(DEFAULT_USE_CASE);
+    setActiveSort(DEFAULT_SORT);
+    setActiveTopN(DEFAULT_TOP_N);
+    setReliabilityFilterEnabled(DEFAULT_RELIABILITY_FILTER_ENABLED);
+    setActiveMaxErrorRate(DEFAULT_MAX_ERROR_RATE);
+    setActiveTimeRange(DEFAULT_TIME_RANGE);
+    setActiveMyReports(DEFAULT_MY_REPORTS);
+  };
+
   return {
     models,
     loading,
@@ -177,5 +188,6 @@ export function useModels() {
     setActiveTimeRange,
     setActiveMyReports,
     toggleUseCase,
+    resetToDefaults,
   };
 }

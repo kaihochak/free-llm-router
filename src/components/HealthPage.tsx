@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useIssues, TIME_RANGE_OPTIONS, type TimeRange } from '@/hooks/useIssues';
+import { useHealth, TIME_RANGE_OPTIONS, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { IssuesChart } from '@/components/IssuesChart';
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 
 function IssuesPageContent() {
-  const { issues, timeline, loading, error, range, setRange, count, lastUpdated } = useIssues();
+  const { issues, timeline, loading, error, range, setRange, count, lastUpdated } = useHealth();
 
   // Convert IssueData to Model format for ModelList
   const models: Model[] = useMemo(() => {
@@ -35,12 +35,12 @@ function IssuesPageContent() {
 
   return (
     <section className="scroll-mt-16 sm:mt-4">
-      <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Reported Issues</h2>
+      <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Model Health</h2>
       <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
-        Community-reported model reliability data based on both successful requests and reported issues.
+        Community-reported model health data based on both successful requests and reported issues.
       </p>
       <p className="mb-8 text-sm text-muted-foreground sm:mb-12 sm:text-base">
-        Error rates show the percentage of failed requests relative to total reports. Lower percentages indicate more reliable models.
+        Error rates show the percentage of failed requests relative to total reports. Lower percentages indicate healthier models.
         Help improve this data by reporting both successes and issues via the API.
       </p>
 

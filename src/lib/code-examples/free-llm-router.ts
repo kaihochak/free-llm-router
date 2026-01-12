@@ -1,5 +1,5 @@
 /**
- * Free Models API helper with built-in 15-minute caching
+ * Free LLM Router helper with built-in 15-minute caching
  * Set FREE_MODELS_API_KEY in your environment.
  *
  * Caching behavior:
@@ -13,7 +13,7 @@
  *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { maxErrorRate: 20, timeRange: '24h', myReports: true, cache: 'no-store' });
  */
 
-const API = 'https://free-models-api.pages.dev/api/v1';
+const API = 'https://free-LLM-router.pages.dev/api/v1';
 const API_KEY = process.env.FREE_MODELS_API_KEY;
 
 /**
@@ -106,7 +106,7 @@ export async function getModelIds(
   }
 }
 
-// Report issues to help improve model reliability data.
+// Report issues to help improve model health data.
 // This does NOT count towards your rate limit - you're contributing!
 export function reportIssue(
   modelId: string,
@@ -123,7 +123,7 @@ export function reportIssue(
   }).catch(() => {}); // Fire-and-forget, don't block on errors
 }
 
-// Report successful model usage to improve reliability metrics.
+// Report successful model usage to improve health metrics.
 // This does NOT count towards your rate limit - you're contributing!
 export function reportSuccess(modelId: string, details?: string) {
   fetch(`${API}/models/feedback`, {

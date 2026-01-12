@@ -109,7 +109,7 @@ export type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'al
 
 export const VALID_TIME_RANGES: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d', 'all'];
 
-// Time ranges with labels (for UI display - used in useIssues.ts)
+// Time ranges with labels (for UI display - used in useHealth.ts)
 export const VALID_TIME_RANGES_WITH_LABELS: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d'];
 
 export interface TimeRangeDefinition {
@@ -181,9 +181,9 @@ export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = true;
 // ==================== UI TOOLTIP CONTENT ====================
 
 export const TOOLTIP_USE_CASE = 'Select models by use case (chat, vision, tools, long context, reasoning)';
-export const TOOLTIP_SORT = 'Sort models by context length, max output, capabilities, or reliability';
+export const TOOLTIP_SORT = 'Sort models by context length, max output, capabilities, or health';
 export const TOOLTIP_TOP_N = 'Return only the top N models based on sort order';
-export const TOOLTIP_RELIABILITY_FILTER = 'Filter out unreliable models by tweaking error rate threshold and time range';
+export const TOOLTIP_RELIABILITY_FILTER = 'Filter out unhealthy models by tweaking error rate threshold and time range';
 
 // ==================== VALIDATION UTILITIES ====================
 

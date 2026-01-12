@@ -39,6 +39,7 @@ export function ApiUsageStep({
     setActiveMaxErrorRate,
     setActiveTimeRange,
     setActiveMyReports,
+    resetToDefaults,
   } = useModels();
 
   const snippet = generateSnippet(apiUrl);
@@ -81,10 +82,10 @@ export function ApiUsageStep({
         <div id="models" className="scroll-mt-20 space-y-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">2</span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Preview Your Model List</h3>
+          <h3 className="text-xl font-semibold sm:text-2xl">Preview Your Live Model List</h3>
         </div>
           <p className="text-muted-foreground">
-            Configure use case and sorting to customize which models you'll get. This is a live preview - your app will fetch these dynamically.
+            Configure use case and sorting to preview the live, health-scored list your app will fetch dynamically.
           </p>
 
           {/* Model Controls */}
@@ -103,6 +104,7 @@ export function ApiUsageStep({
             onMaxErrorRateChange={setActiveMaxErrorRate}
             onTimeRangeChange={setActiveTimeRange}
             onMyReportsChange={setActiveMyReports}
+            onReset={resetToDefaults}
           />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -168,11 +170,11 @@ export function ApiUsageStep({
         </div>
       </div>
 
-      {/* Step 4: Copy free-models.ts */}
+      {/* Step 4: Copy free-llm-router.ts */}
       <div id="copy-file" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 4 : 3}</span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Copy <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">free-models.ts</code></h3>
+          <h3 className="text-xl font-semibold sm:text-2xl">Copy <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">free-llm-router.ts</code></h3>
         </div>
         <p className="text-muted-foreground">
           This helper fetches free model IDs from our API, reports both successes and issues back, and handles caching automatically. It's a single file with no dependencies.
@@ -204,6 +206,7 @@ export function ApiUsageStep({
           onMaxErrorRateChange={setActiveMaxErrorRate}
           onTimeRangeChange={setActiveTimeRange}
           onMyReportsChange={setActiveMyReports}
+          onReset={resetToDefaults}
         />
         <CodeBlock
           code={codeExamples.getModelIdsCall(

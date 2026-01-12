@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
-const BASE_URL = 'https://free-models-api.pages.dev';
+const BASE_URL = 'https://free-LLM-router.pages.dev';
 
 const METHOD_COLORS = {
   GET: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',

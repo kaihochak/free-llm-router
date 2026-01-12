@@ -42,11 +42,11 @@ try {
   for (const id of models) {
     try {
       const res = await client.chat.completions.create({ model: id, messages });
-      reportSuccess(id); // Helps improve reliability metrics
+      reportSuccess(id); // Helps improve health metrics
       return res;
     } catch (e) {
       const status = e.status || e.response?.status;
-      reportIssue(id, issueFromStatus(status), e.message); // Helps improve reliability metrics
+      reportIssue(id, issueFromStatus(status), e.message); // Helps improve health metrics
     }
   }
 } catch {

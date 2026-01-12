@@ -22,9 +22,9 @@ function validateRange(value: string | null): TimeRange {
 }
 
 /**
- * Issues endpoint for the issues page and dashboard.
+ * Health endpoint for the health page and dashboard.
  * No authentication required - returns public community reports by default.
- * Optional userOnly parameter (requires API key) allows filtering to user's own reports.
+ * Optional myReports parameter (requires API key) allows filtering to user's own reports.
  */
 export const GET: APIRoute = async (context) => {
   try {
@@ -68,8 +68,8 @@ export const GET: APIRoute = async (context) => {
       }
     );
   } catch (error) {
-    console.error('[API/issues] Error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch issues' }), {
+    console.error('[API/health] Error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch health data' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

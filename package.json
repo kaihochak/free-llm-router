@@ -1,5 +1,5 @@
 {
-  "name": "free-models-api",
+  "name": "free-LLM-router",
   "type": "module",
   "version": "0.0.1",
   "scripts": {

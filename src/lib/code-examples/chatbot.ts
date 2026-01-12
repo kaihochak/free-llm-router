@@ -1,4 +1,4 @@
-export const chatbot = `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-models';
+export const chatbot = `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-llm-router';
 import OpenAI from 'openai';
 
 // OpenAI SDK works with OpenRouter's API
