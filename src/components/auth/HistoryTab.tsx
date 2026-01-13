@@ -18,6 +18,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  PaginationEllipsis,
 } from '@/components/ui/pagination';
 import { Clock, FileText, RefreshCw } from 'lucide-react';
 

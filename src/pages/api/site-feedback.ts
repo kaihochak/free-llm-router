@@ -1,6 +1,15 @@
 import type { APIRoute } from 'astro';
 import { createDb, siteFeedback } from '@/db';
 
+interface FeedbackPayload {
+  type?: (typeof VALID_TYPES)[number];
+  message?: string;
+  email?: string;
+  userAgent?: string;
+  pageUrl?: string;
+  'cf-turnstile-response'?: string;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -11,7 +20,7 @@ const VALID_TYPES = ['general', 'bug'] as const;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const runtime = locals.runtime;
+    const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
     const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
     const turnstileSecret =
       runtime?.env?.TURNSTILE_SECRET_KEY || import.meta.env.TURNSTILE_SECRET_KEY;
@@ -23,7 +32,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as FeedbackPayload;
     const { type, message, email, userAgent, pageUrl, 'cf-turnstile-response': token } = body;
 
     // Verify Turnstile token if secret is configured
