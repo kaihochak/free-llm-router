@@ -16,11 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { UseCaseType, SortType } from '@/lib/api-definitions';
 import {
   USE_CASE_DEFINITIONS,
@@ -87,13 +83,15 @@ export function ModelControls({
     setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
   }, [activeMaxErrorRate]);
 
-  const useCaseLabel = activeUseCases.length === 0
-    ? 'All'
-    : activeUseCases.length === 1
-      ? USE_CASE_DEFINITIONS.find(uc => uc.key === activeUseCases[0])?.label || activeUseCases[0]
-      : `${activeUseCases.length} selected`;
+  const useCaseLabel =
+    activeUseCases.length === 0
+      ? 'All'
+      : activeUseCases.length === 1
+        ? USE_CASE_DEFINITIONS.find((uc) => uc.key === activeUseCases[0])?.label ||
+          activeUseCases[0]
+        : `${activeUseCases.length} selected`;
 
-  const sortLabel = SORT_DEFINITIONS.find(s => s.key === activeSort)?.label || activeSort;
+  const sortLabel = SORT_DEFINITIONS.find((s) => s.key === activeSort)?.label || activeSort;
 
   const labelClass = isSmall ? 'text-xs leading-4' : 'text-sm font-medium leading-5';
   const gapClass = isSmall ? 'gap-1' : 'gap-2';
@@ -101,171 +99,184 @@ export function ModelControls({
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
 
   // Check if reliability filter controls should be shown
-  const showReliabilitySubControls = reliabilityFilterEnabled && onMaxErrorRateChange && onTimeRangeChange && onMyReportsChange;
+  const showReliabilitySubControls =
+    reliabilityFilterEnabled && onMaxErrorRateChange && onTimeRangeChange && onMyReportsChange;
 
   return (
-    <div className={`flex flex-wrap items-start mb-6 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}>
-      <div className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}>
-      {/* Use Case dropdown */}
-      <div className={`flex flex-col ${gapClass}`}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Use Case</span>
-          </TooltipTrigger>
-          <TooltipContent>{TOOLTIP_USE_CASE}</TooltipContent>
-        </Tooltip>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size={size} className={`${buttonClass} gap-2`}>
-              {useCaseLabel}
-              <ChevronDown className={`${chevronClass} opacity-50`} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuCheckboxItem
-              checked={activeUseCases.length === 0}
-              onCheckedChange={() => onToggleUseCase('all')}
-            >
-              All
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuSeparator />
-            {USE_CASE_DEFINITIONS.filter(uc => uc.key !== 'all').map((useCase) => (
+    <div
+      className={`flex flex-wrap items-start mb-6 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}
+    >
+      <div
+        className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}
+      >
+        {/* Use Case dropdown */}
+        <div className={`flex flex-col ${gapClass}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Use Case</span>
+            </TooltipTrigger>
+            <TooltipContent>{TOOLTIP_USE_CASE}</TooltipContent>
+          </Tooltip>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size={size} className={`${buttonClass} gap-2`}>
+                {useCaseLabel}
+                <ChevronDown className={`${chevronClass} opacity-50`} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
               <DropdownMenuCheckboxItem
-                key={useCase.key}
-                checked={activeUseCases.includes(useCase.key as UseCaseType)}
-                onCheckedChange={() => onToggleUseCase(useCase.key as UseCaseType)}
+                checked={activeUseCases.length === 0}
+                onCheckedChange={() => onToggleUseCase('all')}
               >
-                {useCase.label}
+                All
               </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Sort dropdown */}
-      <div className={`flex flex-col ${gapClass}`}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className={`text-muted-foreground ${labelClass} cursor-help`}>Sort</span>
-          </TooltipTrigger>
-          <TooltipContent>{TOOLTIP_SORT}</TooltipContent>
-        </Tooltip>
-        <Select value={activeSort} onValueChange={(value) => onSortChange(value as SortType)}>
-          <SelectTrigger className={`w-auto ${buttonClass}`}>
-            <SelectValue>{sortLabel}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_DEFINITIONS.map((option) => (
-              <SelectItem key={option.key} value={option.key}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Top N control */}
-      {onTopNChange && (
-        <div className={`flex flex-col ${gapClass}`}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Top N</span>
-            </TooltipTrigger>
-            <TooltipContent>{TOOLTIP_TOP_N}</TooltipContent>
-          </Tooltip>
-          <ButtonGroup>
-            <Button
-              variant={activeTopN !== undefined ? 'default' : 'outline'}
-              size={size}
-              className={buttonClass}
-              onClick={() => onTopNChange(activeTopN === undefined ? 5 : undefined)}
-            >
-              {activeTopN !== undefined ? 'On' : 'Off'}
-            </Button>
-            {activeTopN !== undefined && (
-              <Input
-                type="number"
-                min="1"
-                max="100"
-                value={topNInput}
-                onChange={(e) => setTopNInput(e.target.value)}
-                onBlur={() => {
-                  const value = parseInt(topNInput, 10);
-                  if (!isNaN(value) && value >= 1) {
-                    onTopNChange(Math.min(100, value));
-                  } else {
-                    setTopNInput(activeTopN?.toString() ?? '');
-                  }
-                }}
-                className={`w-16 ${buttonClass}`}
-              />
-            )}
-          </ButtonGroup>
+              <DropdownMenuSeparator />
+              {USE_CASE_DEFINITIONS.filter((uc) => uc.key !== 'all').map((useCase) => (
+                <DropdownMenuCheckboxItem
+                  key={useCase.key}
+                  checked={activeUseCases.includes(useCase.key as UseCaseType)}
+                  onCheckedChange={() => onToggleUseCase(useCase.key as UseCaseType)}
+                >
+                  {useCase.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}
 
-      {/* Health Filter group */}
-      {onReliabilityFilterEnabledChange && (
+        {/* Sort dropdown */}
         <div className={`flex flex-col ${gapClass}`}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Health Filter</span>
+              <span className={`text-muted-foreground ${labelClass} cursor-help`}>Sort</span>
             </TooltipTrigger>
-            <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
+            <TooltipContent>{TOOLTIP_SORT}</TooltipContent>
           </Tooltip>
-          <ButtonGroup>
-            <Button
-              variant={reliabilityFilterEnabled ? 'default' : 'outline'}
-              size={size}
-              className={buttonClass}
-              onClick={() => onReliabilityFilterEnabledChange(!reliabilityFilterEnabled)}
-            >
-              {reliabilityFilterEnabled ? 'On' : 'Off'}
-            </Button>
-            {showReliabilitySubControls && (
-              <>
+          <Select value={activeSort} onValueChange={(value) => onSortChange(value as SortType)}>
+            <SelectTrigger className={`w-auto ${buttonClass}`}>
+              <SelectValue>{sortLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_DEFINITIONS.map((option) => (
+                <SelectItem key={option.key} value={option.key}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Top N control */}
+        {onTopNChange && (
+          <div className={`flex flex-col ${gapClass}`}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={`text-muted-foreground ${labelClass} cursor-help`}>Top N</span>
+              </TooltipTrigger>
+              <TooltipContent>{TOOLTIP_TOP_N}</TooltipContent>
+            </Tooltip>
+            <ButtonGroup>
+              <Button
+                variant={activeTopN !== undefined ? 'default' : 'outline'}
+                size={size}
+                className={buttonClass}
+                onClick={() => onTopNChange(activeTopN === undefined ? 5 : undefined)}
+              >
+                {activeTopN !== undefined ? 'On' : 'Off'}
+              </Button>
+              {activeTopN !== undefined && (
                 <Input
                   type="number"
-                  min="0"
+                  min="1"
                   max="100"
-                  value={errorRateInput}
-                  onChange={(e) => setErrorRateInput(e.target.value)}
+                  value={topNInput}
+                  onChange={(e) => setTopNInput(e.target.value)}
                   onBlur={() => {
-                    const value = parseInt(errorRateInput, 10);
-                    if (!isNaN(value) && value >= 0 && value <= 100) {
-                      onMaxErrorRateChange(value);
+                    const value = parseInt(topNInput, 10);
+                    if (!isNaN(value) && value >= 1) {
+                      onTopNChange(Math.min(100, value));
                     } else {
-                      setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
+                      setTopNInput(activeTopN?.toString() ?? '');
                     }
                   }}
-                  className={`pr-0! w-14 ${buttonClass} border-r-0!`}
+                  className={`w-16 ${buttonClass}`}
                 />
-                <ButtonGroupText className={`pr-3 pl-0 bg-background shadow-xs border-l-0! dark:bg-input/30 dark:border-input ${buttonClass}`}>%</ButtonGroupText>
-                <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>
-                  <SelectTrigger className={`w-20 ${buttonClass}`}>
-                    <SelectValue>{activeTimeRange}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_RANGE_DEFINITIONS.filter(tr => VALID_TIME_RANGES_WITH_LABELS.includes(tr.value)).map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant={activeMyReports ? 'default' : 'outline'}
-                  size={size}
-                  className={buttonClass}
-                  onClick={() => onMyReportsChange(!activeMyReports)}
-                >
-                  {activeMyReports ? 'All Community Reports' : 'My Reports Only'}
-                </Button>
-              </>
-            )}
-          </ButtonGroup>
-        </div>
-      )}
+              )}
+            </ButtonGroup>
+          </div>
+        )}
+
+        {/* Health Filter group */}
+        {onReliabilityFilterEnabledChange && (
+          <div className={`flex flex-col ${gapClass}`}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={`text-muted-foreground ${labelClass} cursor-help`}>
+                  Health Filter
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
+            </Tooltip>
+            <ButtonGroup>
+              <Button
+                variant={reliabilityFilterEnabled ? 'default' : 'outline'}
+                size={size}
+                className={buttonClass}
+                onClick={() => onReliabilityFilterEnabledChange(!reliabilityFilterEnabled)}
+              >
+                {reliabilityFilterEnabled ? 'On' : 'Off'}
+              </Button>
+              {showReliabilitySubControls && (
+                <>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={errorRateInput}
+                    onChange={(e) => setErrorRateInput(e.target.value)}
+                    onBlur={() => {
+                      const value = parseInt(errorRateInput, 10);
+                      if (!isNaN(value) && value >= 0 && value <= 100) {
+                        onMaxErrorRateChange(value);
+                      } else {
+                        setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
+                      }
+                    }}
+                    className={`pr-0! w-14 ${buttonClass} border-r-0!`}
+                  />
+                  <ButtonGroupText
+                    className={`pr-3 pl-0 bg-background shadow-xs border-l-0! dark:bg-input/30 dark:border-input ${buttonClass}`}
+                  >
+                    %
+                  </ButtonGroupText>
+                  <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>
+                    <SelectTrigger className={`w-20 ${buttonClass}`}>
+                      <SelectValue>{activeTimeRange}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_RANGE_DEFINITIONS.filter((tr) =>
+                        VALID_TIME_RANGES_WITH_LABELS.includes(tr.value)
+                      ).map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant={activeMyReports ? 'default' : 'outline'}
+                    size={size}
+                    className={buttonClass}
+                    onClick={() => onMyReportsChange(!activeMyReports)}
+                  >
+                    {activeMyReports ? 'All Community Reports' : 'My Reports Only'}
+                  </Button>
+                </>
+              )}
+            </ButtonGroup>
+          </div>
+        )}
       </div>
 
       {/* Reset button */}

@@ -5,11 +5,7 @@ import {
   getLastUpdated,
   getRecentFeedbackCounts,
 } from '@/services/openrouter';
-import {
-  rateLimitHeaders,
-  corsHeaders,
-  logApiRequest,
-} from '@/lib/api-auth';
+import { rateLimitHeaders, corsHeaders, logApiRequest } from '@/lib/api-auth';
 import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
 
 /**

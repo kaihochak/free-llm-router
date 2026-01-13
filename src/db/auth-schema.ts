@@ -91,8 +91,7 @@ export const apiRequestLogs = pgTable('api_request_logs', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  apiKeyId: text('api_key_id')
-    .references(() => apiKeys.id, { onDelete: 'set null' }),
+  apiKeyId: text('api_key_id').references(() => apiKeys.id, { onDelete: 'set null' }),
   endpoint: text('endpoint').notNull(),
   method: text('method').notNull(),
   statusCode: integer('status_code').notNull(),

@@ -81,9 +81,9 @@ export const ALL: APIRoute = async ({ request, locals }) => {
     return response;
   } catch (error) {
     console.error('[Auth] Error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Auth error', message: String(error) }),
-      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    );
+    return new Response(JSON.stringify({ error: 'Auth error', message: String(error) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
   }
 };

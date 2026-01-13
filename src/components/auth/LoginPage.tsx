@@ -28,17 +28,10 @@ export function LoginPage() {
     <Card className="w-full">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Sign In</CardTitle>
-        <CardDescription>
-          Sign in with GitHub to create and manage your API keys
-        </CardDescription>
+        <CardDescription>Sign in with GitHub to create and manage your API keys</CardDescription>
       </CardHeader>
       <CardContent>
-        <Button
-          onClick={handleGitHubSignIn}
-          className="w-full"
-          size="lg"
-          disabled={isPending}
-        >
+        <Button onClick={handleGitHubSignIn} className="w-full" size="lg" disabled={isPending}>
           <Github className="mr-2 h-5 w-5" />
           Continue with GitHub
         </Button>

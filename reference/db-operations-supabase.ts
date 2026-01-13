@@ -14,7 +14,7 @@
  * Model stored in database
  */
 export interface FreeModel {
-  id: string;                    // Primary key (model ID from OpenRouter)
+  id: string; // Primary key (model ID from OpenRouter)
   name: string;
   context_length: number | null;
   description: string | null;

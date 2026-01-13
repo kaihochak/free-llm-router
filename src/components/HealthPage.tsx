@@ -17,7 +17,18 @@ import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 
 function IssuesPageContent() {
-  const { issues, timeline, loading, error, range, setRange, count, lastUpdated, myReports, setMyReports } = useHealth();
+  const {
+    issues,
+    timeline,
+    loading,
+    error,
+    range,
+    setRange,
+    count,
+    lastUpdated,
+    myReports,
+    setMyReports,
+  } = useHealth();
   const { data: session } = useCachedSession();
 
   // Convert IssueData to Model format for ModelList
@@ -41,11 +52,13 @@ function IssuesPageContent() {
     <section className="scroll-mt-16 sm:mt-4">
       <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Model Health</h2>
       <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
-        {myReports ? 'Your personal' : 'Community-reported'} model health data based on both successful requests and reported issues.
+        {myReports ? 'Your personal' : 'Community-reported'} model health data based on both
+        successful requests and reported issues.
       </p>
       <p className="mb-8 text-sm text-muted-foreground sm:mb-12 sm:text-base">
-        Error rates show the percentage of failed requests relative to total reports. Lower percentages indicate healthier models.
-        Help improve this data by reporting both successes and issues via the API.
+        Error rates show the percentage of failed requests relative to total reports. Lower
+        percentages indicate healthier models. Help improve this data by reporting both successes
+        and issues via the API.
       </p>
 
       {/* Controls */}

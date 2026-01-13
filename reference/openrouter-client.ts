@@ -56,14 +56,7 @@ export function parseOpenRouterJson(text: string): unknown {
  * Call OpenRouter API (single attempt, no retries)
  */
 export async function callOpenRouter(params: OpenRouterCallParams): Promise<OpenRouterResponse> {
-  const {
-    apiKey,
-    model,
-    prompt,
-    systemPrompt,
-    temperature = 0.1,
-    maxOutputTokens = 2000
-  } = params;
+  const { apiKey, model, prompt, systemPrompt, temperature = 0.1, maxOutputTokens = 2000 } = params;
 
   const messages: { role: string; content: string }[] = [];
 
@@ -76,18 +69,18 @@ export async function callOpenRouter(params: OpenRouterCallParams): Promise<Open
     model,
     messages,
     temperature,
-    max_tokens: maxOutputTokens
+    max_tokens: maxOutputTokens,
   };
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://your-app.com',  // Update this
-      'X-Title': 'YourApp'  // Update this
+      'HTTP-Referer': 'https://your-app.com', // Update this
+      'X-Title': 'YourApp', // Update this
     },
-    body: JSON.stringify(requestBody)
+    body: JSON.stringify(requestBody),
   });
 
   const rawBody = await response.text();
@@ -114,7 +107,9 @@ export async function callOpenRouter(params: OpenRouterCallParams): Promise<Open
   }
 
   // Extract response text (OpenAI format)
-  const choices = data.choices as Array<{ message?: { content?: string }; finish_reason?: string }> | undefined;
+  const choices = data.choices as
+    | Array<{ message?: { content?: string }; finish_reason?: string }>
+    | undefined;
   const text = choices?.[0]?.message?.content?.trim() ?? '';
 
   if (!text) {
@@ -128,18 +123,20 @@ export async function callOpenRouter(params: OpenRouterCallParams): Promise<Open
   }
 
   // Extract token usage (OpenAI format)
-  const usage = data.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined;
+  const usage = data.usage as
+    | { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
+    | undefined;
   const promptTokens = usage?.prompt_tokens ?? 0;
   const completionTokens = usage?.completion_tokens ?? 0;
-  const totalTokens = usage?.total_tokens ?? (promptTokens + completionTokens);
+  const totalTokens = usage?.total_tokens ?? promptTokens + completionTokens;
 
   return {
     text,
     tokenUsage: {
       prompt_tokens: promptTokens,
       completion_tokens: completionTokens,
-      total_tokens: totalTokens
+      total_tokens: totalTokens,
     },
-    costUsd: 0 // Free tier model
+    costUsd: 0, // Free tier model
   };
 }

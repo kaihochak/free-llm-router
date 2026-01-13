@@ -22,17 +22,22 @@ const { showHeader = true, ...seoProps } = Astro.props;
     <meta name="generator" content={Astro.generator} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <SEO {...seoProps} />
     <PostHog />
-    {import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
-      <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    )}
+    {
+      import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
+        <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+      )
+    }
     <script is:inline>
-      (function() {
+      (function () {
         const theme = localStorage.getItem('theme');
-        const isDark = theme === 'dark' ||
-          (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const isDark =
+          theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (isDark) document.documentElement.classList.add('dark');
       })();
     </script>
@@ -45,7 +50,7 @@ const { showHeader = true, ...seoProps } = Astro.props;
   -->
   <body class="min-h-screen bg-background text-foreground">
     {showHeader && <SiteHeader client:load showSidebarTrigger={false} />}
-    <main class={showHeader ? "pt-14" : ""}>
+    <main class={showHeader ? 'pt-14' : ''}>
       <slot />
     </main>
     <Toaster client:load />

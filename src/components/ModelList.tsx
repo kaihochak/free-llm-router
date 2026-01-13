@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Model } from '@/hooks/useModels';
 import { ArrowUpRight, AlertTriangle } from 'lucide-react';
 
@@ -88,7 +83,13 @@ function ProviderLogo({ provider }: { provider: string }) {
   );
 }
 
-export function ModelList({ models, loading, error, currentPage, itemsPerPage = DEFAULT_ITEMS_PER_PAGE }: ModelListProps) {
+export function ModelList({
+  models,
+  loading,
+  error,
+  currentPage,
+  itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
+}: ModelListProps) {
   const paginatedModels = models.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -137,11 +138,7 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
                 {badges.length > 0 && (
                   <div className="hidden sm:flex gap-1">
                     {badges.map((badge) => (
-                      <Badge
-                        key={badge}
-                        variant="secondary"
-                        className="text-[10px] font-medium"
-                      >
+                      <Badge key={badge} variant="secondary" className="text-[10px] font-medium">
                         {badge}
                       </Badge>
                     ))}
@@ -156,11 +153,15 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="font-mono hidden sm:inline">
-                        {formatTokens(model.contextLength)} / {formatTokens(model.maxCompletionTokens)}
+                        {formatTokens(model.contextLength)} /{' '}
+                        {formatTokens(model.maxCompletionTokens)}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Context: {formatTokens(model.contextLength)} · Output: {formatTokens(model.maxCompletionTokens)}</p>
+                      <p>
+                        Context: {formatTokens(model.contextLength)} · Output:{' '}
+                        {formatTokens(model.maxCompletionTokens)}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -201,7 +202,9 @@ export function ModelList({ models, loading, error, currentPage, itemsPerPage = 
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{model.issueCount} reported issue{model.issueCount === 1 ? '' : 's'}</p>
+                        <p>
+                          {model.issueCount} reported issue{model.issueCount === 1 ? '' : 's'}
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

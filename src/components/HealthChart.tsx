@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { useMemo, useState, useEffect } from "react"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { useMemo, useState, useEffect } from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import {
   type ChartConfig,
@@ -9,45 +9,45 @@ import {
   ChartLegend,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
-import type { IssueSummary, TimelinePoint, TimeRange } from "@/services/openrouter"
-import { cn } from "@/lib/utils"
+} from '@/components/ui/chart';
+import type { IssueSummary, TimelinePoint, TimeRange } from '@/services/openrouter';
+import { cn } from '@/lib/utils';
 
 interface IssuesChartProps {
-  timeline: TimelinePoint[]
-  issues: IssueSummary[]
-  range: TimeRange
+  timeline: TimelinePoint[];
+  issues: IssueSummary[];
+  range: TimeRange;
 }
 
 // Chart color palette (cycles through these for each model)
 const CHART_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-]
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+];
 
 function formatDateLabel(dateString: string, range: TimeRange): string {
-  const date = new Date(dateString)
-  if (range === "15m" || range === "1h") {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
+  const date = new Date(dateString);
+  if (range === '15m' || range === '1h') {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
       hour12: true,
-    })
+    });
   }
-  if (range === "6h" || range === "24h") {
-    return date.toLocaleTimeString("en-US", { hour: "numeric", hour12: true })
+  if (range === '6h' || range === '24h') {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
   }
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function getShortModelName(modelId: string): string {
   // Extract just the model name from "provider/model:variant" format
-  const parts = modelId.split("/")
-  const modelPart = parts[parts.length - 1]
-  return modelPart.replace(/:free$/, "")
+  const parts = modelId.split('/');
+  const modelPart = parts[parts.length - 1];
+  return modelPart.replace(/:free$/, '');
 }
 
 function InteractiveLegendContent({
@@ -56,47 +56,47 @@ function InteractiveLegendContent({
   onToggle,
   issues,
 }: {
-  payload?: any[]
-  visibleSeries: Set<string>
-  onToggle: (dataKey: string) => void
-  issues: IssueSummary[]
+  payload?: any[];
+  visibleSeries: Set<string>;
+  onToggle: (dataKey: string) => void;
+  issues: IssueSummary[];
 }) {
   if (!payload?.length) {
-    return null
+    return null;
   }
 
   // Create a map of modelId to issue summary for quick lookup
-  const issuesMap = new Map(issues.map((issue) => [issue.modelId, issue]))
+  const issuesMap = new Map(issues.map((issue) => [issue.modelId, issue]));
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
       {payload
-        .filter((item) => item.type !== "none")
+        .filter((item) => item.type !== 'none')
         .map((item) => {
-          const isVisible = visibleSeries.has(item.dataKey)
-          const shortName = getShortModelName(item.dataKey)
-          const issueSummary = issuesMap.get(item.dataKey)
+          const isVisible = visibleSeries.has(item.dataKey);
+          const shortName = getShortModelName(item.dataKey);
+          const issueSummary = issuesMap.get(item.dataKey);
 
           return (
             <button
               key={item.dataKey ?? item.value}
               onClick={() => onToggle(item.dataKey)}
               className={cn(
-                "flex items-center gap-1.5 rounded px-2 py-1 transition-opacity cursor-pointer",
-                isVisible ? "opacity-100" : "opacity-40 hover:opacity-60"
+                'flex items-center gap-1.5 rounded px-2 py-1 transition-opacity cursor-pointer',
+                isVisible ? 'opacity-100' : 'opacity-40 hover:opacity-60'
               )}
-              title={isVisible ? "Click to hide" : "Click to show"}
+              title={isVisible ? 'Click to hide' : 'Click to show'}
             >
               <div
                 className={cn(
-                  "h-2 w-2 shrink-0 rounded-[2px] transition-opacity",
-                  !isVisible && "opacity-50"
+                  'h-2 w-2 shrink-0 rounded-[2px] transition-opacity',
+                  !isVisible && 'opacity-50'
                 )}
                 style={{
                   backgroundColor: item.color,
                 }}
               />
-              <span className={!isVisible ? "text-muted-foreground" : ""}>
+              <span className={!isVisible ? 'text-muted-foreground' : ''}>
                 {shortName}
                 {issueSummary && issueSummary.errorRate > 0 && (
                   <span className="text-xs opacity-70 ml-1">
@@ -105,53 +105,53 @@ function InteractiveLegendContent({
                 )}
               </span>
             </button>
-          )
+          );
         })}
     </div>
-  )
+  );
 }
 
 export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
   // Get unique model IDs from issues (sorted by total issues)
   const modelIds = useMemo(() => {
-    return issues.map((issue) => issue.modelId)
-  }, [issues])
+    return issues.map((issue) => issue.modelId);
+  }, [issues]);
 
   // State to track which series are currently visible
-  const [visibleSeries, setVisibleSeries] = useState<Set<string>>(new Set())
+  const [visibleSeries, setVisibleSeries] = useState<Set<string>>(new Set());
 
   // Initialize visible series when modelIds change
   useEffect(() => {
-    setVisibleSeries(new Set(modelIds))
-  }, [modelIds])
+    setVisibleSeries(new Set(modelIds));
+  }, [modelIds]);
 
   // Handle legend click - toggle series visibility
   const handleLegendClick = (dataKey: string) => {
     setVisibleSeries((prev) => {
-      const newSet = new Set(prev)
+      const newSet = new Set(prev);
       if (newSet.has(dataKey)) {
         // Only allow hiding if there's more than one visible series
         if (newSet.size > 1) {
-          newSet.delete(dataKey)
+          newSet.delete(dataKey);
         }
       } else {
-        newSet.add(dataKey)
+        newSet.add(dataKey);
       }
-      return newSet
-    })
-  }
+      return newSet;
+    });
+  };
 
   // Build chart config dynamically based on models present
   const chartConfig = useMemo(() => {
-    const config: ChartConfig = {}
+    const config: ChartConfig = {};
     modelIds.forEach((modelId, index) => {
       config[modelId] = {
         label: getShortModelName(modelId),
         color: CHART_COLORS[index % CHART_COLORS.length],
-      }
-    })
-    return config
-  }, [modelIds])
+      };
+    });
+    return config;
+  }, [modelIds]);
 
   // Legend payload stays constant so clicking an item doesn't remove it
   const legendPayload = useMemo(
@@ -160,10 +160,10 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
         dataKey: modelId,
         value: chartConfig[modelId]?.label ?? getShortModelName(modelId),
         color: CHART_COLORS[index % CHART_COLORS.length],
-        type: "square" as const,
+        type: 'square' as const,
       })),
     [chartConfig, modelIds]
-  )
+  );
 
   // Format timeline data for recharts - ensure all models have values (0 if missing)
   const chartData = useMemo(() => {
@@ -171,31 +171,21 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
       const filledPoint: Record<string, number | string> = {
         date: point.date,
         dateLabel: formatDateLabel(point.date, range),
-      }
+      };
       // Fill in 0 for any model not present in this time bucket
       modelIds.forEach((modelId) => {
-        filledPoint[modelId] = typeof point[modelId] === "number" ? point[modelId] : 0
-      })
-      return filledPoint
-    })
-  }, [timeline, range, modelIds])
+        filledPoint[modelId] = typeof point[modelId] === 'number' ? point[modelId] : 0;
+      });
+      return filledPoint;
+    });
+  }, [timeline, range, modelIds]);
 
   return (
-    <ChartContainer
-      config={chartConfig}
-      className="aspect-auto h-52 w-full sm:h-75"
-    >
+    <ChartContainer config={chartConfig} className="aspect-auto h-52 w-full sm:h-75">
       <AreaChart data={chartData}>
         <defs>
           {modelIds.map((modelId, index) => (
-            <linearGradient
-              key={modelId}
-              id={`fill-${index}`}
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="1"
-            >
+            <linearGradient key={modelId} id={`fill-${index}`} x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="5%"
                 stopColor={CHART_COLORS[index % CHART_COLORS.length]}
@@ -217,20 +207,10 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
           tickMargin={8}
           minTickGap={32}
         />
-        <YAxis
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-          allowDecimals={false}
-        />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
         <ChartTooltip
           cursor={false}
-          content={
-            <ChartTooltipContent
-              labelFormatter={(value) => value}
-              indicator="dot"
-            />
-          }
+          content={<ChartTooltipContent labelFormatter={(value) => value} indicator="dot" />}
         />
         {modelIds.map((modelId, index) =>
           visibleSeries.has(modelId) ? (
@@ -245,9 +225,15 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
         )}
         <ChartLegend
           payload={legendPayload}
-          content={<InteractiveLegendContent visibleSeries={visibleSeries} onToggle={handleLegendClick} issues={issues} />}
+          content={
+            <InteractiveLegendContent
+              visibleSeries={visibleSeries}
+              onToggle={handleLegendClick}
+              issues={issues}
+            />
+          }
         />
       </AreaChart>
     </ChartContainer>
-  )
+  );
 }

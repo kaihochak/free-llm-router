@@ -44,7 +44,8 @@ export function ApiReferenceSection() {
                     type: 'string',
                     description: (
                       <>
-                        Comma-separated: {VALID_USE_CASES.map((useCase, idx) => (
+                        Comma-separated:{' '}
+                        {VALID_USE_CASES.map((useCase, idx) => (
                           <span key={useCase}>
                             {idx > 0 && ', '}
                             <code className="text-xs bg-muted px-1 py-0.5 rounded">{useCase}</code>
@@ -58,7 +59,8 @@ export function ApiReferenceSection() {
                     type: 'string',
                     description: (
                       <>
-                        One of: {VALID_SORTS.map((sort, idx) => (
+                        One of:{' '}
+                        {VALID_SORTS.map((sort, idx) => (
                           <span key={sort}>
                             {idx > 0 && ', '}
                             <code className="text-xs bg-muted px-1 py-0.5 rounded">{sort}</code>
@@ -82,14 +84,18 @@ export function ApiReferenceSection() {
                     type: 'string',
                     description: (
                       <>
-                        Time window for error rates: {VALID_TIME_RANGES_WITH_LABELS.map((tr, idx) => (
+                        Time window for error rates:{' '}
+                        {VALID_TIME_RANGES_WITH_LABELS.map((tr, idx) => (
                           <span key={tr}>
                             {idx > 0 && ', '}
                             <code className="text-xs bg-muted px-1 py-0.5 rounded">{tr}</code>
                           </span>
                         ))}
                         . Default:{' '}
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">{DEFAULT_TIME_RANGE}</code>.
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                          {DEFAULT_TIME_RANGE}
+                        </code>
+                        .
                       </>
                     ),
                   },
@@ -147,8 +153,8 @@ export function ApiReferenceSection() {
                   <code className="bg-muted px-1 py-0.5 rounded">myReports</code>.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  See <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code> documentation
-                  above for parameter details.
+                  See <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code>{' '}
+                  documentation above for parameter details.
                 </p>
               </div>
 
@@ -257,7 +263,7 @@ export function ApiReferenceSection() {
                     name: 'dryRun',
                     type: 'boolean',
                     required: false,
-                    description: 'If true, validates request but doesn\'t save (for testing)',
+                    description: "If true, validates request but doesn't save (for testing)",
                   },
                 ]}
               />

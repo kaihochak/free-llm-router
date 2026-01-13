@@ -96,9 +96,7 @@ async function fetchAllModels(myReports?: boolean): Promise<ModelsResponse> {
   // Attach issue counts and error rates to each model
   const models = data.models.map((model) => {
     const feedback = data.feedbackCounts[model.id];
-    const issueCount = feedback
-      ? feedback.rateLimited + feedback.unavailable + feedback.error
-      : 0;
+    const issueCount = feedback ? feedback.rateLimited + feedback.unavailable + feedback.error : 0;
     const errorRate = feedback ? feedback.errorRate : 0;
     return { ...model, issueCount, errorRate };
   });
@@ -124,13 +122,31 @@ export function getFullApiUrl(apiUrl: string): string {
 }
 
 export function useModels() {
-  const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>('freeModels:useCases', []);
+  const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>(
+    'freeModels:useCases',
+    []
+  );
   const [activeSort, setActiveSort] = useLocalStorage<SortType>('freeModels:sort', DEFAULT_SORT);
-  const [activeTopN, setActiveTopN] = useLocalStorage<number | undefined>('freeModels:topN', DEFAULT_TOP_N);
-  const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useLocalStorage<boolean>('freeModels:reliabilityFilterEnabled', DEFAULT_RELIABILITY_FILTER_ENABLED);
-  const [activeMaxErrorRate, setActiveMaxErrorRate] = useLocalStorage<number | undefined>('freeModels:maxErrorRate', DEFAULT_MAX_ERROR_RATE);
-  const [activeTimeRange, setActiveTimeRange] = useLocalStorage<string>('freeModels:timeRange', DEFAULT_TIME_RANGE);
-  const [activeMyReports, setActiveMyReports] = useLocalStorage<boolean>('freeModels:myReports', DEFAULT_MY_REPORTS);
+  const [activeTopN, setActiveTopN] = useLocalStorage<number | undefined>(
+    'freeModels:topN',
+    DEFAULT_TOP_N
+  );
+  const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useLocalStorage<boolean>(
+    'freeModels:reliabilityFilterEnabled',
+    DEFAULT_RELIABILITY_FILTER_ENABLED
+  );
+  const [activeMaxErrorRate, setActiveMaxErrorRate] = useLocalStorage<number | undefined>(
+    'freeModels:maxErrorRate',
+    DEFAULT_MAX_ERROR_RATE
+  );
+  const [activeTimeRange, setActiveTimeRange] = useLocalStorage<string>(
+    'freeModels:timeRange',
+    DEFAULT_TIME_RANGE
+  );
+  const [activeMyReports, setActiveMyReports] = useLocalStorage<boolean>(
+    'freeModels:myReports',
+    DEFAULT_MY_REPORTS
+  );
 
   // Fetch all models once
   const {
@@ -150,7 +166,10 @@ export function useModels() {
   }, [modelsResponse.models, activeUseCases, activeSort]);
 
   // API URL for the code snippet (reflects current use cases/sort)
-  const apiUrl = useMemo(() => buildApiUrl(activeUseCases, activeSort), [activeUseCases, activeSort]);
+  const apiUrl = useMemo(
+    () => buildApiUrl(activeUseCases, activeSort),
+    [activeUseCases, activeSort]
+  );
 
   const toggleUseCase = (useCase: UseCaseType | 'all') => {
     if (useCase === 'all') {

@@ -30,9 +30,7 @@ export function OnboardingStep({
           Step {stepNumber}
         </span>
         <h2 className="text-4xl font-bold sm:text-5xl">{title}</h2>
-        {description && (
-          <p className="text-lg text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="text-lg text-muted-foreground">{description}</p>}
       </div>
 
       {/* Step Content */}
@@ -40,7 +38,7 @@ export function OnboardingStep({
 
       {/* Confirm Button */}
       {showConfirm && onConfirm && (
-        <Button size="lg" onClick={onConfirm} >
+        <Button size="lg" onClick={onConfirm}>
           {confirmLabel}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>

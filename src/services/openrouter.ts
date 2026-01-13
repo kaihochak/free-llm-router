@@ -8,10 +8,7 @@ import {
   filterModelsByUseCase,
   sortModels,
 } from '../lib/model-types';
-import {
-  type TimeRange,
-  TIME_RANGE_MS,
-} from '../lib/api-definitions';
+import { type TimeRange, TIME_RANGE_MS } from '../lib/api-definitions';
 
 // Re-export types and validation functions for backwards compatibility
 export { type UseCaseType, type SortType, validateUseCases, validateSort };
@@ -166,7 +163,11 @@ export async function syncModels(db: Database): Promise<SyncResult> {
     // Update sync metadata
     await db
       .insert(syncMeta)
-      .values({ key: 'models_last_updated', value: new Date().toISOString(), updatedAt: new Date() })
+      .values({
+        key: 'models_last_updated',
+        value: new Date().toISOString(),
+        updatedAt: new Date(),
+      })
       .onConflictDoUpdate({
         target: syncMeta.key,
         set: { value: new Date().toISOString(), updatedAt: new Date() },
@@ -217,7 +218,11 @@ export async function getActiveModels(db: Database) {
  * Get all active models with issue counts attached.
  * Used by getFilteredModels to enable shared filtering/sorting logic.
  */
-async function getActiveModelsWithFeedback(db: Database, timeRange: TimeRange = '24h', userId?: string) {
+async function getActiveModelsWithFeedback(
+  db: Database,
+  timeRange: TimeRange = '24h',
+  userId?: string
+) {
   const models = await getActiveModels(db);
   const feedbackCounts = await getRecentFeedbackCounts(db, timeRange, userId);
 
@@ -305,7 +310,13 @@ export async function getRecentFeedbackCounts(
 
   for (const row of results) {
     if (!counts[row.modelId]) {
-      counts[row.modelId] = { rateLimited: 0, unavailable: 0, error: 0, successCount: 0, errorRate: 0 };
+      counts[row.modelId] = {
+        rateLimited: 0,
+        unavailable: 0,
+        error: 0,
+        successCount: 0,
+        errorRate: 0,
+      };
     }
 
     if (row.isSuccess) {
@@ -407,7 +418,8 @@ export async function getFeedbackCountsByRange(
   for (const modelId in summaryMap) {
     const summary = summaryMap[modelId];
     const totalReports = summary.successCount + summary.total;
-    summary.errorRate = totalReports > 0 ? Math.round((summary.total / totalReports) * 10000) / 100 : 0;
+    summary.errorRate =
+      totalReports > 0 ? Math.round((summary.total / totalReports) * 10000) / 100 : 0;
   }
 
   // Sort by total issues descending
@@ -519,12 +531,16 @@ export async function getFeedbackTimeline(
   const windowMs = TIME_RANGE_MS[range];
   // Use hourly buckets for 24h, daily for 7d/30d
   const truncUnit =
-    range === '15m' || range === '1h' ? 'minute' : range === '6h' || range === '24h' ? 'hour' : 'day';
+    range === '15m' || range === '1h'
+      ? 'minute'
+      : range === '6h' || range === '24h'
+        ? 'hour'
+        : 'day';
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
 
   const conditions = [
     windowMs !== null ? gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)) : undefined,
-    ...(userId ? [eq(modelFeedback.source, userId)] : [])
+    ...(userId ? [eq(modelFeedback.source, userId)] : []),
   ].filter(Boolean) as Parameters<typeof db.select>[0][];
 
   const results = await db

@@ -23,7 +23,11 @@ function formatRelativeTime(dateString: string): string {
   return 'over a day ago';
 }
 
-export function ModelCountHeader({ count, lastUpdated, label = 'free models' }: ModelCountHeaderProps) {
+export function ModelCountHeader({
+  count,
+  lastUpdated,
+  label = 'free models',
+}: ModelCountHeaderProps) {
   const [relativeTime, setRelativeTime] = useState<string | null>(
     lastUpdated ? formatRelativeTime(lastUpdated) : null
   );

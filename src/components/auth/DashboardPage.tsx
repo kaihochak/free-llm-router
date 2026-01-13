@@ -72,10 +72,7 @@ export function DashboardPage() {
         </TabsList>
 
         <TabsContent value="api" className="mt-6">
-          <ApiKeysTab
-            userRateLimit={userRateLimit}
-            onRefreshRateLimit={fetchUserRateLimit}
-          />
+          <ApiKeysTab userRateLimit={userRateLimit} onRefreshRateLimit={fetchUserRateLimit} />
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">

@@ -86,7 +86,13 @@ export function OnboardingFlow() {
     {
       title: 'Set Fallback Priority',
       description: 'Models are tried in order - first = primary, rest = fallbacks',
-      content: <SortSelector activeSort={activeSort} onSortChange={setActiveSort} onConfirm={goToNextStep} />,
+      content: (
+        <SortSelector
+          activeSort={activeSort}
+          onSortChange={setActiveSort}
+          onConfirm={goToNextStep}
+        />
+      ),
     },
     {
       title: 'Add to Your Project',
@@ -117,10 +123,11 @@ export function OnboardingFlow() {
         <button
           onClick={goToPrevStep}
           disabled={currentStep === 0}
-          className={`p-2 rounded-full transition-colors ${currentStep === 0
+          className={`p-2 rounded-full transition-colors ${
+            currentStep === 0
               ? 'text-muted-foreground/30 cursor-not-allowed'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
+          }`}
           aria-label="Previous step"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -135,10 +142,11 @@ export function OnboardingFlow() {
                 setDirection(index > currentStep ? 1 : -1);
                 setCurrentStep(index);
               }}
-              className={`h-2 w-2 rounded-full transition-colors ${index === currentStep
+              className={`h-2 w-2 rounded-full transition-colors ${
+                index === currentStep
                   ? 'bg-primary'
                   : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                }`}
+              }`}
               aria-label={`Go to step ${index + 1}`}
             />
           ))}
@@ -148,10 +156,11 @@ export function OnboardingFlow() {
         <button
           onClick={goToNextStep}
           disabled={currentStep === steps.length - 1}
-          className={`p-2 rounded-full transition-colors ${currentStep === steps.length - 1
+          className={`p-2 rounded-full transition-colors ${
+            currentStep === steps.length - 1
               ? 'text-muted-foreground/30 cursor-not-allowed'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
+          }`}
           aria-label="Next step"
         >
           <ChevronRight className="h-4 w-4" />
@@ -216,7 +225,13 @@ export function OnboardingFlow() {
             )}
           </div>
 
-          <ModelList models={models} loading={loading} error={error} currentPage={currentPage} itemsPerPage={ITEMS_PER_PAGE} />
+          <ModelList
+            models={models}
+            loading={loading}
+            error={error}
+            currentPage={currentPage}
+            itemsPerPage={ITEMS_PER_PAGE}
+          />
         </div>
       )}
     </div>

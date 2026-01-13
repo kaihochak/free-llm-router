@@ -37,7 +37,9 @@ function formatTimeAgo(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-function getStatusBadgeVariant(statusCode: number): 'default' | 'secondary' | 'destructive' | 'outline' {
+function getStatusBadgeVariant(
+  statusCode: number
+): 'default' | 'secondary' | 'destructive' | 'outline' {
   if (statusCode >= 200 && statusCode < 300) return 'default';
   if (statusCode >= 400 && statusCode < 500) return 'secondary';
   if (statusCode >= 500) return 'destructive';
@@ -101,9 +103,7 @@ function RequestHistoryTable() {
                 </code>
               </TableCell>
               <TableCell>
-                <Badge variant={getStatusBadgeVariant(item.statusCode)}>
-                  {item.statusCode}
-                </Badge>
+                <Badge variant={getStatusBadgeVariant(item.statusCode)}>{item.statusCode}</Badge>
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
                 {formatTimeAgo(item.createdAt)}
@@ -206,9 +206,7 @@ export function HistoryTab() {
     <Card>
       <CardHeader>
         <CardTitle>History</CardTitle>
-        <CardDescription>
-          View your API request history and usage reports
-        </CardDescription>
+        <CardDescription>View your API request history and usage reports</CardDescription>
         <div className="flex items-center gap-2 pt-2">
           <Button
             variant={activeSection === 'requests' ? 'default' : 'outline'}

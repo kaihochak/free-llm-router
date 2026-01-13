@@ -9,16 +9,19 @@ Free LLM Router provides community-powered health data for large language models
 ## 2. Usage Rights and Restrictions
 
 ### Permitted Use
+
 - Query available LLM models and their metadata
 - Submit success and failure reports about model performance
 - Access community health metrics (24-hour window)
 - Use the API with your API key for development and production
 
 ### Rate Limits
+
 - **Free Tier:** 200 requests per 24 hours per user
 - **API Keys:** Maximum 10 active API keys per account
 
 ### Prohibited Use
+
 - Attempting to circumvent rate limits through multiple accounts
 - Automated scraping or crawling (use the API instead)
 - Submitting false or misleading health reports
@@ -28,17 +31,20 @@ Free LLM Router provides community-powered health data for large language models
 ## 3. Data and Privacy
 
 ### What We Collect
+
 - API usage logs (endpoint, timestamp, response time)
 - API key metadata (creation date, last used, request count)
 - User email address and GitHub account info
 - Model health feedback (success/failure reports)
 
 ### What We Share
+
 - **Public Health Data:** Aggregated model performance metrics are available to all users (without authentication)
 - **User-Scoped Data:** Your personal health reports are only visible to you unless you explicitly share them
 - **Usage Analytics:** We may analyze aggregated usage patterns to improve the service
 
 ### Data Retention
+
 - Request logs: Retained for 30 days for performance monitoring
 - Health feedback: Retained indefinitely as part of model health history
 - User accounts: Retained until account deletion
@@ -46,12 +52,14 @@ Free LLM Router provides community-powered health data for large language models
 ## 4. Hosted vs. Self-Hosted
 
 ### Hosted Instance (free-llm-router.pages.dev)
+
 - Subject to these Terms of Service
 - Managed by the Free LLM Router team
 - Automatic model updates and health scoring
 - Community health data access
 
 ### Self-Hosted
+
 - MIT licensed code available on GitHub
 - You maintain your own instance
 - You control data retention and privacy
@@ -61,6 +69,7 @@ Free LLM Router provides community-powered health data for large language models
 ## 5. Health Data Methodology
 
 We aggregate model health reports from authenticated users:
+
 - **Success Reports:** "This model worked well for my use case"
 - **Issue Reports:** Rate limiting, unavailability, or errors encountered
 - **Community Aggregation:** We calculate error rates and reliability metrics across all reports
@@ -70,13 +79,17 @@ We aggregate model health reports from authenticated users:
 ## 6. Disclaimers
 
 ### No Warranty
+
 The service is provided "AS IS" without warranty of any kind. We do not guarantee:
+
 - Uptime or availability
 - Accuracy of health metrics
 - That models will behave as reported by other users
 
 ### No Liability
+
 We are not responsible for:
+
 - Model failures or unexpected behavior
 - Data loss or corruption
 - Costs incurred from API usage
@@ -89,6 +102,7 @@ We may update these terms at any time. Continued use of the service constitutes 
 ## 8. Account Termination
 
 We reserve the right to terminate accounts that:
+
 - Violate these terms
 - Submit false health data repeatedly
 - Attempt to circumvent rate limits

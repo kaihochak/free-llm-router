@@ -60,9 +60,7 @@ export function useHistory<T extends ApiRequestLog | FeedbackItem>(
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/auth/history?type=${type}&page=${page}&limit=${limit}`
-      );
+      const response = await fetch(`/api/auth/history?type=${type}&page=${page}&limit=${limit}`);
 
       if (!response.ok) {
         const data = await response.json();

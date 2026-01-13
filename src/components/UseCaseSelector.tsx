@@ -19,7 +19,9 @@ export function UseCaseSelector({
       <div className="flex flex-wrap justify-center items-center gap-2">
         {USE_CASES.map((useCase) => {
           const isActive =
-            useCase.key === 'all' ? activeFilters.length === 0 : activeFilters.includes(useCase.key as UseCaseType);
+            useCase.key === 'all'
+              ? activeFilters.length === 0
+              : activeFilters.includes(useCase.key as UseCaseType);
           return (
             <Button
               key={useCase.key}

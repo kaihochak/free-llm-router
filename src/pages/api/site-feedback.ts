@@ -13,7 +13,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const runtime = locals.runtime;
     const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
-    const turnstileSecret = runtime?.env?.TURNSTILE_SECRET_KEY || import.meta.env.TURNSTILE_SECRET_KEY;
+    const turnstileSecret =
+      runtime?.env?.TURNSTILE_SECRET_KEY || import.meta.env.TURNSTILE_SECRET_KEY;
 
     if (!databaseUrl) {
       return new Response(JSON.stringify({ error: 'Database not configured' }), {
@@ -27,28 +28,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Verify Turnstile token if secret is configured
     if (turnstileSecret && token) {
-      const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret: turnstileSecret,
-          response: token
-        })
-      });
+      const turnstileResponse = await fetch(
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            secret: turnstileSecret,
+            response: token,
+          }),
+        }
+      );
 
-      const turnstileResult = await turnstileResponse.json() as { success?: boolean };
+      const turnstileResult = (await turnstileResponse.json()) as { success?: boolean };
 
       if (!turnstileResult.success) {
         return new Response(JSON.stringify({ error: 'Captcha verification failed' }), {
           status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
       }
     } else if (turnstileSecret && !token) {
       // Turnstile is configured but no token provided
       return new Response(JSON.stringify({ error: 'Missing captcha token' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
@@ -74,10 +78,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(
-        JSON.stringify({ error: 'Valid email is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: 'Valid email is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
     }
 
     const db = createDb(databaseUrl);

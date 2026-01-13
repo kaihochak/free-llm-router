@@ -116,7 +116,7 @@ export function reportIssue(
   fetch(`${API}/models/feedback`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${API_KEY}`,
+      Authorization: `Bearer ${API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ modelId, issue, details }),
@@ -129,7 +129,7 @@ export function reportSuccess(modelId: string, details?: string) {
   fetch(`${API}/models/feedback`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${API_KEY}`,
+      Authorization: `Bearer ${API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ modelId, success: true, details }),

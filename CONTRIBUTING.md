@@ -5,20 +5,24 @@ Thank you for your interest in contributing! This project is driven by community
 ## Ways to Contribute
 
 ### 1. Report Issues
+
 - Found a bug? [Open an issue](../../issues) with details about the problem
 - Suggest improvements to model filtering, health metrics, or documentation
 
 ### 2. Improve Health Data
+
 - Use the API and submit feedback about model reliability
 - Help us identify patterns in model performance
 - Contribute ideas for better health scoring algorithms
 
 ### 3. Code Contributions
+
 - Fix bugs and add features
 - Improve documentation and examples
 - Optimize performance
 
 ### 4. Integrations
+
 - Create SDKs for your favorite language
 - Build plugins for LangChain, LlamaIndex, etc.
 - Create examples and tutorials
@@ -26,6 +30,7 @@ Thank you for your interest in contributing! This project is driven by community
 ## Development Setup
 
 ### Prerequisites
+
 - Node.js 18+ / Bun
 - PostgreSQL database (or use Supabase / Neon)
 
@@ -46,6 +51,7 @@ bun run dev
 ```
 
 ### Database Schema
+
 - `free_models` - LLM model metadata from OpenRouter
 - `model_feedback` - User-submitted success/error reports
 - Users, API keys, and request logs in auth schema
@@ -80,6 +86,7 @@ bun run build
 ## Health Data Quality
 
 If contributing health data insights:
+
 - Report both successes and failures (balanced feedback)
 - Include relevant context (rate limits, errors, timing)
 - Be honest about model performance

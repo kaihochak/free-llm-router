@@ -34,11 +34,13 @@ interface FormErrors {
   email?: string;
 }
 
-declare const turnstile: {
-  render: (el: HTMLElement, options: { sitekey: string }) => string;
-  reset: (id: string) => void;
-  remove: (id: string) => void;
-} | undefined;
+declare const turnstile:
+  | {
+      render: (el: HTMLElement, options: { sitekey: string }) => string;
+      reset: (id: string) => void;
+      remove: (id: string) => void;
+    }
+  | undefined;
 
 export function FeedbackDialog() {
   const [open, setOpen] = useState(false);
@@ -125,7 +127,9 @@ export function FeedbackDialog() {
 
     try {
       // Get token from the hidden input that Turnstile auto-creates
-      const tokenInput = document.querySelector<HTMLInputElement>('input[name="cf-turnstile-response"]');
+      const tokenInput = document.querySelector<HTMLInputElement>(
+        'input[name="cf-turnstile-response"]'
+      );
       const token = tokenInput?.value || '';
 
       const response = await fetch('/api/site-feedback', {

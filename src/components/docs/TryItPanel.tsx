@@ -24,17 +24,16 @@ interface TryItPanelProps {
   exampleResponse: string;
 }
 
-export function TryItPanel({
-  endpoint,
-  method,
-  defaultBody,
-  exampleResponse,
-}: TryItPanelProps) {
+export function TryItPanel({ endpoint, method, defaultBody, exampleResponse }: TryItPanelProps) {
   const [activeUseCases, setActiveUseCases] = useState<UseCaseType[]>(DEFAULT_USE_CASE);
   const [activeSort, setActiveSort] = useState<SortType>(DEFAULT_SORT);
   const [activeTopN, setActiveTopN] = useState<number | undefined>(DEFAULT_TOP_N);
-  const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useState(DEFAULT_RELIABILITY_FILTER_ENABLED);
-  const [activeMaxErrorRate, setActiveMaxErrorRate] = useState<number | undefined>(DEFAULT_MAX_ERROR_RATE);
+  const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useState(
+    DEFAULT_RELIABILITY_FILTER_ENABLED
+  );
+  const [activeMaxErrorRate, setActiveMaxErrorRate] = useState<number | undefined>(
+    DEFAULT_MAX_ERROR_RATE
+  );
   const [activeTimeRange, setActiveTimeRange] = useState(DEFAULT_TIME_RANGE);
   const [activeMyReports, setActiveMyReports] = useState(DEFAULT_MY_REPORTS);
   const [apiKey, setApiKey] = useState('');
@@ -101,7 +100,7 @@ export function TryItPanel({
       const options: RequestInit = {
         method,
         headers: {
-          'Authorization': `Bearer ${apiKey.trim()}`,
+          Authorization: `Bearer ${apiKey.trim()}`,
           ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
         },
         body: method === 'POST' ? body : undefined,
@@ -112,7 +111,9 @@ export function TryItPanel({
       const data = await res.json();
       setResponse(JSON.stringify(data, null, 2));
     } catch (err) {
-      setResponse(JSON.stringify({ error: err instanceof Error ? err.message : 'Request failed' }, null, 2));
+      setResponse(
+        JSON.stringify({ error: err instanceof Error ? err.message : 'Request failed' }, null, 2)
+      );
       setStatusCode(500);
     } finally {
       setLoading(false);
@@ -143,9 +144,7 @@ export function TryItPanel({
             />
           </div>
           {!canSend && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Required to send requests.
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground">Required to send requests.</p>
           )}
         </div>
 
@@ -173,7 +172,12 @@ export function TryItPanel({
           </div>
         )}
 
-        <CodeBlock code={buildCurlCommand()} language="bash" showCopy={false} className="rounded-none border-none" />
+        <CodeBlock
+          code={buildCurlCommand()}
+          language="bash"
+          showCopy={false}
+          className="rounded-none border-none"
+        />
       </div>
 
       {/* Response Block */}

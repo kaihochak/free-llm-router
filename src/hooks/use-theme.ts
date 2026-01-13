@@ -19,8 +19,7 @@ export function useTheme() {
     const root = document.documentElement;
     const isDark =
       newTheme === 'dark' ||
-      (newTheme === 'system' &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches);
+      (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     root.classList.toggle('dark', isDark);
   };
