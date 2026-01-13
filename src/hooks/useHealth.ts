@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   type TimeRange,
   VALID_TIME_RANGES_WITH_LABELS,
   TIME_RANGE_DEFINITIONS,
+  DEFAULT_MY_REPORTS,
 } from '@/lib/api-definitions';
+import { useCachedSession } from '@/lib/auth-client';
 
 // Re-export TimeRange for backwards compatibility
 export type { TimeRange };
@@ -44,8 +46,12 @@ export const issueKeys = {
   byRange: (range: TimeRange) => [...issueKeys.all, range] as const,
 };
 
-async function fetchIssues(range: TimeRange): Promise<IssuesResponse> {
-  const response = await fetch(`/api/health?range=${range}`);
+async function fetchIssues(range: TimeRange, myReports?: boolean): Promise<IssuesResponse> {
+  const params = new URLSearchParams({ range });
+  if (myReports !== undefined) {
+    params.append('myReports', myReports.toString());
+  }
+  const response = await fetch(`/api/health?${params.toString()}`);
   if (!response.ok) {
     throw new Error('Failed to fetch health data');
   }
@@ -54,16 +60,33 @@ async function fetchIssues(range: TimeRange): Promise<IssuesResponse> {
 
 export function useHealth() {
   const [range, setRange] = useState<TimeRange>('24h');
+  const [myReports, setMyReportsState] = useState<boolean>(DEFAULT_MY_REPORTS);
+  const { data: session } = useCachedSession();
+
+  // Force myReports to false if user is not authenticated
+  const effectiveMyReports = session ? myReports : false;
+
+  useEffect(() => {
+    // Reset to false if user logs out
+    if (!session && myReports) {
+      setMyReportsState(false);
+    }
+  }, [session, myReports]);
 
   const {
     data,
     isLoading: loading,
     error,
   } = useQuery({
-    queryKey: issueKeys.byRange(range),
-    queryFn: () => fetchIssues(range),
+    queryKey: ['issues', range, effectiveMyReports],
+    queryFn: () => fetchIssues(range, effectiveMyReports),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const setMyReports = (value: boolean) => {
+    // Only allow setting myReports to true if authenticated
+    setMyReportsState(session ? value : false);
+  };
 
   return {
     issues: data?.issues ?? [],
@@ -74,5 +97,7 @@ export function useHealth() {
     error: error instanceof Error ? error.message : error ? String(error) : null,
     range,
     setRange,
+    myReports: effectiveMyReports,
+    setMyReports,
   };
 }

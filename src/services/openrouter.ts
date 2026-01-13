@@ -217,9 +217,9 @@ export async function getActiveModels(db: Database) {
  * Get all active models with issue counts attached.
  * Used by getFilteredModels to enable shared filtering/sorting logic.
  */
-async function getActiveModelsWithFeedback(db: Database) {
+async function getActiveModelsWithFeedback(db: Database, timeRange: TimeRange = '24h', userId?: string) {
   const models = await getActiveModels(db);
-  const feedbackCounts = await getRecentFeedbackCounts(db);
+  const feedbackCounts = await getRecentFeedbackCounts(db, timeRange, userId);
 
   // Attach issueCount to each model (same logic as frontend)
   return models.map((model) => {
@@ -244,15 +244,16 @@ export async function getFilteredModels(
   useCases: UseCaseType[],
   sort: SortType,
   maxErrorRate?: number,
-  timeRange: TimeRange = '24h'
+  timeRange: TimeRange = '24h',
+  userId?: string
 ) {
-  const allModels = await getActiveModelsWithFeedback(db);
+  const allModels = await getActiveModelsWithFeedback(db, timeRange, userId);
   const filtered = filterModelsByUseCase(allModels, useCases);
   const sorted = sortModels(filtered, sort);
 
   // Apply error rate threshold filtering if specified
   if (maxErrorRate !== undefined) {
-    const feedbackCounts = await getRecentFeedbackCounts(db, timeRange);
+    const feedbackCounts = await getRecentFeedbackCounts(db, timeRange, userId);
     return sorted.filter((model) => {
       const feedback = feedbackCounts[model.id];
       if (!feedback) return true; // No feedback = keep model (0% error rate)
@@ -512,13 +513,19 @@ function generateTimeBuckets(range: TimeRange): string[] {
  */
 export async function getFeedbackTimeline(
   db: Database,
-  range: TimeRange
+  range: TimeRange,
+  userId?: string
 ): Promise<TimelinePoint[]> {
   const windowMs = TIME_RANGE_MS[range];
   // Use hourly buckets for 24h, daily for 7d/30d
   const truncUnit =
     range === '15m' || range === '1h' ? 'minute' : range === '6h' || range === '24h' ? 'hour' : 'day';
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
+
+  const conditions = [
+    windowMs !== null ? gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)) : undefined,
+    ...(userId ? [eq(modelFeedback.source, userId)] : [])
+  ].filter(Boolean) as Parameters<typeof db.select>[0][];
 
   const results = await db
     .select({
@@ -527,7 +534,7 @@ export async function getFeedbackTimeline(
       count: sql<number>`count(*)::int`,
     })
     .from(modelFeedback)
-    .where(windowMs !== null ? gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)) : undefined)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
 

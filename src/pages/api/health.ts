@@ -33,22 +33,20 @@ export const GET: APIRoute = async (context) => {
 
     const range = validateRange(context.url.searchParams.get('range'));
 
-    // Optional myReports filter
+    // Optional myReports filter (requires authentication)
     const myReports = context.url.searchParams.get('myReports') === 'true';
     let userId: string | undefined;
 
     try {
       userId = await getUserIdIfMyReports(context, myReports);
     } catch (error) {
-      return new Response(JSON.stringify({ error: (error as Error).message || 'Invalid API key' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      // If myReports=true but no valid API key, gracefully fall back to community data
+      // This allows unauthenticated users to see community data without error
     }
 
     const [issues, timeline] = await Promise.all([
       getFeedbackCountsByRange(db, range, userId),
-      getFeedbackTimeline(db, range),
+      getFeedbackTimeline(db, range, userId),
     ]);
 
     return new Response(

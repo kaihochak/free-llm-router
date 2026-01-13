@@ -259,7 +259,7 @@ export function ModelControls({
                   className={buttonClass}
                   onClick={() => onMyReportsChange(!activeMyReports)}
                 >
-                  {activeMyReports ? 'Mine' : 'All'}
+                  {activeMyReports ? 'All Community Reports' : 'My Reports Only'}
                 </Button>
               </>
             )}
