@@ -34,9 +34,22 @@ interface FormErrors {
   email?: string;
 }
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (element: HTMLElement | string, options: Record<string, any>) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+      getResponse: (widgetId: string) => string;
+    };
+  }
+}
+
 export function FeedbackDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const [turnstileWidgetId, setTurnstileWidgetId] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({
     type: 'general',
     message: '',
@@ -75,6 +88,15 @@ export function FeedbackDialog() {
     setLoading(true);
 
     try {
+      // Get Turnstile token if widget exists
+      let token = turnstileToken;
+      if (turnstileWidgetId && window.turnstile) {
+        token = window.turnstile.getResponse(turnstileWidgetId);
+        if (!token) {
+          throw new Error('Please complete the captcha challenge');
+        }
+      }
+
       const response = await fetch('/api/site-feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +106,7 @@ export function FeedbackDialog() {
           email: formData.email.trim(),
           userAgent: navigator.userAgent,
           pageUrl: window.location.href,
+          'cf-turnstile-response': token,
         }),
       });
 
@@ -106,6 +129,10 @@ export function FeedbackDialog() {
   const resetForm = () => {
     setFormData({ type: 'general', message: '', email: '' });
     setErrors({});
+    setTurnstileToken('');
+    if (turnstileWidgetId && window.turnstile) {
+      window.turnstile.reset(turnstileWidgetId);
+    }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -202,6 +229,32 @@ export function FeedbackDialog() {
               <p className="text-xs text-muted-foreground">We'll use this to follow up</p>
             )}
           </div>
+
+          {typeof window !== 'undefined' && import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
+            <div className="space-y-2">
+              <script
+                src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+                async
+                defer
+              ></script>
+              <div
+                className="cf-turnstile"
+                data-sitekey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY}
+                data-callback="onTurnstileSuccess"
+                data-error-callback="onTurnstileError"
+                ref={(el) => {
+                  if (el && open && !turnstileWidgetId && window.turnstile) {
+                    const widgetId = window.turnstile.render(el, {
+                      sitekey: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
+                      callback: (token: string) => setTurnstileToken(token),
+                      'error-callback': () => setTurnstileToken(''),
+                    });
+                    setTurnstileWidgetId(widgetId);
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <SheetFooter>
