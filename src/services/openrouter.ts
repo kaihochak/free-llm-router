@@ -1,4 +1,4 @@
-import { eq, and, notInArray, gte, sql } from 'drizzle-orm';
+import { eq, and, notInArray, gte, sql, type SQL } from 'drizzle-orm';
 import { freeModels, modelFeedback, syncMeta, type Database } from '../db';
 import {
   type UseCaseType,
@@ -538,10 +538,10 @@ export async function getFeedbackTimeline(
         : 'day';
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
 
-  const conditions = [
+  const conditions: SQL<unknown>[] = [
     windowMs !== null ? gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)) : undefined,
-    ...(userId ? [eq(modelFeedback.source, userId)] : []),
-  ].filter(Boolean) as Parameters<typeof db.select>[0][];
+    userId ? eq(modelFeedback.source, userId) : undefined,
+  ].filter((c): c is SQL<unknown> => Boolean(c));
 
   const results = await db
     .select({
