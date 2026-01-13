@@ -1,6 +1,6 @@
 /**
  * Free LLM Router helper with built-in 15-minute caching
- * Set FREE_MODELS_API_KEY in your environment.
+ * Set FREE_LLM_ROUTER_API_KEY in your environment.
  *
  * Caching behavior:
  *   - In-memory cache with 15-minute TTL (matches server refresh rate)
@@ -14,7 +14,7 @@
  */
 
 const API = 'https://free-llm-router.pages.dev/api/v1';
-const API_KEY = process.env.FREE_MODELS_API_KEY;
+const API_KEY = process.env.FREE_LLM_ROUTER_API_KEY;
 
 /**
  * Type definitions for SDK parameters.

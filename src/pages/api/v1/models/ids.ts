@@ -3,7 +3,7 @@ import {
   getFilteredModels,
   ensureFreshModels,
 } from '@/services/openrouter';
-import { initializeRequest } from '@/lib/api-params';
+import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
 import { rateLimitHeaders, corsHeaders, logApiRequest } from '@/lib/api-auth';
 
 /**
@@ -20,13 +20,23 @@ export const GET: APIRoute = async (context) => {
 
   try {
     const { db, databaseUrl, params, validation } = req;
-    const { useCases, sort, topN, maxErrorRate, timeRange } = params;
+    const { useCases, sort, topN, maxErrorRate, timeRange, myReports } = params;
+
+    // Get userId if myReports is enabled (optional authentication)
+    let userId: string | undefined;
+
+    try {
+      userId = await getUserIdIfMyReports(context, myReports);
+    } catch (error) {
+      // If myReports=true but no valid API key, gracefully fall back to community data
+      // This allows unauthenticated users to see community data without error
+    }
 
     // Lazy refresh if stale
     await ensureFreshModels(db);
 
     // Fetch filtered and sorted models
-    const allModels = await getFilteredModels(db, useCases, sort, maxErrorRate, timeRange);
+    const allModels = await getFilteredModels(db, useCases, sort, maxErrorRate, timeRange, userId);
 
     // Apply topN and extract IDs only
     const models = topN ? allModels.slice(0, topN) : allModels;
