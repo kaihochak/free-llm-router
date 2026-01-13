@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Bug, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -34,16 +34,11 @@ interface FormErrors {
   email?: string;
 }
 
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (element: HTMLElement | string, options: Record<string, any>) => string;
-      reset: (widgetId: string) => void;
-      remove: (widgetId: string) => void;
-      getResponse: (widgetId: string) => string;
-    };
-  }
-}
+declare const turnstile: {
+  render: (el: HTMLElement, options: { sitekey: string }) => string;
+  reset: (id: string) => void;
+  remove: (id: string) => void;
+} | undefined;
 
 export function FeedbackDialog() {
   const [open, setOpen] = useState(false);
@@ -54,6 +49,49 @@ export function FeedbackDialog() {
     email: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string | null>(null);
+
+  // Render Turnstile when dialog opens
+  useEffect(() => {
+    if (!open) return;
+
+    // Wait for Sheet content to mount and turnstile script to load
+    const timer = setTimeout(() => {
+      console.log('Turnstile debug:', {
+        ref: turnstileRef.current,
+        turnstileDefined: typeof turnstile !== 'undefined',
+        widgetId: widgetId.current,
+        siteKey: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
+      });
+
+      if (!turnstileRef.current) {
+        console.log('Turnstile: ref not available');
+        return;
+      }
+      if (typeof turnstile === 'undefined') {
+        console.log('Turnstile: global not available');
+        return;
+      }
+      if (widgetId.current) {
+        console.log('Turnstile: already rendered');
+        return;
+      }
+
+      widgetId.current = turnstile.render(turnstileRef.current, {
+        sitekey: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
+      });
+      console.log('Turnstile: rendered with widgetId', widgetId.current);
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (widgetId.current && typeof turnstile !== 'undefined') {
+        turnstile.remove(widgetId.current);
+        widgetId.current = null;
+      }
+    };
+  }, [open]);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -86,8 +124,9 @@ export function FeedbackDialog() {
     setLoading(true);
 
     try {
-      // Get Turnstile token from global callback
-      const token = (window as Window & { __turnstileToken?: string }).__turnstileToken || '';
+      // Get token from the hidden input that Turnstile auto-creates
+      const tokenInput = document.querySelector<HTMLInputElement>('input[name="cf-turnstile-response"]');
+      const token = tokenInput?.value || '';
 
       const response = await fetch('/api/site-feedback', {
         method: 'POST',
@@ -121,8 +160,6 @@ export function FeedbackDialog() {
   const resetForm = () => {
     setFormData({ type: 'general', message: '', email: '' });
     setErrors({});
-    (window as Window & { __turnstileToken?: string }).__turnstileToken = '';
-    window.turnstile?.reset('.cf-turnstile');
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -220,20 +257,7 @@ export function FeedbackDialog() {
             )}
           </div>
 
-          {typeof window !== 'undefined' && import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
-            <div className="space-y-2">
-              <div
-                className="cf-turnstile"
-                data-sitekey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY}
-                data-callback="onTurnstileSuccess"
-              />
-              <script
-                dangerouslySetInnerHTML={{
-                  __html: `window.onTurnstileSuccess = function(token) { window.__turnstileToken = token; };`,
-                }}
-              />
-            </div>
-          )}
+          {import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && <div ref={turnstileRef} />}
         </div>
 
         <SheetFooter>

@@ -25,6 +25,9 @@ const { showHeader = true, ...seoProps } = Astro.props;
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <SEO {...seoProps} />
     <PostHog />
+    {import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
+      <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    )}
     <script is:inline>
       (function() {
         const theme = localStorage.getItem('theme');
