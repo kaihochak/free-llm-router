@@ -116,35 +116,18 @@ function RequestHistoryTable() {
         </TableBody>
       </Table>
 
-      {pagination.total > pagination.limit && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={prevPage}
-                className={pagination.page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink isActive>
-                {pagination.page} / {Math.ceil(pagination.total / pagination.limit)}
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                onClick={nextPage}
-                className={!pagination.hasMore ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+      <PaginationControls
+        pagination={pagination}
+        onNext={nextPage}
+        onPrev={prevPage}
+        onGoToPage={goToPage}
+      />
     </div>
   );
 }
 
 function UsageReportsTable() {
-  const { items, pagination, isLoading, error, nextPage, prevPage, refresh } =
+  const { items, pagination, isLoading, error, nextPage, prevPage, goToPage, refresh } =
     useHistory<FeedbackItem>('feedback', 15);
 
   if (isLoading && items.length === 0) {
@@ -206,29 +189,12 @@ function UsageReportsTable() {
         </TableBody>
       </Table>
 
-      {pagination.total > pagination.limit && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={prevPage}
-                className={pagination.page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink isActive>
-                {pagination.page} / {Math.ceil(pagination.total / pagination.limit)}
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                onClick={nextPage}
-                className={!pagination.hasMore ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+      <PaginationControls
+        pagination={pagination}
+        onNext={nextPage}
+        onPrev={prevPage}
+        onGoToPage={goToPage}
+      />
     </div>
   );
 }
@@ -266,5 +232,77 @@ export function HistoryTab() {
         {activeSection === 'requests' ? <RequestHistoryTable /> : <UsageReportsTable />}
       </CardContent>
     </Card>
+  );
+}
+
+type PaginationControlsProps = {
+  pagination: { page: number; limit: number; total: number; hasMore: boolean };
+  onNext: () => void;
+  onPrev: () => void;
+  onGoToPage: (page: number) => void;
+};
+
+function PaginationControls({ pagination, onNext, onPrev, onGoToPage }: PaginationControlsProps) {
+  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.limit));
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  const pages: number[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    const start = Math.max(2, pagination.page - 1);
+    const end = Math.min(totalPages - 1, pagination.page + 1);
+    if (start > 2) pages.push(-1); // ellipsis
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push(-1); // ellipsis
+    pages.push(totalPages);
+  }
+
+  return (
+    <Pagination>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            onClick={(e) => {
+              e.preventDefault();
+              onPrev();
+            }}
+            className={pagination.page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+          />
+        </PaginationItem>
+        {pages.map((page, idx) =>
+          page === -1 ? (
+            <PaginationItem key={`ellipsis-${idx}`}>
+              <PaginationEllipsis />
+            </PaginationItem>
+          ) : (
+            <PaginationItem key={page}>
+              <PaginationLink
+                href="#"
+                isActive={page === pagination.page}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onGoToPage(page);
+                }}
+              >
+                {page}
+              </PaginationLink>
+            </PaginationItem>
+          )
+        )}
+        <PaginationItem>
+          <PaginationNext
+            onClick={(e) => {
+              e.preventDefault();
+              onNext();
+            }}
+            className={!pagination.hasMore ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
   );
 }
