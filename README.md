@@ -47,9 +47,11 @@ curl -H "Authorization: Bearer fma_your_key_here" \
 ```
 
 ### GET /api/v1/models/ids
+
 Lightweight endpoint returning only model IDs. Perfect for quick lookups.
 
 **Query Parameters:**
+
 - `filter` - Capability filters: `chat`, `vision`, `tools`, `longContext`, `reasoning` (comma-separated)
 - `sort` - Sort order: `contextLength`, `maxOutput`, `capable`, `leastIssues`, `newest`
 - `topN` - Maximum models to return (1-100, default: all)
@@ -58,6 +60,7 @@ Lightweight endpoint returning only model IDs. Perfect for quick lookups.
 - `myReports` - Show only your reported data (requires auth, default: false)
 
 **Response:**
+
 ```json
 {
   "ids": ["google/gemini-2.0-flash-exp:free", "..."],
@@ -66,11 +69,13 @@ Lightweight endpoint returning only model IDs. Perfect for quick lookups.
 ```
 
 ### GET /api/v1/models/full
+
 Complete endpoint returning full model objects with metadata and health metrics.
 
 **Query Parameters:** (Same as `/ids` endpoint)
 
 **Response:**
+
 ```json
 {
   "models": [
@@ -99,9 +104,11 @@ Complete endpoint returning full model objects with metadata and health metrics.
 ```
 
 ### POST /api/v1/models/feedback
+
 Report model success or issues. **Does not count towards rate limit.**
 
 **Request Body:**
+
 ```json
 // Report success
 {
@@ -121,6 +128,7 @@ Report model success or issues. **Does not count towards rate limit.**
 **Issue types:** `rate_limited`, `unavailable`, `error`
 
 **Response:**
+
 ```json
 {
   "received": true
@@ -128,9 +136,11 @@ Report model success or issues. **Does not count towards rate limit.**
 ```
 
 ### GET /api/health
+
 Public endpoint for community model health data. No authentication required.
 
 **Query Parameters:**
+
 - `timeRange` - Time range: `24h`, `7d`, `30d` (default: 24h)
 
 ## Usage Examples
@@ -141,12 +151,10 @@ Public endpoint for community model health data. No authentication required.
 import { getModelIds } from './public/free-llm-router';
 
 // Get healthiest chat models from last 24 hours
-const models = await getModelIds(
-  ['chat'],
-  'leastIssues',
-  10,
-  { excludeWithIssues: 5, timeWindow: '24h' }
-);
+const models = await getModelIds(['chat'], 'leastIssues', 10, {
+  excludeWithIssues: 5,
+  timeWindow: '24h',
+});
 
 console.log('Available models:', models);
 ```
@@ -159,7 +167,7 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1'
+  baseURL: 'https://openrouter.ai/api/v1',
 });
 
 const models = await getModelIds(['chat'], 'capable');
@@ -168,7 +176,7 @@ for (const modelId of models) {
   try {
     const response = await openai.chat.completions.create({
       model: modelId,
-      messages: [{ role: 'user', content: 'Hello!' }]
+      messages: [{ role: 'user', content: 'Hello!' }],
     });
 
     // Report success to help the community
@@ -187,24 +195,16 @@ for (const modelId of models) {
 import { getModelIds } from './public/free-llm-router';
 
 // Get models with error rates from last 7 days
-const models = await getModelIds(
-  ['chat'],
-  'capable',
-  undefined,
-  { timeWindow: '7d' }
-);
+const models = await getModelIds(['chat'], 'capable', undefined, { timeWindow: '7d' });
 
 // Check error rates in the response metadata
-const response = await fetch(
-  `https://free-llm-router.pages.dev/api/v1/models/full?timeWindow=7d`,
-  {
-    headers: { 'Authorization': `Bearer ${process.env.FREE_LLM_ROUTER_API_KEY}` }
-  }
-);
+const response = await fetch(`https://free-llm-router.pages.dev/api/v1/models/full?timeWindow=7d`, {
+  headers: { Authorization: `Bearer ${process.env.FREE_LLM_ROUTER_API_KEY}` },
+});
 
 const data = await response.json();
 
-data.models.forEach(model => {
+data.models.forEach((model) => {
   const feedback = data.feedbackCounts[model.id];
   if (feedback && feedback.errorRate > 20) {
     console.warn(`${model.id}: High error rate (${feedback.errorRate}%)`);
@@ -336,11 +336,13 @@ Help improve metrics by reporting both successes and failures.
 ### When to Report
 
 **Report Success** ✅
+
 - After successful API call to OpenRouter
 - Model responded without errors
 - Response quality was acceptable
 
 **Report Issues** ⚠️
+
 - `rate_limited` (429): Rate limit exceeded
 - `unavailable` (503): Service temporarily unavailable
 - `error`: Any other error (4xx, 5xx, malformed responses)
@@ -378,6 +380,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 MIT - See [LICENSE](LICENSE) file for full details
 
 This means you can freely:
+
 - ✅ Use commercially
 - ✅ Modify the code
 - ✅ Distribute it
@@ -388,6 +391,7 @@ Just include the license and copyright notice.
 ## Acknowledgments
 
 Built with:
+
 - [OpenRouter](https://openrouter.ai) - Free LLM model access
 - [Cloudflare Pages](https://pages.cloudflare.com) - Hosting
 - [Neon](https://neon.tech) - Serverless Postgres
@@ -397,6 +401,7 @@ Built with:
 ## Disclaimer
 
 This service is provided as-is. We do not guarantee:
+
 - Uptime or availability
 - Accuracy of health metrics
 - Model behavior matches community reports

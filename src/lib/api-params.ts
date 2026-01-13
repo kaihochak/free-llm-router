@@ -97,7 +97,10 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
  * Handle myReports parameter: validates optional user context
  * Returns userId if myReports=true, else undefined
  */
-export async function getUserIdIfMyReports(context: APIContext, myReports: boolean): Promise<string | undefined> {
+export async function getUserIdIfMyReports(
+  context: APIContext,
+  myReports: boolean
+): Promise<string | undefined> {
   if (!myReports) return undefined;
 
   const validation = await validateApiKeyOnly(context);
@@ -141,11 +144,19 @@ export async function initializeAuthOnly(context: APIContext): Promise<AuthOnlyC
   const validation = await validateApiKeyOnly(context);
 
   if (!validation.valid) {
-    const status = validation.errorCode === 'CONFIG_ERROR' || validation.errorCode === 'SERVER_ERROR' ? 500 : 401;
-    return new Response(JSON.stringify({ error: validation.error || (status === 500 ? 'Server error' : 'Unauthorized') }), {
-      status,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    const status =
+      validation.errorCode === 'CONFIG_ERROR' || validation.errorCode === 'SERVER_ERROR'
+        ? 500
+        : 401;
+    return new Response(
+      JSON.stringify({
+        error: validation.error || (status === 500 ? 'Server error' : 'Unauthorized'),
+      }),
+      {
+        status,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      }
+    );
   }
 
   const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;

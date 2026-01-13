@@ -18,9 +18,7 @@ export function DocsSidebar({ children, defaultOpen = true }: DocsSidebarProps) 
     <SidebarProvider defaultOpen={defaultOpen}>
       <SiteHeader showSidebarTrigger={true} />
       <AppSidebar />
-      <main className="min-h-screen w-full pl-0 md:pl-[--sidebar-width]">
-        {children}
-      </main>
+      <main className="min-h-screen w-full pl-0 md:pl-[--sidebar-width]">{children}</main>
     </SidebarProvider>
   );
 }

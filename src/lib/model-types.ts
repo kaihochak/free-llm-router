@@ -108,7 +108,10 @@ export function matchesUseCase<T extends FilterableModel>(model: T, useCase: Use
  * Filter models by multiple use case criteria (AND logic).
  * Single source of truth for filtering - used by frontend.
  */
-export function filterModelsByUseCase<T extends FilterableModel>(models: T[], useCases: UseCaseType[]): T[] {
+export function filterModelsByUseCase<T extends FilterableModel>(
+  models: T[],
+  useCases: UseCaseType[]
+): T[] {
   if (useCases.length === 0) return models;
   return models.filter((model) => useCases.every((useCase) => matchesUseCase(model, useCase)));
 }

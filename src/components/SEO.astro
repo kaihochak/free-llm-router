@@ -13,19 +13,12 @@ const {
   jsonLd,
 } = Astro.props;
 
-const fullTitle =
-  title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
+const fullTitle = title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
 
 const canonicalUrl = new URL(url, siteConfig.url).href;
-const imageUrl = image.startsWith('http')
-  ? image
-  : new URL(image, siteConfig.url).href;
+const imageUrl = image.startsWith('http') ? image : new URL(image, siteConfig.url).href;
 
-const jsonLdScripts = jsonLd
-  ? Array.isArray(jsonLd)
-    ? jsonLd
-    : [jsonLd]
-  : [];
+const jsonLdScripts = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 ---
 
 <!-- Primary Meta Tags -->

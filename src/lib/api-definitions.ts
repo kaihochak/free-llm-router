@@ -9,7 +9,13 @@
 
 export type UseCaseType = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
 
-export const VALID_USE_CASES: UseCaseType[] = ['chat', 'vision', 'tools', 'longContext', 'reasoning'];
+export const VALID_USE_CASES: UseCaseType[] = [
+  'chat',
+  'vision',
+  'tools',
+  'longContext',
+  'reasoning',
+];
 
 export interface UseCaseDefinition {
   key: UseCaseType | 'all';
@@ -23,37 +29,37 @@ export const USE_CASE_DEFINITIONS: UseCaseDefinition[] = [
     key: 'all',
     label: 'All',
     description: 'Show all available free models',
-    docDescription: 'All available free models without filtering'
+    docDescription: 'All available free models without filtering',
   },
   {
     key: 'chat',
     label: 'Chat',
     description: 'Models optimized for conversation',
-    docDescription: 'Text-to-text models optimized for conversation'
+    docDescription: 'Text-to-text models optimized for conversation',
   },
   {
     key: 'vision',
     label: 'Vision',
     description: 'Models that can analyze images',
-    docDescription: 'Models that accept image inputs'
+    docDescription: 'Models that accept image inputs',
   },
   {
     key: 'tools',
     label: 'Tools',
     description: 'Models that support function/tool calling',
-    docDescription: 'Models that support function/tool calling'
+    docDescription: 'Models that support function/tool calling',
   },
   {
     key: 'longContext',
     label: 'Long Context',
     description: 'Models with 100k+ token context windows',
-    docDescription: 'Models with 100k+ token context windows'
+    docDescription: 'Models with 100k+ token context windows',
   },
   {
     key: 'reasoning',
     label: 'Reasoning',
     description: 'Models with advanced reasoning capabilities',
-    docDescription: 'Models with advanced reasoning capabilities (e.g., o1, QwQ, DeepSeek R1)'
+    docDescription: 'Models with advanced reasoning capabilities (e.g., o1, QwQ, DeepSeek R1)',
   },
 ];
 
@@ -61,7 +67,13 @@ export const USE_CASE_DEFINITIONS: UseCaseDefinition[] = [
 
 export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'newest';
 
-export const VALID_SORTS: SortType[] = ['contextLength', 'maxOutput', 'capable', 'leastIssues', 'newest'];
+export const VALID_SORTS: SortType[] = [
+  'contextLength',
+  'maxOutput',
+  'capable',
+  'leastIssues',
+  'newest',
+];
 
 export interface SortDefinition {
   key: SortType;
@@ -75,31 +87,31 @@ export const SORT_DEFINITIONS: SortDefinition[] = [
     key: 'contextLength',
     label: 'Context Length',
     description: 'Sort by maximum input tokens',
-    docDescription: 'Largest context window first - best for long documents'
+    docDescription: 'Largest context window first - best for long documents',
   },
   {
     key: 'maxOutput',
     label: 'Max Output',
     description: 'Sort by maximum output tokens',
-    docDescription: 'Highest output token limit first - best for long-form generation'
+    docDescription: 'Highest output token limit first - best for long-form generation',
   },
   {
     key: 'capable',
     label: 'Most Capable',
     description: 'Sort by most supported features',
-    docDescription: 'Most supported features first - good default'
+    docDescription: 'Most supported features first - good default',
   },
   {
     key: 'leastIssues',
     label: 'Least Reported Issues',
     description: 'Sort by fewest reported issues',
-    docDescription: 'Fewest user-reported issues first - best for stability'
+    docDescription: 'Fewest user-reported issues first - best for stability',
   },
   {
     key: 'newest',
     label: 'Newest First',
     description: 'Sort by when model was added',
-    docDescription: 'Most recently added models first - best for trying new models'
+    docDescription: 'Most recently added models first - best for trying new models',
   },
 ];
 
@@ -110,7 +122,15 @@ export type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'al
 export const VALID_TIME_RANGES: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d', 'all'];
 
 // Time ranges with labels (for UI display - used in useHealth.ts)
-export const VALID_TIME_RANGES_WITH_LABELS: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d'];
+export const VALID_TIME_RANGES_WITH_LABELS: TimeRange[] = [
+  '15m',
+  '30m',
+  '1h',
+  '6h',
+  '24h',
+  '7d',
+  '30d',
+];
 
 export interface TimeRangeDefinition {
   value: TimeRange;
@@ -139,7 +159,7 @@ export const TIME_RANGE_MS: Record<TimeRange, number | null> = {
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
   '30d': 30 * 24 * 60 * 60 * 1000,
-  'all': null,
+  all: null,
 };
 
 // ==================== TOP N PARAMETER ====================
@@ -180,10 +200,12 @@ export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = true;
 
 // ==================== UI TOOLTIP CONTENT ====================
 
-export const TOOLTIP_USE_CASE = 'Select models by use case (chat, vision, tools, long context, reasoning)';
+export const TOOLTIP_USE_CASE =
+  'Select models by use case (chat, vision, tools, long context, reasoning)';
 export const TOOLTIP_SORT = 'Sort models by context length, max output, capabilities, or health';
 export const TOOLTIP_TOP_N = 'Return only the top N models based on sort order';
-export const TOOLTIP_RELIABILITY_FILTER = 'Filter out unhealthy models by tweaking error rate threshold and time range';
+export const TOOLTIP_RELIABILITY_FILTER =
+  'Filter out unhealthy models by tweaking error rate threshold and time range';
 
 // ==================== VALIDATION UTILITIES ====================
 

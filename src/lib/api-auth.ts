@@ -156,7 +156,7 @@ async function checkUserRateLimit(
       limit: current.rateLimitMax ?? 200,
       lastRequest: current.lastRequest ?? new Date(), // Fallback to now for consistent Retry-After headers
       timeWindow: current.rateLimitTimeWindow ?? 86400000,
-      requestCount: current.requestCount ?? (current.rateLimitMax ?? 200),
+      requestCount: current.requestCount ?? current.rateLimitMax ?? 200,
     };
   }
 

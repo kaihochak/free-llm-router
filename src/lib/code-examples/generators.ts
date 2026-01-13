@@ -13,7 +13,7 @@ export const basicUsage = (
   const topNStr = topN !== undefined ? `, ${topN}` : ''; // Only include topN if explicitly set
 
   // Build options object if any optional params are set
-  const hasOptions = (maxErrorRate !== undefined) || timeRange !== undefined || myReports;
+  const hasOptions = maxErrorRate !== undefined || timeRange !== undefined || myReports;
   let optionsStr = '';
 
   if (hasOptions) {
@@ -69,7 +69,7 @@ export const getModelIdsCall = (
   const topNStr = topN !== undefined ? `, ${topN}` : ''; // Only include topN if explicitly set
 
   // Build options object if any optional params are set
-  const hasOptions = (maxErrorRate !== undefined) || timeRange !== undefined || myReports;
+  const hasOptions = maxErrorRate !== undefined || timeRange !== undefined || myReports;
   let optionsStr = '';
 
   if (hasOptions) {

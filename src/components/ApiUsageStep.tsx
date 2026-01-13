@@ -15,9 +15,7 @@ interface ApiUsageStepProps {
   showBrowseModels?: boolean;
 }
 
-export function ApiUsageStep({
-  showBrowseModels = true,
-}: ApiUsageStepProps) {
+export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
   const { data: session } = useCachedSession();
   const {
     models,
@@ -61,7 +59,9 @@ export function ApiUsageStep({
       {/* Step 1: Set Up OpenRouter */}
       <div id="setup-openrouter" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">1</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            1
+          </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Set Up OpenRouter</h3>
         </div>
         <p className="text-muted-foreground">
@@ -73,19 +73,23 @@ export function ApiUsageStep({
           >
             OpenRouter
           </a>{' '}
-          provides a unified API for accessing many LLM providers. Sign up for free and create an API key.
+          provides a unified API for accessing many LLM providers. Sign up for free and create an
+          API key.
         </p>
       </div>
 
       {/* Step 2: Preview Your Model List */}
       {showBrowseModels && (
         <div id="models" className="scroll-mt-20 space-y-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">2</span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Preview Your Live Model List</h3>
-        </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              2
+            </span>
+            <h3 className="text-xl font-semibold sm:text-2xl">Preview Your Live Model List</h3>
+          </div>
           <p className="text-muted-foreground">
-            Configure use case and sorting to preview the live, health-scored list your app will fetch dynamically.
+            Configure use case and sorting to preview the live, health-scored list your app will
+            fetch dynamically.
           </p>
 
           {/* Model Controls */}
@@ -151,11 +155,14 @@ export function ApiUsageStep({
       {/* Step 3: Get Your API Key */}
       <div id="get-api-key" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 3 : 2}</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            {showBrowseModels ? 3 : 2}
+          </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
         </div>
         <p className="text-muted-foreground">
-          Sign in with GitHub to create your API key. All keys share a per-user limit of 200 requests per 24 hours (with SDK caching, this is plenty).
+          Sign in with GitHub to create your API key. All keys share a per-user limit of 200
+          requests per 24 hours (with SDK caching, this is plenty).
         </p>
         <div className="flex justify-center py-4">
           {session?.user ? (
@@ -173,11 +180,19 @@ export function ApiUsageStep({
       {/* Step 4: Copy free-llm-router.ts */}
       <div id="copy-file" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 4 : 3}</span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Copy <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">free-llm-router.ts</code></h3>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            {showBrowseModels ? 4 : 3}
+          </span>
+          <h3 className="text-xl font-semibold sm:text-2xl">
+            Copy{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">
+              free-llm-router.ts
+            </code>
+          </h3>
         </div>
         <p className="text-muted-foreground">
-          This helper fetches free model IDs from our API, reports both successes and issues back, and handles caching automatically. It's a single file with no dependencies.
+          This helper fetches free model IDs from our API, reports both successes and issues back,
+          and handles caching automatically. It's a single file with no dependencies.
         </p>
         <CodeBlock code={snippet} copyLabel="Copy" />
       </div>
@@ -185,7 +200,9 @@ export function ApiUsageStep({
       {/* Step 5: Use It */}
       <div id="use-it" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">{showBrowseModels ? 5 : 4}</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            {showBrowseModels ? 5 : 4}
+          </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
         <p className="text-muted-foreground">
@@ -221,8 +238,12 @@ export function ApiUsageStep({
           className="text-sm"
         />
         <p className="text-muted-foreground">
-          Loop through models until one succeeds. Free models may be rate-limited, so we try multiple and optionally fall back to stable models you trust. See{' '}
-          <a href="#code-examples" className="text-primary hover:underline">Code Examples</a> for more patterns.
+          Loop through models until one succeeds. Free models may be rate-limited, so we try
+          multiple and optionally fall back to stable models you trust. See{' '}
+          <a href="#code-examples" className="text-primary hover:underline">
+            Code Examples
+          </a>{' '}
+          for more patterns.
         </p>
         <CodeBlock
           code={codeExamples.basicUsage(

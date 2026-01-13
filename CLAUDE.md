@@ -25,6 +25,7 @@ This is an Astro site with server-side rendering deployed to Cloudflare Pages. I
 ### Key Patterns
 
 **Database Access**: The database connection is created per-request using Cloudflare's runtime environment. API routes access `DATABASE_URL` from `locals.runtime.env` in production or `import.meta.env` in development:
+
 ```typescript
 const runtime = (locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
 const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
@@ -46,6 +47,7 @@ const db = createDb(databaseUrl);
 ### API
 
 Main endpoint: `GET /api/v1/models/openrouter`
+
 - Query params: `filter` (comma-separated: chat, vision, coding, longContext, reasoning), `sort` (contextLength, maxOutput, name, provider, capable)
 - Returns: `{ models, feedbackCounts, lastUpdated, count }`
 - CORS enabled for all origins

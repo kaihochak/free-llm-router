@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     // Pass through myReports parameter if present
     const fullUrl = `${baseUrl}/api/v1/models/full${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(fullUrl, {
-      headers: { 'Authorization': `Bearer ${demoKey}` },
+      headers: { Authorization: `Bearer ${demoKey}` },
     });
 
     if (!response.ok) {

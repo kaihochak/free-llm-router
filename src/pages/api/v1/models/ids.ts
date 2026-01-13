@@ -1,8 +1,5 @@
 import type { APIRoute } from 'astro';
-import {
-  getFilteredModels,
-  ensureFreshModels,
-} from '@/services/openrouter';
+import { getFilteredModels, ensureFreshModels } from '@/services/openrouter';
 import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
 import { rateLimitHeaders, corsHeaders, logApiRequest } from '@/lib/api-auth';
 

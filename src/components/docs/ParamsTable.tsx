@@ -34,9 +34,7 @@ export function ParamsTable({ type, params }: ParamsTableProps) {
               <tr key={param.name} className={idx === params.length - 1 ? '' : 'border-b'}>
                 <td className="py-2 pr-4 font-mono text-xs">{param.name}</td>
                 <td className="py-2 pr-4">{param.type}</td>
-                {isBodyTable && (
-                  <td className="py-2 pr-4">{param.required ? 'Yes' : 'No'}</td>
-                )}
+                {isBodyTable && <td className="py-2 pr-4">{param.required ? 'Yes' : 'No'}</td>}
                 <td className="py-2">{param.description}</td>
               </tr>
             ))}

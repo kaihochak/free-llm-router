@@ -9,11 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
 interface SubItem {
@@ -129,7 +125,9 @@ function NavItemWithSub({ item, activeHash }: { item: NavItem; activeHash: strin
                         {subItem.badge}
                       </span>
                     )}
-                    <span className={subItem.badge ? 'font-mono text-xs' : ''}>{subItem.title}</span>
+                    <span className={subItem.badge ? 'font-mono text-xs' : ''}>
+                      {subItem.title}
+                    </span>
                   </a>
                 </li>
               );
@@ -142,8 +140,8 @@ function NavItemWithSub({ item, activeHash }: { item: NavItem; activeHash: strin
 }
 
 // Get all section IDs for intersection observer
-const allSectionIds = navItems.flatMap((item) =>
-  item.items?.map((sub) => sub.href.slice(1)) ?? [item.href.slice(1)]
+const allSectionIds = navItems.flatMap(
+  (item) => item.items?.map((sub) => sub.href.slice(1)) ?? [item.href.slice(1)]
 );
 
 export function AppSidebar() {
@@ -171,7 +169,10 @@ export function AppSidebar() {
   }, []);
 
   return (
-    <Sidebar collapsible="offcanvas" className="sticky top-14 h-[calc(100vh-3.5rem)] border-r bg-background">
+    <Sidebar
+      collapsible="offcanvas"
+      className="sticky top-14 h-[calc(100vh-3.5rem)] border-r bg-background"
+    >
       <SidebarContent className="p-2">
         <SidebarGroup>
           <SidebarGroupContent>

@@ -31,17 +31,26 @@ export function SiteHeader({ showSidebarTrigger = true }: SiteHeaderProps) {
           </nav>
         </div>
         <div className="flex-1" />
-        {!isPending && (
-          session?.user ? (
-            <Button variant="outline" size="sm" className="h-8 px-2 text-xs sm:px-3 sm:text-sm" asChild>
+        {!isPending &&
+          (session?.user ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs sm:px-3 sm:text-sm"
+              asChild
+            >
               <a href="/dashboard">Dashboard</a>
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="h-8 px-2 text-xs sm:px-3 sm:text-sm" asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs sm:px-3 sm:text-sm"
+              asChild
+            >
               <a href="/login">Sign In</a>
             </Button>
-          )
-        )}
+          ))}
         <ThemeToggle />
       </div>
     </header>

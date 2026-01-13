@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 export function ModelHero() {
   const { models, loading } = useModels();
-  const modelCount = loading ? '' : models?.length || null; 
+  const modelCount = loading ? '' : models?.length || null;
 
   return (
     <div className="space-y-12">
@@ -35,11 +35,12 @@ export function ModelHero() {
         </h1>
         <p className="relative mt-4 text-2xl font-semibold sm:text-3xl">
           Build your MVP with{' '}
-          <span className="text-primary drop-shadow-[0_0_20px_oklch(0.6_0.2_145/0.5)]">$0</span>{' '}
-          AI costs
+          <span className="text-primary drop-shadow-[0_0_20px_oklch(0.6_0.2_145/0.5)]">$0</span> AI
+          costs
         </p>
         <p className="relative mt-6 max-w-xl text-sm text-muted-foreground sm:text-base">
-          A live-updated list of free LLM models from OpenRouter. One API call, always a working model. We track availability so you don't have to.
+          A live-updated list of free LLM models from OpenRouter. One API call, always a working
+          model. We track availability so you don't have to.
         </p>
         <div className="relative mt-8 flex flex-wrap justify-center gap-3">
           <a href="#onboarding">

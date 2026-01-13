@@ -13,7 +13,8 @@ export function CodeExamplesSection() {
         <div id="example-one-off" className="space-y-3 scroll-mt-20">
           <h3 className="text-2xl font-semibold">One-off API Call</h3>
           <p className="text-muted-foreground">
-            Simple single prompt completion - perfect for scripts, CLI tools, or serverless functions.
+            Simple single prompt completion - perfect for scripts, CLI tools, or serverless
+            functions.
           </p>
           <CodeBlock code={codeExamples.oneOffCall} copyLabel="Copy" />
         </div>

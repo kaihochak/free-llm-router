@@ -156,11 +156,16 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
             <div className="space-y-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold">{userRateLimit.remaining}</span>
-                <span className="text-muted-foreground">/ {userRateLimit.limit} requests remaining</span>
+                <span className="text-muted-foreground">
+                  / {userRateLimit.limit} requests remaining
+                </span>
               </div>
               <div className="text-sm text-muted-foreground">
                 {userRateLimit.requestCount > 0 ? (
-                  <>Used {userRateLimit.requestCount} request{userRateLimit.requestCount === 1 ? '' : 's'} today</>
+                  <>
+                    Used {userRateLimit.requestCount} request
+                    {userRateLimit.requestCount === 1 ? '' : 's'} today
+                  </>
                 ) : (
                   'No requests made yet'
                 )}
@@ -209,7 +214,8 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
         <CardHeader>
           <CardTitle>API Keys</CardTitle>
           <CardDescription>
-            Manage your keys ({apiKeys.length}/{MAX_KEYS}). All keys share your account&apos;s rate limit of {userRateLimit?.limit ?? 200} requests per day.
+            Manage your keys ({apiKeys.length}/{MAX_KEYS}). All keys share your account&apos;s rate
+            limit of {userRateLimit?.limit ?? 200} requests per day.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -222,7 +228,11 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
               className="flex-1"
             />
             <Button type="submit" disabled={isCreating || !keyName.trim() || !canCreateKey}>
-              {isCreating ? 'Creating...' : canCreateKey ? 'Create Key' : `Limit Reached (${MAX_KEYS})`}
+              {isCreating
+                ? 'Creating...'
+                : canCreateKey
+                  ? 'Create Key'
+                  : `Limit Reached (${MAX_KEYS})`}
             </Button>
           </form>
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
