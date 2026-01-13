@@ -10,12 +10,12 @@ import { generateOrganizationSchema, generateWebSiteSchema } from '../lib/seo';
   description="Build your MVP with $0 AI costs. A curated list of free LLM models from OpenRouter. One API call, always a working model."
   jsonLd={[generateOrganizationSchema(), generateWebSiteSchema()]}
 >
-  <div class="container mx-auto max-w-5xl px-4 py-16">
-    <!-- Usage Banner -->
-    <div class="mb-8">
-      <UsageBanner client:load />
-    </div>
+  <!-- Usage Banner -->
+  <div class="max-w-5xl mx-auto fixed bottom-4 left-0 right-0 z-40 px-4 py-2">
+    <UsageBanner client:load />
+  </div>
 
+  <div class="container mx-auto max-w-5xl px-4 py-16">
     <ModelHeroWithProvider client:load />
 
     <!-- Footer -->

@@ -48,8 +48,6 @@ declare global {
 export function FeedbackDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const [turnstileWidgetId, setTurnstileWidgetId] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({
     type: 'general',
     message: '',
@@ -88,14 +86,8 @@ export function FeedbackDialog() {
     setLoading(true);
 
     try {
-      // Get Turnstile token if widget exists
-      let token = turnstileToken;
-      if (turnstileWidgetId && window.turnstile) {
-        token = window.turnstile.getResponse(turnstileWidgetId);
-        if (!token) {
-          throw new Error('Please complete the captcha challenge');
-        }
-      }
+      // Get Turnstile token from global callback
+      const token = (window as Window & { __turnstileToken?: string }).__turnstileToken || '';
 
       const response = await fetch('/api/site-feedback', {
         method: 'POST',
@@ -129,10 +121,8 @@ export function FeedbackDialog() {
   const resetForm = () => {
     setFormData({ type: 'general', message: '', email: '' });
     setErrors({});
-    setTurnstileToken('');
-    if (turnstileWidgetId && window.turnstile) {
-      window.turnstile.reset(turnstileWidgetId);
-    }
+    (window as Window & { __turnstileToken?: string }).__turnstileToken = '';
+    window.turnstile?.reset('.cf-turnstile');
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -232,25 +222,14 @@ export function FeedbackDialog() {
 
           {typeof window !== 'undefined' && import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
             <div className="space-y-2">
-              <script
-                src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-                async
-                defer
-              ></script>
               <div
                 className="cf-turnstile"
                 data-sitekey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY}
                 data-callback="onTurnstileSuccess"
-                data-error-callback="onTurnstileError"
-                ref={(el) => {
-                  if (el && open && !turnstileWidgetId && window.turnstile) {
-                    const widgetId = window.turnstile.render(el, {
-                      sitekey: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
-                      callback: (token: string) => setTurnstileToken(token),
-                      'error-callback': () => setTurnstileToken(''),
-                    });
-                    setTurnstileWidgetId(widgetId);
-                  }
+              />
+              <script
+                dangerouslySetInnerHTML={{
+                  __html: `window.onTurnstileSuccess = function(token) { window.__turnstileToken = token; };`,
                 }}
               />
             </div>
