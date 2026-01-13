@@ -180,7 +180,7 @@ const models = await getModelIds(
 
 // Check error rates in the response metadata
 const response = await fetch(
-  `https://free-LLM-router.pages.dev/api/v1/models/full?timeWindow=7d`,
+  `https://free-llm-router.pages.dev/api/v1/models/full?timeWindow=7d`,
   {
     headers: { 'Authorization': `Bearer ${process.env.FREE_MODELS_API_KEY}` }
   }
@@ -198,12 +198,12 @@ data.models.forEach(model => {
 
 ## Authentication
 
-Get your free API key at https://free-LLM-router.pages.dev
+Get your free API key at https://free-llm-router.pages.dev
 
 Use in API requests:
 ```bash
 curl -H "Authorization: Bearer fma_your_key_here" \
-  "https://free-LLM-router.pages.dev/api/v1/models/ids?filter=chat"
+  "https://free-llm-router.pages.dev/api/v1/models/ids?filter=chat"
 ```
 
 Set in environment:
@@ -266,7 +266,7 @@ Deploy to Cloudflare Pages:
 
 ## Documentation
 
-- Full web documentation and interactive API explorer at https://free-LLM-router.pages.dev
+- Full web documentation and interactive API explorer at https://free-llm-router.pages.dev
 - [PRD](./docs/PRD.md) - Product requirements and design
 - [Reference implementations](./reference/) - Example code for common patterns
 

@@ -28,16 +28,14 @@ export const GET: APIRoute = async (context) => {
     const { db, databaseUrl, params, validation } = req;
     const { useCases, sort, topN, maxErrorRate, timeRange, myReports } = params;
 
-    // Get userId if myReports is enabled
+    // Get userId if myReports is enabled (optional authentication)
     let userId: string | undefined;
 
     try {
       userId = await getUserIdIfMyReports(context, myReports);
     } catch (error) {
-      return new Response(JSON.stringify({ error: (error as Error).message || 'Invalid API key' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      // If myReports=true but no valid API key, gracefully fall back to community data
+      // This allows unauthenticated users to see community data without error
     }
 
     // Lazy refresh if stale
@@ -45,7 +43,7 @@ export const GET: APIRoute = async (context) => {
 
     // Fetch filtered and sorted models + feedback counts
     const [allModels, feedbackCounts, updatedAt] = await Promise.all([
-      getFilteredModels(db, useCases, sort, maxErrorRate, timeRange),
+      getFilteredModels(db, useCases, sort, maxErrorRate, timeRange, userId),
       getRecentFeedbackCounts(db, timeRange, userId),
       getLastUpdated(db),
     ]);

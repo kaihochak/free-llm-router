@@ -61,7 +61,7 @@ export type SortType = ApiSortType;
 export const USE_CASES = USE_CASE_DEFINITIONS;
 export const SORT_OPTIONS = SORT_DEFINITIONS;
 
-const API_BASE = 'https://free-LLM-router.pages.dev';
+const API_BASE = 'https://free-llm-router.pages.dev';
 
 export const modelKeys = {
   all: ['models'] as const,
@@ -81,8 +81,13 @@ interface ModelsResponse {
   lastUpdated: string | null;
 }
 
-async function fetchAllModels(): Promise<ModelsResponse> {
-  const response = await fetch('/api/demo/models');
+async function fetchAllModels(myReports?: boolean): Promise<ModelsResponse> {
+  const params = new URLSearchParams();
+  if (myReports !== undefined) {
+    params.append('myReports', myReports.toString());
+  }
+  const url = `/api/demo/models${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch models');
   }
@@ -133,8 +138,8 @@ export function useModels() {
     isLoading: loading,
     error,
   } = useQuery({
-    queryKey: modelKeys.all,
-    queryFn: fetchAllModels,
+    queryKey: ['models', activeMyReports],
+    queryFn: () => fetchAllModels(activeMyReports),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 

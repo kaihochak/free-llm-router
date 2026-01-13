@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: 'Free LLM Router',
-  url: 'https://free-LLM-router.pages.dev',
+  url: 'https://free-llm-router.pages.dev',
   description:
     'A live-updated list of free LLM models from OpenRouter. One API call, always a working model. We track availability so you don\'t have to.',
   defaultImage: '/og-image.png',

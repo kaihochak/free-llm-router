@@ -15,7 +15,7 @@ import {
   DEFAULT_RELIABILITY_FILTER_ENABLED,
 } from '@/lib/api-definitions';
 
-const BASE_URL = 'https://free-LLM-router.pages.dev';
+const BASE_URL = 'https://free-llm-router.pages.dev';
 
 interface TryItPanelProps {
   endpoint: string;

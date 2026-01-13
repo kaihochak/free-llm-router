@@ -8,15 +8,15 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://free-LLM-router.pages.dev',
+	site: 'https://free-llm-router.pages.dev',
 	output: 'server',
 	adapter: cloudflare(),
 	integrations: [
 		react(),
 		sitemap({
 			customPages: [
-				'https://free-LLM-router.pages.dev/',
-				'https://free-LLM-router.pages.dev/docs',
+				'https://free-llm-router.pages.dev/',
+				'https://free-llm-router.pages.dev/docs',
 			],
 		}),
 	],
