@@ -15,6 +15,7 @@ import {
   validateApiKeyOnly,
   type ApiKeyValidation,
   corsHeaders,
+  rateLimitedResponse,
 } from '@/lib/api-auth';
 
 export interface ParsedModelParams {
@@ -65,10 +66,7 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
       });
     }
     if (validation.errorCode === 'RATE_LIMITED') {
-      return new Response(JSON.stringify({ error: validation.error || 'Rate limited' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return rateLimitedResponse(validation);
     }
     return new Response(JSON.stringify({ error: validation.error || 'Unauthorized' }), {
       status: 401,
