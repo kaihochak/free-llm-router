@@ -68,7 +68,7 @@ function InteractiveLegendContent({
   const issuesMap = new Map(issues.map((issue) => [issue.modelId, issue]));
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
+    <div className="flex items-center justify-center gap-x-4 gap-y-2 pt-3 max-h-30 overflow-x-auto custom-scrollbar px-2">
       {payload
         .filter((item) => item.type !== 'none')
         .map((item) => {
@@ -81,7 +81,7 @@ function InteractiveLegendContent({
               key={item.dataKey ?? item.value}
               onClick={() => onToggle(item.dataKey)}
               className={cn(
-                'flex items-center gap-1.5 rounded px-2 py-1 transition-opacity cursor-pointer',
+                'min-w-[100px] flex items-center gap-1.5 rounded px-1.5 py-0.5 text-sm transition-opacity cursor-pointer',
                 isVisible ? 'opacity-100' : 'opacity-40 hover:opacity-60'
               )}
               title={isVisible ? 'Click to hide' : 'Click to show'}
@@ -95,7 +95,7 @@ function InteractiveLegendContent({
                   backgroundColor: item.color,
                 }}
               />
-              <span className={!isVisible ? 'text-muted-foreground' : ''}>
+              <span className={`${!isVisible ? 'text-muted-foreground' : ''} flex flex-col`}>
                 {shortName}
                 {issueSummary && issueSummary.errorRate > 0 && (
                   <span className="text-xs opacity-70 ml-1">
@@ -241,7 +241,7 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
   }, [timeline, range, modelIds]);
 
   return (
-    <ChartContainer config={chartConfig} className="aspect-auto h-52 w-full sm:h-75">
+    <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full sm:h-100">
       <AreaChart data={chartData}>
         <defs>
           {modelIds.map((modelId, index) => (
