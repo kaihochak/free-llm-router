@@ -186,24 +186,21 @@ export function TryItPanel({ endpoint, method, defaultBody, exampleResponse }: T
           <h4 className="text-sm font-medium">Response</h4>
           {statusCode !== null && (
             <span
-              className={`text-xs font-medium ${
-                statusCode >= 200 && statusCode < 300
+              className={`text-xs font-medium ${statusCode >= 200 && statusCode < 300
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-red-600 dark:text-red-400'
-              }`}
+                }`}
             >
               {statusCode}
             </span>
           )}
         </div>
-        <div className="max-h-64 overflow-auto custom-scrollbar">
-          <CodeBlock
-            code={response || exampleResponse}
-            language="json"
-            showCopy={!!response}
-            className="rounded-none border-none"
-          />
-        </div>
+        <CodeBlock
+          code={response || exampleResponse}
+          language="json"
+          showCopy={!!response}
+          className="rounded-none border-none"
+        />
       </div>
     </div>
   );

@@ -48,7 +48,11 @@ export function OnboardingFlow() {
     lastUpdated,
     toggleUseCase,
     setActiveSort,
-  } = useModels();
+  } = useModels({
+    overrideTimeRange: '1h',
+    overrideMyReports: false,
+    overrideReliabilityFilterEnabled: false,
+  });
 
   const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
 

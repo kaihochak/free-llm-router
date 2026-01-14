@@ -67,7 +67,8 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
 
   try {
     const params = new URLSearchParams(url.searchParams);
-    // Pass through myReports parameter if present
+    // Force myReports=false for demo - shows community data, not demo user's reports
+    params.set('myReports', 'false');
     const fullUrl = `${baseUrl}/api/v1/models/full${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(fullUrl, {
       headers: { Authorization: `Bearer ${demoKey}` },

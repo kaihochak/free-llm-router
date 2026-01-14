@@ -6,7 +6,11 @@ import { QueryProvider } from '@/components/QueryProvider';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 export function ModelHero() {
-  const { models, loading } = useModels();
+  const { models, loading } = useModels({
+    overrideTimeRange: '1h',
+    overrideMyReports: false,
+    overrideReliabilityFilterEnabled: false,
+  });
   const modelCount = loading ? '' : models?.length || null;
 
   return (
