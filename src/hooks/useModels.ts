@@ -35,6 +35,10 @@ export interface Model {
   createdAt?: string | null;
   issueCount?: number;
   errorRate?: number;
+  successCount?: number;
+  rateLimited?: number;
+  unavailable?: number;
+  errorCount?: number;
 }
 
 interface FeedbackCounts {
@@ -93,12 +97,16 @@ async function fetchAllModels(myReports?: boolean): Promise<ModelsResponse> {
   }
   const data: ApiResponse = await response.json();
 
-  // Attach issue counts and error rates to each model
+  // Attach issue counts, error rates, and breakdown to each model
   const models = data.models.map((model) => {
     const feedback = data.feedbackCounts[model.id];
     const issueCount = feedback ? feedback.rateLimited + feedback.unavailable + feedback.error : 0;
     const errorRate = feedback ? feedback.errorRate : 0;
-    return { ...model, issueCount, errorRate };
+    const successCount = feedback ? feedback.successCount : 0;
+    const rateLimited = feedback ? feedback.rateLimited : 0;
+    const unavailable = feedback ? feedback.unavailable : 0;
+    const errorCount = feedback ? feedback.error : 0;
+    return { ...model, issueCount, errorRate, successCount, rateLimited, unavailable, errorCount };
   });
 
   return {

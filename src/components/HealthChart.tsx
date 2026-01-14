@@ -8,7 +8,6 @@ import {
   ChartContainer,
   ChartLegend,
   ChartTooltip,
-  ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { IssueSummary, TimelinePoint, TimeRange } from '@/services/openrouter';
 import { cn } from '@/lib/utils';
@@ -111,6 +110,59 @@ function InteractiveLegendContent({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function SortedTooltipContent({
+  active,
+  payload,
+  label,
+  chartConfig,
+}: {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  chartConfig: ChartConfig;
+}) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  // Sort by value descending (highest error rate first)
+  const sortedPayload = [...payload].sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+
+  return (
+    <div className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
+      <div className="font-medium">{label}</div>
+      <div className="grid gap-1.5">
+        {sortedPayload.map((item) => {
+          const name = String(item.name ?? '');
+          // Get the meta data with counts from the payload
+          const meta = item.payload?.[`${name}_meta`] as { errorRate: number; errorCount: number; totalCount: number } | undefined;
+          const errorCount = meta?.errorCount ?? 0;
+          const totalCount = meta?.totalCount ?? 0;
+
+          return (
+            <div
+              key={name}
+              className="flex w-full items-center gap-2"
+            >
+              <div
+                className="shrink-0 rounded-[2px] h-2.5 w-2.5"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="flex-1 text-muted-foreground">
+                {chartConfig[name]?.label || name}
+              </span>
+              <span className="font-mono font-medium tabular-nums text-foreground">
+                {item.value}% ({errorCount}/{totalCount})
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
   // Get unique model IDs from issues (sorted by total issues)
   const modelIds = useMemo(() => {
@@ -168,13 +220,21 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
   // Format timeline data for recharts - ensure all models have values (0 if missing)
   const chartData = useMemo(() => {
     return timeline.map((point) => {
-      const filledPoint: Record<string, number | string> = {
+      const filledPoint: Record<string, number | string | { errorRate: number; errorCount: number; totalCount: number }> = {
         date: point.date,
         dateLabel: formatDateLabel(point.date, range),
       };
-      // Fill in 0 for any model not present in this time bucket
+      // Fill in data for each model - use errorRate for chart, keep full data for tooltip
       modelIds.forEach((modelId) => {
-        filledPoint[modelId] = typeof point[modelId] === 'number' ? point[modelId] : 0;
+        const data = point[modelId];
+        if (data && typeof data === 'object' && 'errorRate' in data) {
+          // Store errorRate as the chart value, and full data with _meta suffix for tooltip
+          filledPoint[modelId] = data.errorRate;
+          filledPoint[`${modelId}_meta`] = data;
+        } else {
+          filledPoint[modelId] = 0;
+          filledPoint[`${modelId}_meta`] = { errorRate: 0, errorCount: 0, totalCount: 0 };
+        }
       });
       return filledPoint;
     });
@@ -207,10 +267,17 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
           tickMargin={8}
           minTickGap={32}
         />
-        <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} tickFormatter={(value) => `${value}%`} />
         <ChartTooltip
           cursor={false}
-          content={<ChartTooltipContent labelFormatter={(value) => value} indicator="dot" />}
+          content={(props) => (
+            <SortedTooltipContent
+              active={props.active}
+              payload={props.payload as any[]}
+              label={props.label as string}
+              chartConfig={chartConfig}
+            />
+          )}
         />
         {modelIds.map((modelId, index) =>
           visibleSeries.has(modelId) ? (
