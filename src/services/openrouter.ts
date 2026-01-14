@@ -451,10 +451,17 @@ export async function ensureFreshModels(db: Database) {
   }
 }
 
+// Timeline data for a single model at a point in time
+export interface TimelineModelData {
+  errorRate: number;
+  errorCount: number;
+  totalCount: number;
+}
+
 // Timeline data point for charts
 export interface TimelinePoint {
   date: string;
-  [modelId: string]: number | string;
+  [modelId: string]: number | string | TimelineModelData;
 }
 
 /**
@@ -547,20 +554,26 @@ export async function getFeedbackTimeline(
     .select({
       bucket: sql<string>`${dateTrunc}::text`,
       modelId: modelFeedback.modelId,
-      count: sql<number>`count(*)::int`,
+      errorCount: sql<number>`count(*) filter (where ${modelFeedback.isSuccess} = false)::int`,
+      totalCount: sql<number>`count(*)::int`,
     })
     .from(modelFeedback)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
 
-  // Build map of actual data
-  const dataMap: Record<string, Record<string, number>> = {};
+  // Build map of actual data - store error rate percentage and counts
+  const dataMap: Record<string, Record<string, TimelineModelData>> = {};
   for (const row of results) {
     if (!dataMap[row.bucket]) {
       dataMap[row.bucket] = {};
     }
-    dataMap[row.bucket][row.modelId] = row.count;
+    // Store error rate and counts for breakdown display
+    dataMap[row.bucket][row.modelId] = {
+      errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
+      errorCount: row.errorCount,
+      totalCount: row.totalCount,
+    };
   }
 
   // Generate all buckets and fill with data (or empty)

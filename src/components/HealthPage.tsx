@@ -45,6 +45,11 @@ function IssuesPageContent() {
       supportedParameters: null,
       isModerated: null,
       issueCount: issue.total,
+      errorRate: issue.errorRate,
+      successCount: issue.successCount,
+      rateLimited: issue.rateLimited,
+      unavailable: issue.unavailable,
+      errorCount: issue.error,
     }));
   }, [issues]);
 
@@ -66,7 +71,7 @@ function IssuesPageContent() {
         <ModelCountHeader
           count={count}
           lastUpdated={lastUpdated}
-          label={`model${count === 1 ? '' : 's'} with reported issues`}
+          label={`model${count === 1 ? '' : 's'} with reported usage`}
         />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
           {session && (
@@ -103,11 +108,19 @@ function IssuesPageContent() {
       </div>
 
       {/* Chart */}
+      <div className="mb-3 flex items-center gap-2">
+        <span className="font-medium">Error Rate Over Time</span>
+        <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
+      </div>
       <div className="mb-8">
         <IssuesChart timeline={timeline} issues={issues} range={range} />
       </div>
 
       {/* Issues list */}
+      <div className="mb-3 flex items-center gap-2">
+        <span className="font-medium">Models by Error Rate</span>
+        <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
+      </div>
       <ModelList models={models} loading={loading} error={error} currentPage={1} />
     </section>
   );

@@ -5,6 +5,7 @@ import {
   VALID_TIME_RANGES_WITH_LABELS,
   TIME_RANGE_DEFINITIONS,
   DEFAULT_MY_REPORTS,
+  DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
 import { useCachedSession } from '@/lib/auth-client';
 
@@ -22,9 +23,15 @@ export interface IssueData {
   errorRate: number;
 }
 
+export interface TimelineModelData {
+  errorRate: number;
+  errorCount: number;
+  totalCount: number;
+}
+
 export interface TimelinePoint {
   date: string;
-  [modelId: string]: number | string;
+  [modelId: string]: number | string | TimelineModelData;
 }
 
 interface IssuesResponse {
@@ -59,7 +66,7 @@ async function fetchIssues(range: TimeRange, myReports?: boolean): Promise<Issue
 }
 
 export function useHealth() {
-  const [range, setRange] = useState<TimeRange>('24h');
+  const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [myReports, setMyReportsState] = useState<boolean>(DEFAULT_MY_REPORTS);
   const { data: session } = useCachedSession();
 

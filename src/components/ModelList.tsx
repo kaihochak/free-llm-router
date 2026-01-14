@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Model } from '@/hooks/useModels';
-import { ArrowUpRight, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 interface ModelListProps {
   models: Model[];
@@ -110,7 +110,6 @@ export function ModelList({
           const badges = getCapabilityBadges(model);
           const provider = getProvider(model.id);
           const isNew = isNewModel(model.createdAt);
-          const hasIssues = (model.issueCount ?? 0) > 0;
 
           return (
             <a
@@ -148,23 +147,25 @@ export function ModelList({
 
               {/* Stats */}
               <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                {/* Context / Output tokens */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="font-mono hidden sm:inline">
-                        {formatTokens(model.contextLength)} /{' '}
-                        {formatTokens(model.maxCompletionTokens)}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        Context: {formatTokens(model.contextLength)} · Output:{' '}
-                        {formatTokens(model.maxCompletionTokens)}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                {/* Context / Output tokens - only show if at least one value exists */}
+                {(model.contextLength || model.maxCompletionTokens) && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="font-mono hidden sm:inline">
+                          {formatTokens(model.contextLength)} /{' '}
+                          {formatTokens(model.maxCompletionTokens)}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          Context: {formatTokens(model.contextLength)} · Output:{' '}
+                          {formatTokens(model.maxCompletionTokens)}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
 
                 {/* Error rate badge */}
                 {model.errorRate !== undefined && model.errorRate > 0 ? (
@@ -185,30 +186,22 @@ export function ModelList({
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Error rate: {model.errorRate.toFixed(1)}%</p>
+                        <p className="font-medium">
+                          {model.errorRate.toFixed(1)}% ({model.issueCount}/{(model.issueCount ?? 0) + (model.successCount ?? 0)})
+                        </p>
+                        {(model.rateLimited ?? 0) > 0 && (
+                          <p className="text-muted-foreground">Rate limited: {model.rateLimited}</p>
+                        )}
+                        {(model.unavailable ?? 0) > 0 && (
+                          <p className="text-muted-foreground">Unavailable: {model.unavailable}</p>
+                        )}
+                        {(model.errorCount ?? 0) > 0 && (
+                          <p className="text-muted-foreground">Errors: {model.errorCount}</p>
+                        )}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 ) : null}
-
-                {/* Issues count */}
-                {hasIssues && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                          <AlertTriangle className="h-3 w-3" />
-                          <span className="text-[10px]">{model.issueCount}</span>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          {model.issueCount} reported issue{model.issueCount === 1 ? '' : 's'}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
 
                 <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
