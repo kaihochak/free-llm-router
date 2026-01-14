@@ -1,39 +1,34 @@
 import type { APIRoute } from 'astro';
+import { getClientIp, createRateLimiter, isAllowedOrigin } from '@/lib/api-utils';
 
-// Lightweight in-memory cache + per-IP throttle (best effort per instance).
+// Lightweight in-memory cache (best effort per instance).
 // This keeps the endpoint anonymous while reducing demo key burn.
 const cache = new Map<string, { body: string; expiresAt: number }>();
-const requests = new Map<string, { count: number; resetAt: number }>();
-
 const CACHE_TTL_MS = 60_000; // reuse upstream response for 60s
-const RATE_LIMIT = 20; // max requests per IP per minute
-const RATE_WINDOW_MS = 60_000;
 
-function getClientIp(req: Request) {
-  return (
-    req.headers.get('cf-connecting-ip') ||
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  );
-}
+// Rate limiter: 20 requests per IP per minute
+const rateLimiter = createRateLimiter(20, 60_000);
 
-function isRateLimited(ip: string) {
-  const now = Date.now();
-  const entry = requests.get(ip);
-  if (!entry || now > entry.resetAt) {
-    requests.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > RATE_LIMIT;
-}
+// Allowed origins for demo endpoint (blocks off-site scraping)
+const ALLOWED_ORIGINS = [
+  'https://free-llm-router.pages.dev',
+  'http://localhost:4321',
+  'http://localhost:3000',
+];
 
 /**
  * Demo proxy endpoint for the website.
  * Uses a server-side DEMO_API_KEY to fetch models without exposing credentials to the browser.
  */
 export const GET: APIRoute = async ({ locals, url, request }) => {
+  // Check origin first (blocks off-site scraping)
+  if (!isAllowedOrigin(request, ALLOWED_ORIGINS)) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
   const env = runtime?.env || {};
 
@@ -48,7 +43,8 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
   }
 
   const ip = getClientIp(request);
-  if (isRateLimited(ip)) {
+  const { limited } = rateLimiter.check(ip);
+  if (limited) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), {
       status: 429,
       headers: { 'Content-Type': 'application/json' },

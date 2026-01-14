@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createDb, siteFeedback } from '@/db';
+import { getClientIp, createRateLimiter, createCooldownTracker } from '@/lib/api-utils';
 
 interface FeedbackPayload {
   type?: (typeof VALID_TYPES)[number];
@@ -18,8 +19,28 @@ const corsHeaders = {
 
 const VALID_TYPES = ['general', 'bug'] as const;
 
+// Rate limiting: 5 posts per IP per 10 minutes
+const ipRateLimiter = createRateLimiter(5, 10 * 60 * 1000);
+
+// Email cooldown: 5 minutes between submissions per email
+const emailCooldown = createCooldownTracker(5 * 60 * 1000);
+
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
+    // Check IP rate limit first (before parsing body)
+    const ip = getClientIp(request);
+    const ipLimit = ipRateLimiter.check(ip);
+    if (ipLimit.limited) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(ipLimit.retryAfter),
+          ...corsHeaders,
+        },
+      });
+    }
+
     const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
     const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
     const turnstileSecret =
@@ -93,6 +114,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
+    // Check email cooldown (after validation so we have a valid email)
+    const emailLimit = emailCooldown.check(email);
+    if (emailLimit.limited) {
+      return new Response(
+        JSON.stringify({ error: 'Please wait before submitting another feedback' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(emailLimit.retryAfter),
+            ...corsHeaders,
+          },
+        }
+      );
+    }
+
     const db = createDb(databaseUrl);
     const id = crypto.randomUUID();
 
@@ -105,6 +142,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       pageUrl: pageUrl || null,
       createdAt: new Date(),
     });
+
+    // Set email cooldown after successful insert
+    emailCooldown.set(email);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
