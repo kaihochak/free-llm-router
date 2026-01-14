@@ -85,12 +85,22 @@ interface ModelsResponse {
   lastUpdated: string | null;
 }
 
-async function fetchAllModels(myReports?: boolean): Promise<ModelsResponse> {
+interface FetchOptions {
+  timeRange: string;
+  maxErrorRate?: number;
+  myReports?: boolean;
+}
+
+async function fetchAllModels(options: FetchOptions): Promise<ModelsResponse> {
   const params = new URLSearchParams();
-  if (myReports !== undefined) {
-    params.append('myReports', myReports.toString());
+  params.append('timeRange', options.timeRange);
+  if (options.maxErrorRate !== undefined) {
+    params.append('maxErrorRate', options.maxErrorRate.toString());
   }
-  const url = `/api/demo/models${params.toString() ? '?' + params.toString() : ''}`;
+  if (options.myReports !== undefined) {
+    params.append('myReports', options.myReports.toString());
+  }
+  const url = `/api/demo/models?${params.toString()}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch models');
@@ -129,7 +139,13 @@ export function getFullApiUrl(apiUrl: string): string {
   return `${API_BASE}${apiUrl}`;
 }
 
-export function useModels() {
+export interface UseModelsOptions {
+  overrideTimeRange?: string;
+  overrideMyReports?: boolean;
+  overrideReliabilityFilterEnabled?: boolean;
+}
+
+export function useModels(options?: UseModelsOptions) {
   const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>(
     'freeModels:useCases',
     []
@@ -156,14 +172,26 @@ export function useModels() {
     DEFAULT_MY_REPORTS
   );
 
+  // Use override values if provided, otherwise use state values
+  const effectiveTimeRange = options?.overrideTimeRange ?? activeTimeRange;
+  const effectiveMyReports = options?.overrideMyReports ?? activeMyReports;
+  const effectiveReliabilityEnabled =
+    options?.overrideReliabilityFilterEnabled ?? reliabilityFilterEnabled;
+  const effectiveMaxErrorRate = effectiveReliabilityEnabled ? activeMaxErrorRate : undefined;
+
   // Fetch all models once
   const {
     data: modelsResponse = { models: [], lastUpdated: null },
     isLoading: loading,
     error,
   } = useQuery({
-    queryKey: ['models', activeMyReports],
-    queryFn: () => fetchAllModels(activeMyReports),
+    queryKey: ['models', effectiveTimeRange, effectiveMaxErrorRate, effectiveMyReports],
+    queryFn: () =>
+      fetchAllModels({
+        timeRange: effectiveTimeRange,
+        maxErrorRate: effectiveMaxErrorRate,
+        myReports: effectiveMyReports,
+      }),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 

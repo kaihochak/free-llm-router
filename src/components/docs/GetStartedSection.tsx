@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { ApiUsageStep } from '@/components/ApiUsageStep';
 import { QueryProvider } from '@/components/QueryProvider';
 import { useModels } from '@/hooks/useModels';
 import { ModelControls } from '@/components/ModelControls';
 import { ModelList } from '@/components/ModelList';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function GetStartedSection() {
   const {
@@ -29,6 +32,16 @@ export function GetStartedSection() {
   } = useModels();
 
   const previewModels = activeTopN ? models.slice(0, activeTopN) : models;
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(previewModels.length / itemsPerPage);
+
+  // Reset to page 1 when models change
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   return (
     <section id="get-started" className="mt-20 scroll-mt-20">
@@ -92,13 +105,40 @@ export function GetStartedSection() {
           onMyReportsChange={setActiveMyReports}
           onReset={resetToDefaults}
         />
-        <ModelCountHeader count={previewModels.length} lastUpdated={lastUpdated} />
+        <div className="flex items-center justify-between">
+          <ModelCountHeader count={previewModels.length} lastUpdated={lastUpdated} />
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground px-1">
+                {currentPage} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
         <ModelList
           models={previewModels}
           loading={loading}
           error={error}
-          currentPage={1}
-          itemsPerPage={5}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
         />
       </div>
 
