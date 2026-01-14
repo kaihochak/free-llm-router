@@ -213,7 +213,7 @@ export function ModelControls({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className={`text-muted-foreground ${labelClass} cursor-help`}>
-                  Health Filter
+                  Health Filter {`${reliabilityFilterEnabled && activeMaxErrorRate ? `(error less than ${activeMaxErrorRate}% within the past ${activeTimeRange})` : ''}`}
                 </span>
               </TooltipTrigger>
               <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
