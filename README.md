@@ -356,6 +356,53 @@ Choose the appropriate time window for your use case:
 - **24h** - Daily health (recommended default)
 - **7d/30d** - Long-term stability patterns
 
+## Administration
+
+### Data Retention
+
+The API stores request logs and model feedback for analytics. To prevent unbounded growth:
+
+- **model_feedback**: Retained for 90 days
+- **api_request_logs**: Retained for 30 days
+
+### Cleanup Endpoint
+
+A protected admin endpoint is available to delete old data:
+
+```bash
+# Trigger cleanup manually
+curl -X POST \
+  -H "X-Admin-Secret: your-admin-secret" \
+  "https://your-domain.com/api/admin/cleanup"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "deleted": {
+    "modelFeedback": 150,
+    "apiRequestLogs": 2340
+  },
+  "cutoffs": {
+    "modelFeedback": "2024-10-15T00:00:00.000Z",
+    "apiRequestLogs": "2024-12-14T00:00:00.000Z"
+  }
+}
+```
+
+### Environment Variables for Admin
+
+```bash
+# Required for cleanup endpoint
+ADMIN_SECRET=your-secure-random-string
+```
+
+### Automated Cleanup (Optional)
+
+For automated cleanup, use an external cron service like [cron-job.org](https://cron-job.org) to call the cleanup endpoint daily or weekly.
+
 ## Contributing
 
 We welcome contributions! Help improve the Free LLM Router:
