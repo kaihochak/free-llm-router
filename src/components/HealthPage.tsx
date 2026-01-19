@@ -1,20 +1,11 @@
-import { useMemo } from 'react';
-import { useHealth, TIME_RANGE_OPTIONS, type TimeRange } from '@/hooks/useHealth';
+import { useMemo, useCallback } from 'react';
+import { useHealth, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { IssuesChart } from '@/components/HealthChart';
 import { QueryProvider } from '@/components/QueryProvider';
-import { useCachedSession } from '@/lib/auth-client';
+import { ModelControls } from '@/components/ModelControls';
 import type { Model } from '@/hooks/useModels';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
 
 function IssuesPageContent() {
   const {
@@ -28,21 +19,37 @@ function IssuesPageContent() {
     lastUpdated,
     myReports,
     setMyReports,
+    activeUseCases,
+    activeSort,
+    activeTopN,
+    reliabilityFilterEnabled,
+    activeMaxErrorRate,
+    toggleUseCase,
+    setActiveSort,
+    setActiveTopN,
+    setReliabilityFilterEnabled,
+    setActiveMaxErrorRate,
+    resetToDefaults,
   } = useHealth();
-  const { data: session } = useCachedSession();
+
+  // Wrapper to cast string to TimeRange for ModelControls compatibility
+  const handleTimeRangeChange = useCallback(
+    (value: string) => setRange(value as TimeRange),
+    [setRange]
+  );
 
   // Convert IssueData to Model format for ModelList
   const models: Model[] = useMemo(() => {
     return issues.map((issue) => ({
       id: issue.modelId,
       name: issue.modelName,
-      contextLength: null,
-      maxCompletionTokens: null,
+      contextLength: issue.contextLength,
+      maxCompletionTokens: issue.maxCompletionTokens,
       description: null,
-      modality: null,
-      inputModalities: null,
-      outputModalities: null,
-      supportedParameters: null,
+      modality: issue.modality,
+      inputModalities: issue.inputModalities,
+      outputModalities: issue.outputModalities,
+      supportedParameters: issue.supportedParameters,
       isModerated: null,
       issueCount: issue.total,
       errorRate: issue.errorRate,
@@ -67,48 +74,33 @@ function IssuesPageContent() {
       </p>
 
       {/* Controls */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <ModelCountHeader
-          count={count}
-          lastUpdated={lastUpdated}
-          label={`model${count === 1 ? '' : 's'} with reported usage`}
-        />
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-          {session && (
-            <ButtonGroup className="w-full sm:w-auto">
-              <Button
-                variant={!myReports ? 'default' : 'outline'}
-                onClick={() => setMyReports(false)}
-                className="flex-1"
-              >
-                All Community Reports
-              </Button>
-              <Button
-                variant={myReports ? 'default' : 'outline'}
-                onClick={() => setMyReports(true)}
-                className="flex-1"
-              >
-                My Reports Only
-              </Button>
-            </ButtonGroup>
-          )}
-          <Select value={range} onValueChange={(v) => setRange(v as TimeRange)}>
-            <SelectTrigger className="w-full sm:w-45">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_RANGE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <ModelControls
+        activeUseCases={activeUseCases}
+        activeSort={activeSort}
+        activeTopN={activeTopN}
+        reliabilityFilterEnabled={reliabilityFilterEnabled}
+        activeMaxErrorRate={activeMaxErrorRate}
+        activeTimeRange={range}
+        activeMyReports={myReports}
+        onToggleUseCase={toggleUseCase}
+        onSortChange={setActiveSort}
+        onTopNChange={setActiveTopN}
+        onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
+        onMaxErrorRateChange={setActiveMaxErrorRate}
+        onTimeRangeChange={handleTimeRangeChange}
+        onMyReportsChange={setMyReports}
+        onReset={resetToDefaults}
+        size="lg"
+      />
+
+      <ModelCountHeader
+        count={issues.length}
+        lastUpdated={lastUpdated}
+        label={`model${issues.length === 1 ? '' : 's'} shown (${count} total with reported usage)`}
+      />
 
       {/* Chart */}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mt-6 mb-3 flex items-center gap-2">
         <span className="font-medium">Error Rate Over Time</span>
         <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
       </div>
