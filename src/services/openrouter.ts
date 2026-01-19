@@ -350,17 +350,33 @@ export interface IssueSummary {
   total: number;
   successCount: number;
   errorRate: number; // percentage 0-100
+  // Model metadata for filtering
+  modality: string | null;
+  inputModalities: string[] | null;
+  outputModalities: string[] | null;
+  supportedParameters: string[] | null;
+  contextLength: number | null;
+  maxCompletionTokens: number | null;
+}
+
+export interface HealthFilterOptions {
+  range: TimeRange;
+  userId?: string;
+  useCases?: UseCaseType[];
+  sort?: SortType;
+  topN?: number;
+  maxErrorRate?: number;
 }
 
 export async function getFeedbackCountsByRange(
   db: Database,
-  range: TimeRange,
-  userId?: string
+  options: HealthFilterOptions
 ): Promise<IssueSummary[]> {
+  const { range, userId, useCases, sort, topN, maxErrorRate } = options;
   const windowMs = TIME_RANGE_MS[range];
 
   // Build where conditions
-  const whereConditions: any[] = [];
+  const whereConditions: SQL[] = [];
   if (windowMs !== null) {
     whereConditions.push(gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)));
   }
@@ -375,10 +391,28 @@ export async function getFeedbackCountsByRange(
       issue: modelFeedback.issue,
       isSuccess: modelFeedback.isSuccess,
       count: sql<number>`count(*)::int`,
+      // Model metadata for filtering
+      modality: freeModels.modality,
+      inputModalities: freeModels.inputModalities,
+      outputModalities: freeModels.outputModalities,
+      supportedParameters: freeModels.supportedParameters,
+      contextLength: freeModels.contextLength,
+      maxCompletionTokens: freeModels.maxCompletionTokens,
     })
     .from(modelFeedback)
     .leftJoin(freeModels, eq(modelFeedback.modelId, freeModels.id))
-    .groupBy(modelFeedback.modelId, freeModels.name, modelFeedback.issue, modelFeedback.isSuccess);
+    .groupBy(
+      modelFeedback.modelId,
+      freeModels.name,
+      modelFeedback.issue,
+      modelFeedback.isSuccess,
+      freeModels.modality,
+      freeModels.inputModalities,
+      freeModels.outputModalities,
+      freeModels.supportedParameters,
+      freeModels.contextLength,
+      freeModels.maxCompletionTokens
+    );
 
   const query = whereConditions.length > 0 ? baseQuery.where(and(...whereConditions)) : baseQuery;
   const results = await query;
@@ -397,6 +431,12 @@ export async function getFeedbackCountsByRange(
         total: 0,
         successCount: 0,
         errorRate: 0,
+        modality: row.modality,
+        inputModalities: row.inputModalities,
+        outputModalities: row.outputModalities,
+        supportedParameters: row.supportedParameters,
+        contextLength: row.contextLength,
+        maxCompletionTokens: row.maxCompletionTokens,
       };
     }
 
@@ -422,8 +462,32 @@ export async function getFeedbackCountsByRange(
       totalReports > 0 ? Math.round((summary.total / totalReports) * 10000) / 100 : 0;
   }
 
-  // Sort by total issues descending
-  return Object.values(summaryMap).sort((a, b) => b.total - a.total);
+  let summaries = Object.values(summaryMap);
+
+  // Apply use case filtering (client-side since it's post-aggregation)
+  if (useCases && useCases.length > 0) {
+    summaries = filterModelsByUseCase(summaries, useCases);
+  }
+
+  // Apply max error rate filter
+  if (maxErrorRate !== undefined) {
+    summaries = summaries.filter((s) => s.errorRate <= maxErrorRate);
+  }
+
+  // Apply sorting
+  if (sort) {
+    summaries = sortModels(summaries, sort);
+  } else {
+    // Default: sort by total issues descending
+    summaries.sort((a, b) => b.total - a.total);
+  }
+
+  // Apply topN limit
+  if (topN !== undefined && topN > 0) {
+    summaries = summaries.slice(0, topN);
+  }
+
+  return summaries;
 }
 
 export async function getModelsWithLazyRefresh(db: Database) {

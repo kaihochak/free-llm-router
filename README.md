@@ -399,6 +399,23 @@ curl -X POST \
 ADMIN_SECRET=your-secure-random-string
 ```
 
+### Generating Strong DB Passwords (RLS roles)
+
+Create unique, long passwords for each DB role (app/admin/stats). Example with Python:
+
+```bash
+python - <<'PY'
+import secrets, string
+alphabet = string.ascii_letters + string.digits + '!@#$%^&*()_-+='
+print(''.join(secrets.choice(alphabet) for _ in range(32)))
+PY
+```
+
+Use different passwords for:
+- `DATABASE_URL` (fma_app, RLS enforced)
+- `DATABASE_URL_ADMIN` (fma_admin, BYPASSRLS)
+- `DATABASE_URL_STATS` (fma_stats, stats functions only)
+
 ### Automated Cleanup (Optional)
 
 For automated cleanup, use an external cron service like [cron-job.org](https://cron-job.org) to call the cleanup endpoint daily or weekly.

@@ -1,13 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   type TimeRange,
+  type UseCaseType,
+  type SortType,
   VALID_TIME_RANGES_WITH_LABELS,
   TIME_RANGE_DEFINITIONS,
   DEFAULT_MY_REPORTS,
   DEFAULT_TIME_RANGE,
+  DEFAULT_SORT,
+  DEFAULT_TOP_N,
+  DEFAULT_USE_CASE,
+  DEFAULT_RELIABILITY_FILTER_ENABLED,
+  DEFAULT_MAX_ERROR_RATE,
 } from '@/lib/api-definitions';
 import { useCachedSession } from '@/lib/auth-client';
+import { useLocalStorage } from './useLocalStorage';
 
 // Re-export TimeRange for backwards compatibility
 export type { TimeRange };
@@ -21,6 +29,13 @@ export interface IssueData {
   total: number;
   successCount: number;
   errorRate: number;
+  // Model metadata for filtering
+  modality: string | null;
+  inputModalities: string[] | null;
+  outputModalities: string[] | null;
+  supportedParameters: string[] | null;
+  contextLength: number | null;
+  maxCompletionTokens: number | null;
 }
 
 export interface TimelineModelData {
@@ -34,7 +49,7 @@ export interface TimelinePoint {
   [modelId: string]: number | string | TimelineModelData;
 }
 
-interface IssuesResponse {
+interface HealthResponse {
   issues: IssueData[];
   timeline: TimelinePoint[];
   range: TimeRange;
@@ -43,21 +58,39 @@ interface IssuesResponse {
 }
 
 // Export TIME_RANGE_OPTIONS for backward compatibility
-// Filters to only display UI-relevant time ranges (excludes 'all')
 export const TIME_RANGE_OPTIONS = TIME_RANGE_DEFINITIONS.filter((tr) =>
   VALID_TIME_RANGES_WITH_LABELS.includes(tr.value)
 ).map((tr) => ({ value: tr.value as TimeRange, label: `Last ${tr.label}` }));
 
-export const issueKeys = {
-  all: ['issues'] as const,
-  byRange: (range: TimeRange) => [...issueKeys.all, range] as const,
-};
+interface FetchHealthOptions {
+  range: TimeRange;
+  myReports?: boolean;
+  useCases?: UseCaseType[];
+  sort?: SortType;
+  topN?: number;
+  maxErrorRate?: number;
+}
 
-async function fetchIssues(range: TimeRange, myReports?: boolean): Promise<IssuesResponse> {
-  const params = new URLSearchParams({ range });
-  if (myReports !== undefined) {
-    params.append('myReports', myReports.toString());
+async function fetchHealth(options: FetchHealthOptions): Promise<HealthResponse> {
+  const params = new URLSearchParams();
+  params.append('range', options.range);
+
+  if (options.myReports) {
+    params.append('myReports', 'true');
   }
+  if (options.useCases && options.useCases.length > 0) {
+    params.append('useCases', options.useCases.join(','));
+  }
+  if (options.sort) {
+    params.append('sort', options.sort);
+  }
+  if (options.topN !== undefined) {
+    params.append('topN', options.topN.toString());
+  }
+  if (options.maxErrorRate !== undefined) {
+    params.append('maxErrorRate', options.maxErrorRate.toString());
+  }
+
   const response = await fetch(`/api/health?${params.toString()}`);
   if (!response.ok) {
     throw new Error('Failed to fetch health data');
@@ -65,34 +98,123 @@ async function fetchIssues(range: TimeRange, myReports?: boolean): Promise<Issue
   return response.json();
 }
 
-export function useHealth() {
-  const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
-  const [myReports, setMyReportsState] = useState<boolean>(DEFAULT_MY_REPORTS);
+export interface UseHealthOptions {
+  overrideTopN?: number;
+  overrideReliabilityFilterEnabled?: boolean;
+  overrideMaxErrorRate?: number;
+}
+
+export function useHealth(options?: UseHealthOptions) {
+  // Time range and myReports state
+  const [range, setRange] = useLocalStorage<TimeRange>(
+    'freeModels:health:range',
+    DEFAULT_TIME_RANGE as TimeRange
+  );
+  const [myReports, setMyReportsState] = useLocalStorage<boolean>(
+    'freeModels:health:myReports',
+    DEFAULT_MY_REPORTS
+  );
   const { data: session } = useCachedSession();
+
+  // ModelControls state - persisted in localStorage
+  const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>(
+    'freeModels:health:useCases',
+    DEFAULT_USE_CASE
+  );
+  const [activeSort, setActiveSort] = useLocalStorage<SortType>(
+    'freeModels:health:sort',
+    DEFAULT_SORT
+  );
+  const [activeTopN, setActiveTopN] = useLocalStorage<number | undefined>(
+    'freeModels:health:topN',
+    DEFAULT_TOP_N
+  );
+  const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useLocalStorage<boolean>(
+    'freeModels:health:reliabilityFilterEnabled',
+    DEFAULT_RELIABILITY_FILTER_ENABLED
+  );
+  const [activeMaxErrorRate, setActiveMaxErrorRate] = useLocalStorage<number | undefined>(
+    'freeModels:health:maxErrorRate',
+    DEFAULT_MAX_ERROR_RATE
+  );
 
   // Force myReports to false if user is not authenticated
   const effectiveMyReports = session ? myReports : false;
+
+  // Apply overrides
+  const effectiveTopN = options?.overrideTopN ?? activeTopN;
+  const effectiveReliabilityEnabled =
+    options?.overrideReliabilityFilterEnabled ?? reliabilityFilterEnabled;
+  const effectiveMaxErrorRate = effectiveReliabilityEnabled
+    ? (options?.overrideMaxErrorRate ?? activeMaxErrorRate)
+    : undefined;
 
   useEffect(() => {
     // Reset to false if user logs out
     if (!session && myReports) {
       setMyReportsState(false);
     }
-  }, [session, myReports]);
+  }, [session, myReports, setMyReportsState]);
 
   const {
     data,
     isLoading: loading,
     error,
   } = useQuery({
-    queryKey: ['issues', range, effectiveMyReports],
-    queryFn: () => fetchIssues(range, effectiveMyReports),
+    queryKey: [
+      'health',
+      range,
+      effectiveMyReports,
+      activeUseCases,
+      activeSort,
+      effectiveTopN,
+      effectiveMaxErrorRate,
+    ],
+    queryFn: () =>
+      fetchHealth({
+        range,
+        myReports: effectiveMyReports,
+        useCases: activeUseCases,
+        sort: activeSort,
+        topN: effectiveTopN,
+        maxErrorRate: effectiveMaxErrorRate,
+      }),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const setMyReports = (value: boolean) => {
     // Only allow setting myReports to true if authenticated
     setMyReportsState(session ? value : false);
+  };
+
+  const toggleUseCase = (useCase: UseCaseType | 'all') => {
+    if (useCase === 'all') {
+      setActiveUseCases([]);
+    } else {
+      const newUseCases = activeUseCases.includes(useCase)
+        ? activeUseCases.filter((uc) => uc !== useCase)
+        : [...activeUseCases, useCase];
+      setActiveUseCases(newUseCases);
+    }
+  };
+
+  const resetToDefaults = () => {
+    // Always reset useCase and sort to defaults
+    setActiveUseCases(DEFAULT_USE_CASE);
+    setActiveSort(DEFAULT_SORT);
+    setRange(DEFAULT_TIME_RANGE as TimeRange);
+    setMyReportsState(DEFAULT_MY_REPORTS);
+
+    // Only reset topN/health if not using overrides
+    if (options?.overrideTopN === undefined) {
+      setActiveTopN(DEFAULT_TOP_N);
+    }
+    if (options?.overrideReliabilityFilterEnabled === undefined) {
+      setReliabilityFilterEnabled(DEFAULT_RELIABILITY_FILTER_ENABLED);
+    }
+    if (options?.overrideMaxErrorRate === undefined) {
+      setActiveMaxErrorRate(DEFAULT_MAX_ERROR_RATE);
+    }
   };
 
   return {
@@ -106,5 +228,17 @@ export function useHealth() {
     setRange,
     myReports: effectiveMyReports,
     setMyReports,
+    // ModelControls state
+    activeUseCases,
+    activeSort,
+    activeTopN,
+    reliabilityFilterEnabled,
+    activeMaxErrorRate,
+    toggleUseCase,
+    setActiveSort,
+    setActiveTopN,
+    setReliabilityFilterEnabled,
+    setActiveMaxErrorRate,
+    resetToDefaults,
   };
 }
