@@ -1,31 +1,44 @@
 -- PostgreSQL Row-Level Security (RLS) Setup for Free Models API
--- Run this manually via Neon console SQL Editor (requires elevated privileges)
+-- Run this manually via Neon console SQL Editor as neondb_owner
 -- DO NOT run via db:push or Drizzle migrations
 --
 -- IMPORTANT:
 -- - Replace <secure> placeholders with strong unique passwords before running.
--- - Run as the schema/table owner (often neondb_owner). If you hit permission errors
---   on ALTER DEFAULT PRIVILEGES, ALTER FUNCTION OWNER, or ENABLE/FORCE RLS:
---     SET ROLE neondb_owner;
+-- - This script is idempotent - safe to re-run (uses IF NOT EXISTS / OR REPLACE / IF EXISTS)
 
 -- ============================================
 -- PART 1: CREATE DATABASE ROLES
 -- ============================================
 
 -- App role (restricted, enforces RLS)
-CREATE ROLE fma_app LOGIN PASSWORD '<secure>' NOINHERIT;
+DO $$ BEGIN
+  CREATE ROLE fma_app LOGIN PASSWORD '<secure>' NOINHERIT;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Admin role (for Better Auth, cleanup, bypasses RLS)
-CREATE ROLE fma_admin LOGIN PASSWORD '<secure>' NOINHERIT BYPASSRLS;
+DO $$ BEGIN
+  CREATE ROLE fma_admin LOGIN PASSWORD '<secure>' NOINHERIT BYPASSRLS;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Stats role (EXECUTE on SECURITY DEFINER functions + SELECT on free_models for public aggregates)
 -- NO BYPASSRLS - calls functions owned by fma_admin which bypass RLS internally
-CREATE ROLE fma_stats LOGIN PASSWORD '<secure>' NOINHERIT;
+DO $$ BEGIN
+  CREATE ROLE fma_stats LOGIN PASSWORD '<secure>' NOINHERIT;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Allow neondb_owner to transfer ownership to fma_admin (needed for SECURITY DEFINER functions)
+GRANT fma_admin TO neondb_owner;
 
 -- Grant schema usage
 GRANT USAGE ON SCHEMA public TO fma_app;
 GRANT USAGE ON SCHEMA public TO fma_admin;
 GRANT USAGE ON SCHEMA public TO fma_stats;
+
+-- fma_admin needs CREATE on schema to own functions in it
+GRANT CREATE ON SCHEMA public TO fma_admin;
 
 -- fma_app: user-scoped tables (RLS enforced)
 GRANT SELECT, INSERT, UPDATE, DELETE ON users, sessions, accounts, api_keys, api_request_logs, model_feedback TO fma_app;
@@ -41,18 +54,16 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO fma_admin;
 -- Sequences for app role
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO fma_app;
 
--- Default privileges for future tables (run as schema owner; optional if you prefer manual grants)
--- If migrations run as a different role (e.g., neondb_owner), adjust the ROLE below accordingly.
--- SET ROLE neondb_owner;  -- if needed
-ALTER DEFAULT PRIVILEGES FOR ROLE fma_admin IN SCHEMA public
+-- Default privileges for future tables created by neondb_owner (Drizzle migrations)
+-- Run as neondb_owner; omitting FOR ROLE defaults to current role
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO fma_app;
-ALTER DEFAULT PRIVILEGES FOR ROLE fma_admin IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON TABLES TO fma_admin;
-ALTER DEFAULT PRIVILEGES FOR ROLE fma_admin IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO fma_app;
-ALTER DEFAULT PRIVILEGES FOR ROLE fma_admin IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON SEQUENCES TO fma_admin;
--- RESET ROLE;  -- if you set it above
 
 -- ============================================
 -- PART 2: ENABLE RLS ON USER-SCOPED TABLES
@@ -82,6 +93,8 @@ ALTER TABLE model_feedback FORCE ROW LEVEL SECURITY;
 -- USERS TABLE (ownership by id)
 -- Column types: id is TEXT (not UUID)
 -- ============================================
+DROP POLICY IF EXISTS users_select ON users;
+DROP POLICY IF EXISTS users_update ON users;
 CREATE POLICY users_select ON users FOR SELECT
   USING (id = NULLIF(current_setting('app.user_id', true), ''));
 CREATE POLICY users_update ON users FOR UPDATE
@@ -94,6 +107,10 @@ CREATE POLICY users_update ON users FOR UPDATE
 -- SESSIONS TABLE (ownership by user_id)
 -- Note: Better Auth INSERTs here during OAuth - uses admin role
 -- ============================================
+DROP POLICY IF EXISTS sessions_select ON sessions;
+DROP POLICY IF EXISTS sessions_insert ON sessions;
+DROP POLICY IF EXISTS sessions_update ON sessions;
+DROP POLICY IF EXISTS sessions_delete ON sessions;
 CREATE POLICY sessions_select ON sessions FOR SELECT
   USING (user_id = NULLIF(current_setting('app.user_id', true), ''));
 CREATE POLICY sessions_insert ON sessions FOR INSERT
@@ -108,6 +125,10 @@ CREATE POLICY sessions_delete ON sessions FOR DELETE
 -- ACCOUNTS TABLE (ownership by user_id)
 -- Note: Better Auth INSERTs here during OAuth - uses admin role
 -- ============================================
+DROP POLICY IF EXISTS accounts_select ON accounts;
+DROP POLICY IF EXISTS accounts_insert ON accounts;
+DROP POLICY IF EXISTS accounts_update ON accounts;
+DROP POLICY IF EXISTS accounts_delete ON accounts;
 CREATE POLICY accounts_select ON accounts FOR SELECT
   USING (user_id = NULLIF(current_setting('app.user_id', true), ''));
 CREATE POLICY accounts_insert ON accounts FOR INSERT
@@ -129,6 +150,10 @@ CREATE POLICY accounts_delete ON accounts FOR DELETE
 -- (session.user.id or validation.userId from validateApiKey), never from
 -- request params. See history.ts line 27-29, api-auth.ts validateApiKey.
 -- NOTE: Key hash lookup requires enabled = true (matches app-layer enabled check in validateApiKey)
+DROP POLICY IF EXISTS api_keys_select ON api_keys;
+DROP POLICY IF EXISTS api_keys_insert ON api_keys;
+DROP POLICY IF EXISTS api_keys_update ON api_keys;
+DROP POLICY IF EXISTS api_keys_delete ON api_keys;
 CREATE POLICY api_keys_select ON api_keys FOR SELECT
   USING (
     (key = NULLIF(current_setting('app.api_key_hash', true), '') AND enabled = true)
@@ -146,6 +171,8 @@ CREATE POLICY api_keys_delete ON api_keys FOR DELETE
 -- ============================================
 -- API_REQUEST_LOGS TABLE (ownership by user_id)
 -- ============================================
+DROP POLICY IF EXISTS logs_select ON api_request_logs;
+DROP POLICY IF EXISTS logs_insert ON api_request_logs;
 CREATE POLICY logs_select ON api_request_logs FOR SELECT
   USING (user_id = NULLIF(current_setting('app.user_id', true), ''));
 CREATE POLICY logs_insert ON api_request_logs FOR INSERT
@@ -157,6 +184,8 @@ CREATE POLICY logs_insert ON api_request_logs FOR INSERT
 -- source stores userId as TEXT string
 -- ============================================
 -- SELECT: Owner-only (no public aggregates via app role)
+DROP POLICY IF EXISTS feedback_select ON model_feedback;
+DROP POLICY IF EXISTS feedback_insert ON model_feedback;
 CREATE POLICY feedback_select ON model_feedback FOR SELECT
   USING (source = NULLIF(current_setting('app.user_id', true), ''));
 -- INSERT: Must set source to current user (enforced)
@@ -213,17 +242,14 @@ AS $$
   ORDER BY bucket;
 $$;
 
+-- Grant execute to fma_stats only (PUBLIC doesn't get execute by default on Neon)
+GRANT EXECUTE ON FUNCTION public.get_feedback_counts(timestamptz, timestamptz) TO fma_stats;
+GRANT EXECUTE ON FUNCTION public.get_error_timeline(timestamptz, timestamptz, interval) TO fma_stats;
+
 -- Set function ownership to fma_admin (required for BYPASSRLS to work)
 -- SECURITY DEFINER runs as owner, so owner must have BYPASSRLS
 ALTER FUNCTION public.get_feedback_counts(timestamptz, timestamptz) OWNER TO fma_admin;
 ALTER FUNCTION public.get_error_timeline(timestamptz, timestamptz, interval) OWNER TO fma_admin;
-
--- Revoke from PUBLIC, grant only to fma_stats
-REVOKE ALL ON FUNCTION public.get_feedback_counts(timestamptz, timestamptz) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.get_feedback_counts(timestamptz, timestamptz) TO fma_stats;
-
-REVOKE ALL ON FUNCTION public.get_error_timeline(timestamptz, timestamptz, interval) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.get_error_timeline(timestamptz, timestamptz, interval) TO fma_stats;
 
 -- fma_stats needs free_models for JOINs (no sensitive data in this table)
 GRANT SELECT ON free_models TO fma_stats;
