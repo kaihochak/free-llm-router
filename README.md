@@ -237,11 +237,24 @@ This shows model reliability based on your actual experience, preventing bad act
 # Required for API access
 FREE_LLM_ROUTER_API_KEY=fma_xxxxxxxxxxxxx
 
-# Required for hosting (database)
-DATABASE_URL=postgresql://...@ep-xxx.us-east-2.aws.neon.tech/free_models_api
+# Required for hosting (database, RLS enforced)
+DATABASE_URL=postgresql://fma_app:...@ep-xxx.us-east-2.aws.neon.tech/neondb
+
+# Admin connection (Better Auth OAuth, cleanup, migrations)
+DATABASE_URL_ADMIN=postgresql://fma_admin:...@ep-xxx.us-east-2.aws.neon.tech/neondb
+
+# Stats connection (aggregates only)
+DATABASE_URL_STATS=postgresql://fma_stats:...@ep-xxx.us-east-2.aws.neon.tech/neondb
+
+# Auth configuration
+BETTER_AUTH_URL=http://localhost:4321
+BETTER_AUTH_SECRET=your-secret-here
 
 # Optional - for scheduled model sync from OpenRouter
 REFRESH_API_KEY=your-secret-for-cron
+
+# Demo list (server-side key for /api/demo/models)
+DEMO_API_KEY=fma_xxxxxxxxxxxxx
 ```
 
 ## Tech Stack
@@ -415,6 +428,13 @@ Use different passwords for:
 - `DATABASE_URL` (fma_app, RLS enforced)
 - `DATABASE_URL_ADMIN` (fma_admin, BYPASSRLS)
 - `DATABASE_URL_STATS` (fma_stats, stats functions only)
+
+### RLS Setup (Quick Checklist)
+
+1. Run `sql/enable_rls.sql` in the Neon SQL console (replace `<secure>` first).
+2. Set `DATABASE_URL`, `DATABASE_URL_ADMIN`, and `DATABASE_URL_STATS` in your env.
+3. Restart the server after env changes.
+4. Generate/confirm a valid `DEMO_API_KEY` for the demo list endpoint.
 
 ### Automated Cleanup (Optional)
 

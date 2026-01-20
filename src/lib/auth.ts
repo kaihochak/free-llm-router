@@ -14,6 +14,7 @@ type AuthOptions = {
 // Environment config passed from runtime
 export interface AuthEnv {
   databaseUrl: string;
+  databaseUrlAdmin?: string; // For Better Auth operations (bypasses RLS)
   baseUrl: string;
   secret: string;
   // Optional for API key verification (only required for OAuth flows)
@@ -37,15 +38,18 @@ function simpleHash(str: string): string {
 }
 
 export function createAuth(env: AuthEnv): BetterAuthInstance<AuthOptions> {
+  // Use admin connection for Better Auth (needs to INSERT users, sessions, accounts)
+  const adminUrl = env.databaseUrlAdmin || env.databaseUrl;
+
   // Include all config values in cache key to handle preview/prod differences
   const secretHash = env.githubClientSecret ? simpleHash(env.githubClientSecret) : '';
-  const cacheKey = `${env.databaseUrl}:${env.baseUrl}:${env.githubClientId || ''}:${secretHash}`;
+  const cacheKey = `${adminUrl}:${env.baseUrl}:${env.githubClientId || ''}:${secretHash}`;
 
   if (authCache.has(cacheKey)) {
     return authCache.get(cacheKey)!;
   }
 
-  const sql = neon(env.databaseUrl);
+  const sql = neon(adminUrl);
   const db = drizzle(sql, { schema });
 
   // Only include GitHub provider if credentials are provided

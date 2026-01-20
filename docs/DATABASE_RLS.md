@@ -6,6 +6,10 @@ This document describes the PostgreSQL Row-Level Security implementation for the
 
 RLS acts as defense-in-depth for user-scoped tables. If a bug bypasses app-layer checks, the database itself enforces row ownership.
 
+## Runtime Requirement (Transactions)
+
+RLS relies on per-request session variables (`app.user_id`, `app.api_key_hash`) set via `set_config` inside a transaction. This requires a transaction-capable DB driver. The project uses Neon’s WebSocket/pg pool (`drizzle-orm/node-postgres`) for runtime access. The HTTP driver (`drizzle-orm/neon-http`) does not support transactions and will break RLS.
+
 ## Database Role Reference
 
 | Role | BYPASSRLS | Purpose | Grants |
@@ -27,6 +31,43 @@ DATABASE_URL_ADMIN=postgresql://fma_admin:...@neon.tech/db
 
 # Stats connection - for public aggregates via SECURITY DEFINER functions
 DATABASE_URL_STATS=postgresql://fma_stats:...@neon.tech/db
+```
+
+## App Wiring
+
+- **Better Auth** uses `DATABASE_URL_ADMIN` to create users/sessions (bypasses RLS).
+- **API key validation** uses `DATABASE_URL` (fma_app) and sets `app.api_key_hash`.
+- **User-scoped queries** use `DATABASE_URL` and set `app.user_id`.
+- **Stats endpoints** use `DATABASE_URL_STATS` and call SECURITY DEFINER functions.
+
+## Example (End-to-End)
+
+**Scenario:** client calls `/api/v1/models/full` with a valid API key.
+
+1. **API key lookup (bootstrap)**  
+   - Code runs `withKeyHashContext(databaseUrl, keyHash, ...)`
+   - Transaction sets `app.api_key_hash`
+   - Policy `api_keys_select` allows lookup by hash when `enabled = true`
+
+2. **User-scoped operations**  
+   - Code runs `withUserContext(databaseUrl, userId, ...)`
+   - Transaction sets `app.user_id`
+   - Policies on `users`, `api_request_logs`, `model_feedback` allow access only for that user
+
+3. **Response returned**  
+   - Data is filtered by RLS automatically; app-layer filters remain as defense-in-depth
+
+**Local verification (SQL):**
+
+```sql
+SELECT current_user;
+
+BEGIN;
+SELECT set_config('app.user_id', 'user_123', true);
+SELECT id, user_id, endpoint
+FROM api_request_logs
+LIMIT 5;
+ROLLBACK;
 ```
 
 ### Generating strong passwords for roles
@@ -119,6 +160,10 @@ To check: `SELECT current_user;` during migration or check Neon dashboard.
 - Check if `app.user_id` is set: `SELECT current_setting('app.user_id', true);`
 - Verify using correct role: `SELECT current_user;`
 - Check RLS is enabled: `SELECT relrowsecurity FROM pg_class WHERE relname = 'tablename';`
+
+**401 "User not found" during API key validation:**
+- The key lookup succeeded, but user-scoped queries ran without `app.user_id`.
+- Ensure user-scoped DB operations run inside `withUserContext`.
 
 **Auth bootstrap fails:**
 - Verify `app.api_key_hash` is set before api_keys lookup
