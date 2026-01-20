@@ -31,7 +31,13 @@ DATABASE_URL_ADMIN=postgresql://fma_admin:...@neon.tech/db
 
 # Stats connection - for public aggregates via SECURITY DEFINER functions
 DATABASE_URL_STATS=postgresql://fma_stats:...@neon.tech/db
+
+# Owner connection - for schema migrations (tables owned by neondb_owner)
+DATABASE_URL_OWNER=postgresql://neondb_owner:...@neon.tech/db
 ```
+
+When running `bun run db:reset`, the script derives role URLs from `DATABASE_URL_OWNER`
+and prints them if they are missing from `.env`.
 
 ## App Wiring
 
@@ -39,6 +45,7 @@ DATABASE_URL_STATS=postgresql://fma_stats:...@neon.tech/db
 - **API key validation** uses `DATABASE_URL` (fma_app) and sets `app.api_key_hash`.
 - **User-scoped queries** use `DATABASE_URL` and set `app.user_id`.
 - **Stats endpoints** use `DATABASE_URL_STATS` and call SECURITY DEFINER functions.
+- **Schema migrations** use `DATABASE_URL_OWNER` (table owner role).
 
 ## Example (End-to-End)
 

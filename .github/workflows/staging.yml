@@ -1,13 +1,14 @@
-name: Deploy Staging
+name: Staging Checks + Migrations
 
 on:
   push:
     branches: [staging]
 
 jobs:
-  deploy-staging:
-    name: Deploy to Cloudflare Pages (Staging)
+  staging-checks:
+    name: Staging Sanity + Migrations
     runs-on: ubuntu-latest
+    environment: staging
     permissions:
       contents: read
       deployments: write
@@ -27,14 +28,14 @@ jobs:
       - name: Push database schema (staging)
         run: bun run db:push
         env:
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_URL_OWNER: ${{ secrets.DATABASE_URL_OWNER }}
 
       - name: Build project
         run: bun run build
         env:
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          BETTER_AUTH_URL: ${{ secrets.STAGING_BETTER_AUTH_URL }}
-          BETTER_AUTH_SECRET: ${{ secrets.STAGING_BETTER_AUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
 
       - name: Deploy to Cloudflare Pages (staging)
         uses: cloudflare/pages-action@v1
