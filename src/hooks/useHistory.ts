@@ -61,15 +61,24 @@ export function useHistory<T extends ApiRequestLog | FeedbackItem>(
 
     try {
       const response = await fetch(`/api/auth/history?type=${type}&page=${page}&limit=${limit}`);
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      const payload = isJson ? await response.json() : await response.text();
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fetch history');
+        const message =
+          isJson && payload && typeof payload === 'object' && 'error' in payload
+            ? String(payload.error)
+            : `Failed to fetch history (${response.status})`;
+        throw new Error(message);
       }
 
-      const data = await response.json();
-      setItems(data.items);
-      setPagination(data.pagination);
+      if (!isJson || !payload || typeof payload !== 'object') {
+        throw new Error('Unexpected response format from history endpoint');
+      }
+
+      setItems(payload.items ?? []);
+      setPagination(payload.pagination ?? { page, limit, total: 0, hasMore: false });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setItems([]);
