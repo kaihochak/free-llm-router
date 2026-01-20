@@ -1,13 +1,14 @@
-name: Deploy Production
+name: Production Checks + Migrations
 
 on:
   push:
     branches: [main]
 
 jobs:
-  deploy-production:
-    name: Deploy to Cloudflare Pages (Production)
+  production-checks:
+    name: Production Sanity + Migrations
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
       deployments: write
@@ -27,7 +28,7 @@ jobs:
       - name: Push database schema (production)
         run: bun run db:push
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_OWNER: ${{ secrets.DATABASE_URL_OWNER }}
 
       - name: Build project
         run: bun run build

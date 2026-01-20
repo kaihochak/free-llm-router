@@ -487,6 +487,13 @@ curl -X POST \
 ADMIN_SECRET=your-secure-random-string
 ```
 
+### Database Owner URL (Migrations)
+
+```bash
+# Required for drizzle-kit push (tables are owned by neondb_owner)
+DATABASE_URL_OWNER=postgresql://neondb_owner:...@neon.tech/db
+```
+
 ### Generating Strong DB Passwords (RLS roles)
 
 Create unique, long passwords for each DB role (app/admin/stats). Example with Python:
@@ -508,8 +515,15 @@ Use different passwords for:
 
 1. Run `sql/enable_rls.sql` in the Neon SQL console (replace `<secure>` first).
 2. Set `DATABASE_URL`, `DATABASE_URL_ADMIN`, and `DATABASE_URL_STATS` in your env.
+3. Set `DATABASE_URL_OWNER` for schema migrations (owner role).
 3. Restart the server after env changes.
 4. Generate/confirm a valid `DEMO_API_KEY` for the demo list endpoint.
+
+### Dev Reset Notes
+
+`bun run db:reset` uses `DATABASE_URL_OWNER` as the base and will print generated
+`DATABASE_URL`, `DATABASE_URL_ADMIN`, and `DATABASE_URL_STATS` if they are missing.
+Copy those into `.env` for future runs.
 
 ### Automated Cleanup (Optional)
 
