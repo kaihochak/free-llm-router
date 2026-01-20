@@ -19,7 +19,11 @@ const API_LOGS_RETENTION_DAYS = 30;
 export const POST: APIRoute = async ({ request, locals }) => {
   const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
   const adminSecret = runtime?.env?.ADMIN_SECRET || import.meta.env.ADMIN_SECRET;
-  const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
+  const databaseUrl =
+    runtime?.env?.DATABASE_URL_ADMIN ||
+    import.meta.env.DATABASE_URL_ADMIN ||
+    runtime?.env?.DATABASE_URL ||
+    import.meta.env.DATABASE_URL;
 
   // Validate admin secret
   if (!adminSecret) {

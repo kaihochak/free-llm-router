@@ -18,6 +18,8 @@ export const GET: APIRoute = async (context) => {
   try {
     const { db, databaseUrl, params, validation } = req;
     const { useCases, sort, topN, maxErrorRate, timeRange, myReports } = params;
+    const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
+    const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || import.meta.env.DATABASE_URL_STATS;
 
     // Get userId if myReports is enabled (optional authentication)
     let userId: string | undefined;
@@ -33,7 +35,15 @@ export const GET: APIRoute = async (context) => {
     await ensureFreshModels(db);
 
     // Fetch filtered and sorted models
-    const allModels = await getFilteredModels(db, useCases, sort, maxErrorRate, timeRange, userId);
+    const allModels = await getFilteredModels(
+      db,
+      useCases,
+      sort,
+      maxErrorRate,
+      timeRange,
+      userId,
+      statsDbUrl
+    );
 
     // Apply topN and extract IDs only
     const models = topN ? allModels.slice(0, topN) : allModels;
