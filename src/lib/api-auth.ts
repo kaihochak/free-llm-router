@@ -2,7 +2,7 @@ import type { APIContext } from 'astro';
 import { base64Url } from '@better-auth/utils/base64';
 import { type AuthEnv } from './auth';
 import { eq, and, sql } from 'drizzle-orm';
-import { createDb, apiKeys, users, apiRequestLogs } from '@/db';
+import { createDb, apiKeys, users, apiRequestLogs, withKeyHashContext, withUserContext } from '@/db';
 
 export interface ApiKeyValidation {
   valid: boolean;
@@ -53,8 +53,7 @@ function getEnv(context: APIContext): Partial<AuthEnv> & { missing: string[] } {
  * Tracks per-key usage statistics (no rate limiting, just tracking).
  * Increments requestCount and updates lastRequest timestamp.
  */
-async function trackKeyUsage(keyId: string, databaseUrl: string): Promise<void> {
-  const db = createDb(databaseUrl);
+async function trackKeyUsage(db: ReturnType<typeof createDb>, keyId: string): Promise<void> {
   await db
     .update(apiKeys)
     .set({
@@ -72,10 +71,8 @@ async function trackKeyUsage(keyId: string, databaseUrl: string): Promise<void> 
  */
 async function checkUserRateLimit(
   userId: string,
-  databaseUrl: string
+  db: ReturnType<typeof createDb>
 ): Promise<Omit<ApiKeyValidation, 'valid' | 'keyId'>> {
-  const db = createDb(databaseUrl);
-
   // Atomic rate limit check with strict enforcement via PostgreSQL row locking
   // Reset logic and limit check both in SQL for zero-race atomic operation
   const now = new Date();
@@ -215,13 +212,14 @@ export async function validateApiKey(context: APIContext): Promise<ApiKeyValidat
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(apiKey));
     const hash = base64Url.encode(new Uint8Array(hashBuffer), { padding: false });
 
-    // Validate key directly (bypass Better Auth's per-key rate limiting)
-    const db = createDb(authEnv.databaseUrl);
-    const result = await db
-      .select()
-      .from(apiKeys)
-      .where(and(eq(apiKeys.key, hash), eq(apiKeys.enabled, true)))
-      .limit(1);
+    // Validate key using RLS-protected transaction (sets app.api_key_hash for auth bootstrap)
+    const result = await withKeyHashContext(authEnv.databaseUrl, hash, async (db) => {
+      return db
+        .select()
+        .from(apiKeys)
+        .where(and(eq(apiKeys.key, hash), eq(apiKeys.enabled, true)))
+        .limit(1);
+    });
 
     if (!result.length) {
       return { valid: false, error: 'Invalid API key', errorCode: 'INVALID_KEY' };
@@ -233,8 +231,13 @@ export async function validateApiKey(context: APIContext): Promise<ApiKeyValidat
       return { valid: false, error: 'API key expired', errorCode: 'EXPIRED_KEY' };
     }
 
-    // Check user-level rate limits
-    const rateLimitCheck = await checkUserRateLimit(key.userId, authEnv.databaseUrl);
+    // Check user-level rate limits and track usage under RLS user context
+    const rateLimitCheck = await withUserContext(authEnv.databaseUrl, key.userId, async (db) => {
+      const result = await checkUserRateLimit(key.userId, db);
+      if (result.errorCode) return result;
+      await trackKeyUsage(db, key.id);
+      return result;
+    });
 
     if (rateLimitCheck.errorCode === 'RATE_LIMITED') {
       return {
@@ -252,9 +255,6 @@ export async function validateApiKey(context: APIContext): Promise<ApiKeyValidat
         errorCode: rateLimitCheck.errorCode,
       };
     }
-
-    // Track per-key usage (no rate limiting, just stats)
-    await trackKeyUsage(key.id, authEnv.databaseUrl);
 
     return {
       valid: true,
@@ -348,16 +348,17 @@ export async function logApiRequest(
   }
 ): Promise<void> {
   try {
-    const db = createDb(databaseUrl);
-    await db.insert(apiRequestLogs).values({
-      id: crypto.randomUUID(),
-      userId: params.userId,
-      apiKeyId: params.apiKeyId,
-      endpoint: params.endpoint,
-      method: params.method,
-      statusCode: params.statusCode,
-      responseTimeMs: params.responseTimeMs ?? null,
-      createdAt: new Date(),
+    await withUserContext(databaseUrl, params.userId, async (db) => {
+      await db.insert(apiRequestLogs).values({
+        id: crypto.randomUUID(),
+        userId: params.userId,
+        apiKeyId: params.apiKeyId,
+        endpoint: params.endpoint,
+        method: params.method,
+        statusCode: params.statusCode,
+        responseTimeMs: params.responseTimeMs ?? null,
+        createdAt: new Date(),
+      });
     });
   } catch (error) {
     // Log but don't fail the request if logging fails
@@ -403,13 +404,14 @@ export async function validateApiKeyOnly(context: APIContext): Promise<ApiKeyVal
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(apiKey));
     const hash = base64Url.encode(new Uint8Array(hashBuffer), { padding: false });
 
-    // Direct DB query - no rate limit tracking
-    const db = createDb(envResult.databaseUrl!);
-    const result = await db
-      .select()
-      .from(apiKeys)
-      .where(and(eq(apiKeys.key, hash), eq(apiKeys.enabled, true)))
-      .limit(1);
+    // RLS-protected query - no rate limit tracking
+    const result = await withKeyHashContext(envResult.databaseUrl!, hash, async (db) => {
+      return db
+        .select()
+        .from(apiKeys)
+        .where(and(eq(apiKeys.key, hash), eq(apiKeys.enabled, true)))
+        .limit(1);
+    });
 
     if (!result.length) {
       return { valid: false, error: 'Invalid API key', errorCode: 'INVALID_KEY' };

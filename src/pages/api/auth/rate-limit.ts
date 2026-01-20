@@ -9,6 +9,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const env = runtime?.env || {};
 
     const databaseUrl = env.DATABASE_URL || import.meta.env.DATABASE_URL;
+    const databaseUrlAdmin = env.DATABASE_URL_ADMIN || import.meta.env.DATABASE_URL_ADMIN;
     const baseUrl = env.BETTER_AUTH_URL || import.meta.env.BETTER_AUTH_URL;
     const secret = env.BETTER_AUTH_SECRET || import.meta.env.BETTER_AUTH_SECRET;
     const githubClientId = env.GITHUB_CLIENT_ID || import.meta.env.GITHUB_CLIENT_ID;
@@ -22,7 +23,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 
     // Get user session using Better Auth
-    const authEnv: AuthEnv = { databaseUrl, baseUrl, secret, githubClientId, githubClientSecret };
+    const authEnv: AuthEnv = {
+      databaseUrl,
+      databaseUrlAdmin,
+      baseUrl,
+      secret,
+      githubClientId,
+      githubClientSecret,
+    };
     const auth = createAuth(authEnv);
     const session = await auth.api.getSession({ headers: request.headers });
 

@@ -5,17 +5,18 @@ import {
   type TimeRange,
 } from '@/services/openrouter';
 import { initializeDb, getUserIdIfMyReports } from '@/lib/api-params';
-import { corsHeaders } from '@/lib/api-auth';
 import {
   VALID_TIME_RANGES_WITH_LABELS,
   validateTimeRange,
+  validateUseCases,
+  validateSort,
   DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
 
 function validateRange(value: string | null): TimeRange {
   const validated = validateTimeRange(value);
   // Only allow UI-relevant time ranges (not 'all')
-  if (VALID_TIME_RANGES_WITH_LABELS.includes(validated as any)) {
+  if (VALID_TIME_RANGES_WITH_LABELS.includes(validated as TimeRange)) {
     return validated as TimeRange;
   }
   return DEFAULT_TIME_RANGE as TimeRange;
@@ -24,28 +25,55 @@ function validateRange(value: string | null): TimeRange {
 /**
  * Health endpoint for the health page and dashboard.
  * No authentication required - returns public community reports by default.
- * Optional myReports parameter (requires API key) allows filtering to user's own reports.
+ *
+ * Query params:
+ * - range: time range (15m, 30m, 1h, 6h, 24h, 7d, 30d)
+ * - myReports: filter to user's own reports (requires auth)
+ * - useCases: comma-separated use case filters (chat, vision, tools, longContext, reasoning)
+ * - sort: sort order (contextLength, maxOutput, capable, leastIssues, newest)
+ * - topN: limit to top N results
+ * - maxErrorRate: filter to models with error rate <= this value (0-100)
  */
 export const GET: APIRoute = async (context) => {
   try {
     const db = await initializeDb(context);
     if (db instanceof Response) return db;
 
-    const range = validateRange(context.url.searchParams.get('range'));
+    const params = context.url.searchParams;
+    const range = validateRange(params.get('range'));
 
     // Optional myReports filter (requires authentication)
-    const myReports = context.url.searchParams.get('myReports') === 'true';
+    const myReports = params.get('myReports') === 'true';
     let userId: string | undefined;
 
     try {
       userId = await getUserIdIfMyReports(context, myReports);
-    } catch (error) {
+    } catch {
       // If myReports=true but no valid API key, gracefully fall back to community data
-      // This allows unauthenticated users to see community data without error
     }
 
+    // Parse filter params
+    const useCasesParam = params.get('useCases');
+    const useCases = useCasesParam ? validateUseCases(useCasesParam) : undefined;
+
+    const sortParam = params.get('sort');
+    const sort = sortParam ? validateSort(sortParam) : undefined;
+
+    const topNParam = params.get('topN');
+    const topN = topNParam ? parseInt(topNParam, 10) : undefined;
+
+    const maxErrorRateParam = params.get('maxErrorRate');
+    const maxErrorRate = maxErrorRateParam ? parseFloat(maxErrorRateParam) : undefined;
+
     const [issues, timeline] = await Promise.all([
-      getFeedbackCountsByRange(db, range, userId),
+      getFeedbackCountsByRange(db, {
+        range,
+        userId,
+        useCases: useCases && useCases.length > 0 ? useCases : undefined,
+        sort,
+        topN: topN && topN > 0 ? topN : undefined,
+        maxErrorRate: maxErrorRate !== undefined && !isNaN(maxErrorRate) ? maxErrorRate : undefined,
+      }),
       getFeedbackTimeline(db, range, userId),
     ]);
 
