@@ -38,6 +38,8 @@ export const GET: APIRoute = async (context) => {
   try {
     const db = await initializeDb(context);
     if (db instanceof Response) return db;
+    const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
+    const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || import.meta.env.DATABASE_URL_STATS;
 
     const params = context.url.searchParams;
     const range = validateRange(params.get('range'));
@@ -69,12 +71,13 @@ export const GET: APIRoute = async (context) => {
       getFeedbackCountsByRange(db, {
         range,
         userId,
+        statsDbUrl,
         useCases: useCases && useCases.length > 0 ? useCases : undefined,
         sort,
         topN: topN && topN > 0 ? topN : undefined,
         maxErrorRate: maxErrorRate !== undefined && !isNaN(maxErrorRate) ? maxErrorRate : undefined,
       }),
-      getFeedbackTimeline(db, range, userId),
+      getFeedbackTimeline(db, range, userId, statsDbUrl),
     ]);
 
     return new Response(

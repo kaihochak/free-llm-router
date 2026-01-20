@@ -1,5 +1,13 @@
 import { eq, and, notInArray, gte, sql, type SQL } from 'drizzle-orm';
-import { freeModels, modelFeedback, syncMeta, type Database } from '../db';
+import {
+  freeModels,
+  modelFeedback,
+  syncMeta,
+  type Database,
+  getFeedbackCounts as getFeedbackCountsStats,
+  getErrorTimeline as getErrorTimelineStats,
+  createDb,
+} from '../db';
 import {
   type UseCaseType,
   type SortType,
@@ -221,10 +229,11 @@ export async function getActiveModels(db: Database) {
 async function getActiveModelsWithFeedback(
   db: Database,
   timeRange: TimeRange = '24h',
-  userId?: string
+  userId?: string,
+  statsDbUrl?: string
 ) {
   const models = await getActiveModels(db);
-  const feedbackCounts = await getRecentFeedbackCounts(db, timeRange, userId);
+  const feedbackCounts = await getRecentFeedbackCounts(db, timeRange, userId, statsDbUrl);
 
   // Attach issueCount to each model (same logic as frontend)
   return models.map((model) => {
@@ -250,15 +259,16 @@ export async function getFilteredModels(
   sort: SortType,
   maxErrorRate?: number,
   timeRange: TimeRange = '24h',
-  userId?: string
+  userId?: string,
+  statsDbUrl?: string
 ) {
-  const allModels = await getActiveModelsWithFeedback(db, timeRange, userId);
+  const allModels = await getActiveModelsWithFeedback(db, timeRange, userId, statsDbUrl);
   const filtered = filterModelsByUseCase(allModels, useCases);
   const sorted = sortModels(filtered, sort);
 
   // Apply error rate threshold filtering if specified
   if (maxErrorRate !== undefined) {
-    const feedbackCounts = await getRecentFeedbackCounts(db, timeRange, userId);
+    const feedbackCounts = await getRecentFeedbackCounts(db, timeRange, userId, statsDbUrl);
     return sorted.filter((model) => {
       const feedback = feedbackCounts[model.id];
       if (!feedback) return true; // No feedback = keep model (0% error rate)
@@ -285,10 +295,49 @@ export interface FeedbackCounts {
 export async function getRecentFeedbackCounts(
   db: Database,
   timeRange: TimeRange = '24h',
-  userId?: string
+  userId?: string,
+  statsDbUrl?: string
 ): Promise<FeedbackCounts> {
   const windowMs = TIME_RANGE_MS[timeRange];
   const cutoff = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
+
+  if (!userId && statsDbUrl) {
+    const endTs = new Date();
+    const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
+    const rows = await getFeedbackCountsStats(statsDbUrl, startTs, endTs);
+
+    const counts: FeedbackCounts = {};
+    for (const row of rows) {
+      if (!counts[row.modelId]) {
+        counts[row.modelId] = {
+          rateLimited: 0,
+          unavailable: 0,
+          error: 0,
+          successCount: 0,
+          errorRate: 0,
+        };
+      }
+
+      if (row.isSuccess) {
+        counts[row.modelId].successCount += row.count;
+      } else if (row.issue === 'rate_limited') {
+        counts[row.modelId].rateLimited += row.count;
+      } else if (row.issue === 'unavailable') {
+        counts[row.modelId].unavailable += row.count;
+      } else if (row.issue === 'error') {
+        counts[row.modelId].error += row.count;
+      }
+    }
+
+    for (const modelId in counts) {
+      const c = counts[modelId];
+      const errorCount = c.rateLimited + c.unavailable + c.error;
+      const total = c.successCount + errorCount;
+      c.errorRate = total > 0 ? Math.round((errorCount / total) * 10000) / 100 : 0;
+    }
+
+    return counts;
+  }
 
   const whereConditions = [gte(modelFeedback.createdAt, cutoff)];
   if (userId) {
@@ -362,6 +411,7 @@ export interface IssueSummary {
 export interface HealthFilterOptions {
   range: TimeRange;
   userId?: string;
+  statsDbUrl?: string;
   useCases?: UseCaseType[];
   sort?: SortType;
   topN?: number;
@@ -372,8 +422,94 @@ export async function getFeedbackCountsByRange(
   db: Database,
   options: HealthFilterOptions
 ): Promise<IssueSummary[]> {
-  const { range, userId, useCases, sort, topN, maxErrorRate } = options;
+  const { range, userId, statsDbUrl, useCases, sort, topN, maxErrorRate } = options;
   const windowMs = TIME_RANGE_MS[range];
+
+  if (!userId && statsDbUrl) {
+    const endTs = new Date();
+    const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
+    const rows = await getFeedbackCountsStats(statsDbUrl, startTs, endTs);
+
+    const statsDb = createDb(statsDbUrl);
+    const modelRows = await statsDb
+      .select({
+        id: freeModels.id,
+        name: freeModels.name,
+        modality: freeModels.modality,
+        inputModalities: freeModels.inputModalities,
+        outputModalities: freeModels.outputModalities,
+        supportedParameters: freeModels.supportedParameters,
+        contextLength: freeModels.contextLength,
+        maxCompletionTokens: freeModels.maxCompletionTokens,
+      })
+      .from(freeModels);
+
+    const modelMap = new Map<string, typeof modelRows[number]>();
+    for (const model of modelRows) {
+      modelMap.set(model.id, model);
+    }
+
+    const summaryMap: Record<string, IssueSummary> = {};
+    for (const row of rows) {
+      if (!summaryMap[row.modelId]) {
+        const model = modelMap.get(row.modelId);
+        summaryMap[row.modelId] = {
+          modelId: row.modelId,
+          modelName: model?.name ?? row.modelId,
+          rateLimited: 0,
+          unavailable: 0,
+          error: 0,
+          total: 0,
+          successCount: 0,
+          errorRate: 0,
+          modality: model?.modality ?? null,
+          inputModalities: model?.inputModalities ?? null,
+          outputModalities: model?.outputModalities ?? null,
+          supportedParameters: model?.supportedParameters ?? null,
+          contextLength: model?.contextLength ?? null,
+          maxCompletionTokens: model?.maxCompletionTokens ?? null,
+        };
+      }
+
+      if (row.isSuccess) {
+        summaryMap[row.modelId].successCount += row.count;
+      } else if (row.issue === 'rate_limited') {
+        summaryMap[row.modelId].rateLimited += row.count;
+        summaryMap[row.modelId].total += row.count;
+      } else if (row.issue === 'unavailable') {
+        summaryMap[row.modelId].unavailable += row.count;
+        summaryMap[row.modelId].total += row.count;
+      } else if (row.issue === 'error') {
+        summaryMap[row.modelId].error += row.count;
+        summaryMap[row.modelId].total += row.count;
+      }
+    }
+
+    for (const modelId in summaryMap) {
+      const summary = summaryMap[modelId];
+      const totalReports = summary.successCount + summary.total;
+      summary.errorRate =
+        totalReports > 0 ? Math.round((summary.total / totalReports) * 10000) / 100 : 0;
+    }
+
+    let summaries = Object.values(summaryMap);
+    if (useCases && useCases.length > 0) {
+      summaries = filterModelsByUseCase(summaries, useCases);
+    }
+    if (maxErrorRate !== undefined) {
+      summaries = summaries.filter((s) => s.errorRate <= maxErrorRate);
+    }
+    if (sort) {
+      summaries = sortModels(summaries, sort);
+    } else {
+      summaries.sort((a, b) => b.total - a.total);
+    }
+    if (topN !== undefined && topN > 0) {
+      summaries = summaries.slice(0, topN);
+    }
+
+    return summaries;
+  }
 
   // Build where conditions
   const whereConditions: SQL[] = [];
@@ -597,7 +733,8 @@ function generateTimeBuckets(range: TimeRange): string[] {
 export async function getFeedbackTimeline(
   db: Database,
   range: TimeRange,
-  userId?: string
+  userId?: string,
+  statsDbUrl?: string
 ): Promise<TimelinePoint[]> {
   const windowMs = TIME_RANGE_MS[range];
   // Use hourly buckets for 24h, daily for 7d/30d
@@ -608,6 +745,31 @@ export async function getFeedbackTimeline(
         ? 'hour'
         : 'day';
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
+
+  if (!userId && statsDbUrl) {
+    const endTs = new Date();
+    const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
+    const rows = await getErrorTimelineStats(statsDbUrl, startTs, endTs);
+
+    const dataMap: Record<string, Record<string, TimelineModelData>> = {};
+    for (const row of rows) {
+      const bucket = row.bucket.toISOString().replace('T', ' ').slice(0, 19);
+      if (!dataMap[bucket]) {
+        dataMap[bucket] = {};
+      }
+      dataMap[bucket][row.modelId] = {
+        errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
+        errorCount: row.errorCount,
+        totalCount: row.totalCount,
+      };
+    }
+
+    const allBuckets = generateTimeBuckets(range);
+    return allBuckets.map((bucket) => ({
+      date: bucket,
+      ...(dataMap[bucket] || {}),
+    }));
+  }
 
   const conditions: SQL<unknown>[] = [
     windowMs !== null ? gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)) : undefined,
