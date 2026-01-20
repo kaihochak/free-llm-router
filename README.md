@@ -279,6 +279,81 @@ bun run db:push      # Push schema to database
 bun run db:studio    # Open Drizzle Studio (database GUI)
 ```
 
+### Frontend Utilities
+
+#### `getModelControlsProps`
+
+Helper function to reduce prop drilling when using `ModelControls` with `useModels()`:
+
+```tsx
+import { useModels, getModelControlsProps } from '@/hooks/useModels';
+import { ModelControls } from '@/components/ModelControls';
+
+function MyComponent() {
+  const modelsData = useModels();
+  const { models, loading, error } = modelsData;
+  const modelControlsProps = getModelControlsProps(modelsData);
+
+  return (
+    <div>
+      {/* Instead of passing 15 individual props */}
+      <ModelControls {...modelControlsProps} />
+      {/* Optionally override specific props */}
+      <ModelControls {...modelControlsProps} size="sm" />
+    </div>
+  );
+}
+```
+
+This extracts all `ModelControls` props from the hook return value:
+
+| State Props | Handler Props |
+|-------------|---------------|
+| `activeUseCases` | `onToggleUseCase` |
+| `activeSort` | `onSortChange` |
+| `activeTopN` | `onTopNChange` |
+| `reliabilityFilterEnabled` | `onReliabilityFilterEnabledChange` |
+| `activeMaxErrorRate` | `onMaxErrorRateChange` |
+| `activeTimeRange` | `onTimeRangeChange` |
+| `activeMyReports` | `onMyReportsChange` |
+| | `onReset` |
+
+#### Component Data Requirements
+
+Four components use `ModelControls` with different state sources and patterns:
+
+| Component | State Source | Uses `getModelControlsProps` |
+|-----------|--------------|:----------------------------:|
+| `GetStartedSection` | `useModels()` | ✓ |
+| `ApiUsageStep` | `useModels()` | ✓ |
+| `HealthPage` | `useHealth()` | ✗ (different hook) |
+| `TryItPanel` | Local `useState` | ✗ (standalone) |
+
+**Data extracted from hooks:**
+
+| Data | GetStartedSection | ApiUsageStep | HealthPage | TryItPanel |
+|------|:-----------------:|:------------:|:----------:|:----------:|
+| `models` / `issues` | ✓ | ✓ | ✓ | |
+| `loading` | ✓ | ✓ | ✓ | local |
+| `error` | ✓ | ✓ | ✓ | local |
+| `activeTopN` | ✓ | ✓ | ✓ | local |
+| `lastUpdated` | ✓ | ✓ | ✓ | |
+| `activeUseCases` | | ✓ | ✓ | local |
+| `activeSort` | | ✓ | ✓ | local |
+| `reliabilityFilterEnabled` | | ✓ | ✓ | local |
+| `activeMaxErrorRate` | | ✓ | ✓ | local |
+| `activeTimeRange` / `range` | | ✓ | ✓ | local |
+| `activeMyReports` / `myReports` | | ✓ | ✓ | local |
+| `apiUrl` | | ✓ | | |
+| `timeline` | | | ✓ | |
+
+**Why the differences?**
+
+- **GetStartedSection**: Only displays models; delegates code snippets to `<ApiUsageStep showBrowseModels={false} />`
+- **ApiUsageStep**: Needs filter values for `codeExamples.getModelIdsCall()` and `codeExamples.basicUsage()`
+- **HealthPage**: Uses `useHealth()` hook with different property names (`range` vs `activeTimeRange`, `myReports` vs `activeMyReports`) and additional `timeline` data for charts
+- **TryItPanel**: Standalone interactive panel with local state; doesn't persist to localStorage or share state with other components
+
 ## Deployment
 
 ### Hosted (Cloudflare Pages + Neon)
