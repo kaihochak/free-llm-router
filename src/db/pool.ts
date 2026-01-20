@@ -1,5 +1,5 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { drizzle, type NeonDatabase } from 'drizzle-orm/neon-serverless';
 import * as schema from './schema';
 
 // Ensure WebSocket is available for the Neon serverless driver (local Node needs ws).
@@ -19,9 +19,9 @@ function getPool(databaseUrl: string): Pool {
   return pool;
 }
 
-export function createDb(databaseUrl: string): NodePgDatabase<typeof schema> {
+export function createDb(databaseUrl: string): NeonDatabase<typeof schema> {
   const pool = getPool(databaseUrl);
   return drizzle(pool, { schema });
 }
 
-export type Database = NodePgDatabase<typeof schema>;
+export type Database = NeonDatabase<typeof schema>;
