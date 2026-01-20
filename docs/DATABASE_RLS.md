@@ -8,7 +8,7 @@ RLS acts as defense-in-depth for user-scoped tables. If a bug bypasses app-layer
 
 ## Runtime Requirement (Transactions)
 
-RLS relies on per-request session variables (`app.user_id`, `app.api_key_hash`) set via `set_config` inside a transaction. This requires a transaction-capable DB driver. The project uses Neon’s WebSocket/pg pool (`drizzle-orm/node-postgres`) for runtime access. The HTTP driver (`drizzle-orm/neon-http`) does not support transactions and will break RLS.
+RLS relies on per-request session variables (`app.user_id`, `app.api_key_hash`) set via `set_config` inside a transaction. This requires a transaction-capable DB driver. The project uses Neon’s serverless driver with WebSockets (`drizzle-orm/neon-serverless`) for runtime access on Cloudflare Pages. The HTTP driver (`drizzle-orm/neon-http`) does not support transactions and will break RLS.
 
 ## Database Role Reference
 
