@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createAuth, type AuthEnv } from '@/lib/auth';
-import { createDb, users } from '@/db';
+import { users, withUserContext } from '@/db';
 import { eq } from 'drizzle-orm';
 
 export const GET: APIRoute = async ({ request, locals }) => {
@@ -22,7 +22,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Get user session using Better Auth
     const authEnv: AuthEnv = {
       databaseUrl,
       databaseUrlAdmin,
@@ -41,20 +40,21 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Fetch user's rate limit data
-    const db = createDb(databaseUrl);
-    const [user] = await db
-      .select({
-        remaining: users.remaining,
-        rateLimitMax: users.rateLimitMax,
-        requestCount: users.requestCount,
-        lastRequest: users.lastRequest,
-      })
-      .from(users)
-      .where(eq(users.id, session.user.id))
-      .limit(1);
+    const [record] = await withUserContext(databaseUrl, session.user.id, async (db) => {
+      return db
+        .select({
+          remaining: users.remaining,
+          limit: users.rateLimitMax,
+          requestCount: users.requestCount,
+          timeWindow: users.rateLimitTimeWindow,
+          lastRequest: users.lastRequest,
+        })
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1);
+    });
 
-    if (!user) {
+    if (!record) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
@@ -63,15 +63,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     return new Response(
       JSON.stringify({
-        remaining: user.remaining ?? 200,
-        limit: user.rateLimitMax ?? 200,
-        requestCount: user.requestCount ?? 0,
-        lastRequest: user.lastRequest,
+        remaining: record.remaining ?? 0,
+        limit: record.limit ?? 200,
+        requestCount: record.requestCount ?? 0,
+        timeWindow: record.timeWindow ?? 86400000,
+        lastRequest: record.lastRequest,
       }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Rate limit fetch error:', error);

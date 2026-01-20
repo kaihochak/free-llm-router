@@ -104,7 +104,7 @@ export function ModelControls({
 
   return (
     <div
-      className={`flex flex-wrap items-start mb-6 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}
+      className={`flex items-start mb-3 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}
     >
       <div
         className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}
