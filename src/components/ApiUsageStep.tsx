@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
-import { useModels, generateSnippet } from '@/hooks/useModels';
+import { useModels, generateSnippet, getModelControlsProps } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { ModelList } from '@/components/ModelList';
@@ -17,6 +17,7 @@ interface ApiUsageStepProps {
 
 export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
   const { data: session } = useCachedSession();
+  const modelsData = useModels();
   const {
     models,
     loading,
@@ -30,15 +31,8 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
     activeMyReports,
     lastUpdated,
     apiUrl,
-    toggleUseCase,
-    setActiveSort,
-    setActiveTopN,
-    setReliabilityFilterEnabled,
-    setActiveMaxErrorRate,
-    setActiveTimeRange,
-    setActiveMyReports,
-    resetToDefaults,
-  } = useModels();
+  } = modelsData;
+  const modelControlsProps = getModelControlsProps(modelsData);
 
   const snippet = generateSnippet(apiUrl);
 
@@ -93,23 +87,7 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
           </p>
 
           {/* Model Controls */}
-          <ModelControls
-            activeUseCases={activeUseCases}
-            activeSort={activeSort}
-            activeTopN={activeTopN}
-            reliabilityFilterEnabled={reliabilityFilterEnabled}
-            activeMaxErrorRate={activeMaxErrorRate}
-            activeTimeRange={activeTimeRange}
-            activeMyReports={activeMyReports}
-            onToggleUseCase={toggleUseCase}
-            onSortChange={setActiveSort}
-            onTopNChange={setActiveTopN}
-            onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
-            onMaxErrorRateChange={setActiveMaxErrorRate}
-            onTimeRangeChange={setActiveTimeRange}
-            onMyReportsChange={setActiveMyReports}
-            onReset={resetToDefaults}
-          />
+          <ModelControls {...modelControlsProps} />
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <ModelCountHeader count={limitedModels.length} lastUpdated={lastUpdated} />
@@ -208,23 +186,7 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
         <p className="text-muted-foreground">
           This is the exact `getModelIds` call for your current use case, sort, and top N.
         </p>
-        <ModelControls
-          activeUseCases={activeUseCases}
-          activeSort={activeSort}
-          activeTopN={activeTopN}
-          reliabilityFilterEnabled={reliabilityFilterEnabled}
-          activeMaxErrorRate={activeMaxErrorRate}
-          activeTimeRange={activeTimeRange}
-          activeMyReports={activeMyReports}
-          onToggleUseCase={toggleUseCase}
-          onSortChange={setActiveSort}
-          onTopNChange={setActiveTopN}
-          onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
-          onMaxErrorRateChange={setActiveMaxErrorRate}
-          onTimeRangeChange={setActiveTimeRange}
-          onMyReportsChange={setActiveMyReports}
-          onReset={resetToDefaults}
-        />
+        <ModelControls {...modelControlsProps} />
         <CodeBlock
           code={codeExamples.getModelIdsCall(
             activeUseCases,

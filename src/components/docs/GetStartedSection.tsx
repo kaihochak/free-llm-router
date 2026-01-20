@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ApiUsageStep } from '@/components/ApiUsageStep';
 import { QueryProvider } from '@/components/QueryProvider';
-import { useModels } from '@/hooks/useModels';
+import { useModels, getModelControlsProps } from '@/hooks/useModels';
 import { ModelControls } from '@/components/ModelControls';
 import { ModelList } from '@/components/ModelList';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
@@ -9,27 +9,15 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function GetStartedSection() {
+  const modelsData = useModels();
   const {
     models,
     loading,
     error,
-    activeUseCases,
-    activeSort,
     activeTopN,
-    reliabilityFilterEnabled,
-    activeMaxErrorRate,
-    activeTimeRange,
-    activeMyReports,
     lastUpdated,
-    toggleUseCase,
-    setActiveSort,
-    setActiveTopN,
-    setReliabilityFilterEnabled,
-    setActiveMaxErrorRate,
-    setActiveTimeRange,
-    setActiveMyReports,
-    resetToDefaults,
-  } = useModels();
+  } = modelsData;
+  const modelControlsProps = getModelControlsProps(modelsData);
 
   const previewModels = activeTopN ? models.slice(0, activeTopN) : models;
 
@@ -88,23 +76,7 @@ export function GetStartedSection() {
           Configure use case and sorting to preview the live, health-scored list your app will fetch
           dynamically.
         </p>
-        <ModelControls
-          activeUseCases={activeUseCases}
-          activeSort={activeSort}
-          activeTopN={activeTopN}
-          reliabilityFilterEnabled={reliabilityFilterEnabled}
-          activeMaxErrorRate={activeMaxErrorRate}
-          activeTimeRange={activeTimeRange}
-          activeMyReports={activeMyReports}
-          onToggleUseCase={toggleUseCase}
-          onSortChange={setActiveSort}
-          onTopNChange={setActiveTopN}
-          onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
-          onMaxErrorRateChange={setActiveMaxErrorRate}
-          onTimeRangeChange={setActiveTimeRange}
-          onMyReportsChange={setActiveMyReports}
-          onReset={resetToDefaults}
-        />
+        <ModelControls {...modelControlsProps} />
         <div className="flex items-center justify-between">
           <ModelCountHeader count={previewModels.length} lastUpdated={lastUpdated} />
           {totalPages > 1 && (

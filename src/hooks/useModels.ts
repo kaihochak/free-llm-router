@@ -135,6 +135,27 @@ export function generateSnippet(_apiUrl?: string): string {
   return FREE_MODELS_FILE;
 }
 
+/** Extract props for ModelControls from useModels() return value */
+export function getModelControlsProps(models: ReturnType<typeof useModels>) {
+  return {
+    activeUseCases: models.activeUseCases,
+    activeSort: models.activeSort,
+    activeTopN: models.activeTopN,
+    reliabilityFilterEnabled: models.reliabilityFilterEnabled,
+    activeMaxErrorRate: models.activeMaxErrorRate,
+    activeTimeRange: models.activeTimeRange,
+    activeMyReports: models.activeMyReports,
+    onToggleUseCase: models.toggleUseCase,
+    onSortChange: models.setActiveSort,
+    onTopNChange: models.setActiveTopN,
+    onReliabilityFilterEnabledChange: models.setReliabilityFilterEnabled,
+    onMaxErrorRateChange: models.setActiveMaxErrorRate,
+    onTimeRangeChange: models.setActiveTimeRange,
+    onMyReportsChange: models.setActiveMyReports,
+    onReset: models.resetToDefaults,
+  };
+}
+
 export function getFullApiUrl(apiUrl: string): string {
   return `${API_BASE}${apiUrl}`;
 }
