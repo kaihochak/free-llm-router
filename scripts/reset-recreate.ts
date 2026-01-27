@@ -183,13 +183,7 @@ async function main() {
   console.log('===== Step 6/6: Done =====');
   if (generated) {
     console.log('');
-    console.log('Add these to .env (generated):');
-    console.log('');
-    console.log(`DATABASE_URL=${appUrl}`);
-    console.log('');
-    console.log(`DATABASE_URL_ADMIN=${adminUrl}`);
-    console.log('');
-    console.log(`DATABASE_URL_STATS=${statsUrl}`);
+    console.log('Add the generated DATABASE_URL, DATABASE_URL_ADMIN, and DATABASE_URL_STATS to .env.');
   }
 }
 
