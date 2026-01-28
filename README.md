@@ -43,7 +43,7 @@ Get your API key at https://freellmrouter.com
 
 ```bash
 curl -H "Authorization: Bearer fma_your_key_here" \
-  "https://freellmrouter.com/api/v1/models/ids?filter=chat"
+  "https://freellmrouter.com/api/v1/models/ids?useCase=chat"
 ```
 
 ### GET /api/v1/models/ids
@@ -52,11 +52,11 @@ Lightweight endpoint returning only model IDs. Perfect for quick lookups.
 
 **Query Parameters:**
 
-- `filter` - Capability filters: `chat`, `vision`, `tools`, `longContext`, `reasoning` (comma-separated)
+- `useCase` - Capability filters: `chat`, `vision`, `tools`, `longContext`, `reasoning` (comma-separated)
 - `sort` - Sort order: `contextLength`, `maxOutput`, `capable`, `leastIssues`, `newest`
 - `topN` - Maximum models to return (1-100, default: all)
 - `maxErrorRate` - Exclude models with error rate > N% (0-100)
-- `timeRange` - Time range for health: `15m`, `30m`, `1h`, `6h`, `24h`, `7d`, `30d`, `all` (default: 24h)
+- `timeRange` - Time range for health: `15m`, `30m`, `1h`, `6h`, `24h`, `7d`, `30d`, `all` (default: 30m)
 - `myReports` - Show only your reported data (requires auth, default: false)
 
 **Response:**
@@ -141,7 +141,7 @@ Public endpoint for community model health data. No authentication required.
 
 **Query Parameters:**
 
-- `timeRange` - Time range: `24h`, `7d`, `30d` (default: 24h)
+- `timeRange` - Time range: `24h`, `7d`, `30d` (default: 30m)
 
 ## Usage Examples
 
@@ -150,10 +150,10 @@ Public endpoint for community model health data. No authentication required.
 ```typescript
 import { getModelIds } from './public/free-llm-router';
 
-// Get healthiest chat models from last 24 hours
+// Get healthiest chat models from last 30 minutes (default)
 const models = await getModelIds(['chat'], 'leastIssues', 10, {
   excludeWithIssues: 5,
-  timeWindow: '24h',
+  timeWindow: '30m',
 });
 
 console.log('Available models:', models);
