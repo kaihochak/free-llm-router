@@ -60,30 +60,19 @@ export function FeedbackDialog() {
 
     // Wait for Sheet content to mount and turnstile script to load
     const timer = setTimeout(() => {
-      console.log('Turnstile debug:', {
-        ref: turnstileRef.current,
-        turnstileDefined: typeof turnstile !== 'undefined',
-        widgetId: widgetId.current,
-        siteKey: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
-      });
-
       if (!turnstileRef.current) {
-        console.log('Turnstile: ref not available');
         return;
       }
       if (typeof turnstile === 'undefined') {
-        console.log('Turnstile: global not available');
         return;
       }
       if (widgetId.current) {
-        console.log('Turnstile: already rendered');
         return;
       }
 
       widgetId.current = turnstile.render(turnstileRef.current, {
         sitekey: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
       });
-      console.log('Turnstile: rendered with widgetId', widgetId.current);
     }, 100);
 
     return () => {

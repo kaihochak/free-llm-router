@@ -65,8 +65,6 @@ export type SortType = ApiSortType;
 export const USE_CASES = USE_CASE_DEFINITIONS;
 export const SORT_OPTIONS = SORT_DEFINITIONS;
 
-const API_BASE = 'https://free-llm-router.pages.dev';
-
 export const modelKeys = {
   all: ['models'] as const,
   count: () => [...modelKeys.all, 'count'] as const,

@@ -51,7 +51,7 @@ Free LLM Router provides community-powered health data for large language models
 
 ## 4. Hosted vs. Self-Hosted
 
-### Hosted Instance (free-llm-router.pages.dev)
+### Hosted Instance (freellmrouter.com)
 
 - Subject to these Terms of Service
 - Managed by the Free LLM Router team
