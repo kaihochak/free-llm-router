@@ -13,7 +13,7 @@
  *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { maxErrorRate: 20, timeRange: '24h', myReports: true, cache: 'no-store' });
  */
 
-const API = 'https://free-llm-router.pages.dev/api/v1';
+const API = 'https://freellmrouter.com/api/v1';
 const API_KEY = process.env.FREE_LLM_ROUTER_API_KEY;
 
 /**
