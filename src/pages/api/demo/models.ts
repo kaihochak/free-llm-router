@@ -13,6 +13,7 @@ const rateLimiter = createRateLimiter(20, 60_000);
 // Allowed origins for demo endpoint (blocks off-site scraping)
 const ALLOWED_ORIGINS = [
   siteConfig.url,
+  'https://staging.free-llm-router.pages.dev',
   'http://localhost:4321',
   'http://localhost:3000',
 ];
