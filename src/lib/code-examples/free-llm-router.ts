@@ -36,7 +36,7 @@ const cache = new Map<string, { data: string[]; timestamp: number }>();
 /**
  * Get available free model IDs with optional filtering and sorting.
  * Default sort is 'contextLength' (largest context window first).
- * Default maxErrorRate is undefined (no filtering), timeRange is '24h', myReports is false.
+ * Default maxErrorRate is undefined (no filtering), timeRange is '30m' (server default), myReports is false.
  */
 export async function getModelIds(
   useCase?: UseCase[],
