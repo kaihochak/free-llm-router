@@ -2,8 +2,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
-
-const BASE_URL = 'https://free-llm-router.pages.dev';
+import { siteConfig } from '@/lib/seo';
 
 const METHOD_COLORS = {
   GET: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
@@ -20,7 +19,7 @@ interface EndpointHeaderProps {
 
 export function EndpointHeader({ method, endpoint, description }: EndpointHeaderProps) {
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(`${BASE_URL}${endpoint}`);
+    await navigator.clipboard.writeText(`${siteConfig.url}${endpoint}`);
     toast.success('Endpoint URL copied');
   };
 

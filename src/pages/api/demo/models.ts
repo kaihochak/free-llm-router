@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getClientIp, createRateLimiter, isAllowedOrigin } from '@/lib/api-utils';
+import { siteConfig } from '@/lib/seo';
 
 // Lightweight in-memory cache (best effort per instance).
 // This keeps the endpoint anonymous while reducing demo key burn.
@@ -11,7 +12,7 @@ const rateLimiter = createRateLimiter(20, 60_000);
 
 // Allowed origins for demo endpoint (blocks off-site scraping)
 const ALLOWED_ORIGINS = [
-  'https://free-llm-router.pages.dev',
+  siteConfig.url,
   'http://localhost:4321',
   'http://localhost:3000',
 ];
@@ -41,6 +42,7 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+
 
   const ip = getClientIp(request);
   const { limited } = rateLimiter.check(ip);
