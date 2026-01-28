@@ -14,8 +14,7 @@ import {
   DEFAULT_MY_REPORTS,
   DEFAULT_RELIABILITY_FILTER_ENABLED,
 } from '@/lib/api-definitions';
-
-const BASE_URL = 'https://free-llm-router.pages.dev';
+import { siteConfig } from '@/lib/seo';
 
 interface TryItPanelProps {
   endpoint: string;
@@ -80,12 +79,12 @@ export function TryItPanel({ endpoint, method, defaultBody, exampleResponse }: T
     const authHeader = `-H "Authorization: Bearer ${token}" \\`;
     if (method === 'POST') {
       const body = defaultBody ? JSON.stringify(defaultBody, null, 2) : '{}';
-      return `curl -X POST ${BASE_URL}${endpoint} \\
+      return `curl -X POST ${siteConfig.url}${endpoint} \\
   ${authHeader}
   -H "Content-Type: application/json" \\
   -d '${body.replace(/\n/g, '\n  ')}'`;
     }
-    return `curl ${BASE_URL}${buildUrl()} \\
+    return `curl ${siteConfig.url}${buildUrl()} \\
   ${authHeader}`;
   };
 

@@ -2,7 +2,7 @@
 
 A free, open-source API that surfaces the healthiest free LLM models with community-powered health metrics. Get reliable model endpoints, real-time reliability data, and help the community improve model quality.
 
-**Website:** https://free-llm-router.pages.dev
+**Website:** https://freellmrouter.com
 **GitHub:** https://github.com/kaihochak/free-llm-router
 **License:** MIT
 
@@ -39,11 +39,11 @@ bun run dev
 
 Free tier: 200 requests per 24 hours per user, 10 API keys maximum.
 
-Get your API key at https://free-llm-router.pages.dev
+Get your API key at https://freellmrouter.com
 
 ```bash
 curl -H "Authorization: Bearer fma_your_key_here" \
-  "https://free-llm-router.pages.dev/api/v1/models/ids?filter=chat"
+  "https://freellmrouter.com/api/v1/models/ids?filter=chat"
 ```
 
 ### GET /api/v1/models/ids
@@ -198,7 +198,7 @@ import { getModelIds } from './public/free-llm-router';
 const models = await getModelIds(['chat'], 'capable', undefined, { timeWindow: '7d' });
 
 // Check error rates in the response metadata
-const response = await fetch(`https://free-llm-router.pages.dev/api/v1/models/full?timeWindow=7d`, {
+const response = await fetch(`https://freellmrouter.com/api/v1/models/full?timeWindow=7d`, {
   headers: { Authorization: `Bearer ${process.env.FREE_LLM_ROUTER_API_KEY}` },
 });
 
@@ -220,7 +220,7 @@ Use `?myReports=true` to see only YOUR reported data (instead of community-wide)
 
 ```bash
 curl -H "Authorization: Bearer fma_your_key_here" \
-  "https://free-llm-router.pages.dev/api/v1/models/full?myReports=true"
+  "https://freellmrouter.com/api/v1/models/full?myReports=true"
 ```
 
 This shows model reliability based on your actual experience, preventing bad actors from poisoning community data with false reports.
@@ -255,6 +255,10 @@ REFRESH_API_KEY=your-secret-for-cron
 
 # Demo list (server-side key for /api/demo/models)
 DEMO_API_KEY=fma_xxxxxxxxxxxxx
+
+# Turnstile (captcha) for feedback form
+PUBLIC_TURNSTILE_SITE_KEY=your-site-key
+TURNSTILE_SECRET_KEY=your-secret-key
 ```
 
 ## Tech Stack
@@ -405,7 +409,7 @@ docker run -e DATABASE_URL="..." -p 3000:3000 free-llm-router
 
 ## Documentation
 
-- Full web documentation and interactive API explorer at https://free-llm-router.pages.dev
+- Full web documentation and interactive API explorer at https://freellmrouter.com
 - [PRD](./docs/PRD.md) - Product requirements and design
 - [Reference implementations](./reference/) - Example code for common patterns
 
@@ -518,12 +522,13 @@ Use different passwords for:
 3. Set `DATABASE_URL_OWNER` for schema migrations (owner role).
 3. Restart the server after env changes.
 4. Generate/confirm a valid `DEMO_API_KEY` for the demo list endpoint.
+5. (Optional) Set Turnstile keys to require captcha on feedback form.
 
 ### Dev Reset Notes
 
-`bun run db:reset` uses `DATABASE_URL_OWNER` as the base and will print generated
-`DATABASE_URL`, `DATABASE_URL_ADMIN`, and `DATABASE_URL_STATS` if they are missing.
-Copy those into `.env` for future runs.
+`bun run db:reset` uses `DATABASE_URL_OWNER` as the base and will prompt you to
+add generated `DATABASE_URL`, `DATABASE_URL_ADMIN`, and `DATABASE_URL_STATS` if
+they are missing. Copy those into `.env` for future runs.
 
 ### Automated Cleanup (Optional)
 
@@ -545,7 +550,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 - **GitHub Issues:** [Report bugs and request features](../../issues)
 - **GitHub Discussions:** [Ask questions and share feedback](../../discussions)
-- **Website:** https://free-llm-router.pages.dev
+- **Website:** https://freellmrouter.com
 - **Health Data:** Public metrics available at `/api/health`
 
 ## License
