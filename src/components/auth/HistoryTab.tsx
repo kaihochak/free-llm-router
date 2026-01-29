@@ -47,9 +47,9 @@ function getStatusBadgeVariant(
   return 'outline';
 }
 
-function RequestHistoryTable() {
+function RequestHistoryTable({ enabled }: { enabled?: boolean }) {
   const { items, pagination, isLoading, error, nextPage, prevPage, goToPage, refresh } =
-    useHistory<ApiRequestLog>('requests', 15);
+    useHistory<ApiRequestLog>('requests', 15, { enabled });
 
   if (isLoading && items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">Loading request history...</p>;
@@ -127,9 +127,9 @@ function RequestHistoryTable() {
   );
 }
 
-function UsageReportsTable() {
+function UsageReportsTable({ enabled }: { enabled?: boolean }) {
   const { items, pagination, isLoading, error, nextPage, prevPage, goToPage, refresh } =
-    useHistory<FeedbackItem>('feedback', 15);
+    useHistory<FeedbackItem>('feedback', 15, { enabled });
 
   if (isLoading && items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">Loading usage reports...</p>;
@@ -200,7 +200,7 @@ function UsageReportsTable() {
   );
 }
 
-export function HistoryTab() {
+export function HistoryTab({ isSessionReady }: { isSessionReady?: boolean }) {
   const [activeSection, setActiveSection] = useState<'requests' | 'reports'>('requests');
 
   return (
@@ -230,10 +230,10 @@ export function HistoryTab() {
       <CardContent>
         {/* Keep both components mounted to prevent refetching on tab switch */}
         <div className={activeSection === 'requests' ? '' : 'hidden'}>
-          <RequestHistoryTable />
+          <RequestHistoryTable enabled={isSessionReady} />
         </div>
         <div className={activeSection === 'reports' ? '' : 'hidden'}>
-          <UsageReportsTable />
+          <UsageReportsTable enabled={isSessionReady} />
         </div>
       </CardContent>
     </Card>

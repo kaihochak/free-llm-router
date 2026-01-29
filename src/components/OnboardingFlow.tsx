@@ -101,7 +101,7 @@ export function OnboardingFlow() {
     {
       title: 'Add to Your Project',
       description: 'Copy the helper file and start using free models',
-      content: <ApiUsageStep showBrowseModels={false} />,
+      content: <ApiUsageStep />,
       wide: true,
     },
   ];
