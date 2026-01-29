@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createDb, modelFeedback, apiRequestLogs } from '@/db';
 import { lt } from 'drizzle-orm';
+import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
 
 const MODEL_FEEDBACK_RETENTION_DAYS = 90;
 const API_LOGS_RETENTION_DAYS = 30;
@@ -27,25 +28,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   // Validate admin secret
   if (!adminSecret) {
-    return new Response(JSON.stringify({ error: 'ADMIN_SECRET not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(
+      { error: 'ADMIN_SECRET not configured' },
+      { status: 500, headers: apiResponseHeaders({ cors: false }) }
+    );
   }
 
   const providedSecret = request.headers.get('X-Admin-Secret');
   if (!providedSecret || providedSecret !== adminSecret) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(
+      { error: 'Unauthorized' },
+      { status: 401, headers: apiResponseHeaders({ cors: false }) }
+    );
   }
 
   if (!databaseUrl) {
-    return new Response(JSON.stringify({ error: 'Database not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(
+      { error: 'Database not configured' },
+      { status: 500, headers: apiResponseHeaders({ cors: false }) }
+    );
   }
 
   try {
@@ -66,8 +67,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .delete(apiRequestLogs)
       .where(lt(apiRequestLogs.createdAt, logsCutoff));
 
-    return new Response(
-      JSON.stringify({
+    return jsonResponse(
+      {
         success: true,
         deleted: {
           modelFeedback: feedbackResult.rowCount ?? 0,
@@ -77,17 +78,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
           modelFeedback: feedbackCutoff.toISOString(),
           apiRequestLogs: logsCutoff.toISOString(),
         },
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      },
+      { headers: apiResponseHeaders({ cors: false }) }
     );
   } catch (error) {
     console.error('[API/admin/cleanup] Error:', error);
-    return new Response(JSON.stringify({ error: 'Cleanup failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'Cleanup failed' }, { status: 500, headers: apiResponseHeaders({ cors: false }) });
   }
 };

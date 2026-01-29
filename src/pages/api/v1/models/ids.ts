@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { getFilteredModels, ensureFreshModels } from '@/services/openrouter';
+import { getFilteredModels, checkModelsFreshness, ensureFreshModels } from '@/services/openrouter';
 import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
-import { rateLimitHeaders, corsHeaders, logApiRequest } from '@/lib/api-auth';
+import { corsHeaders, logApiRequest } from '@/lib/api-auth';
+import { apiResponseHeaders, jsonResponse, noContentResponse, type HeaderMap } from '@/lib/api-response';
 
 /**
  * Lightweight endpoint that returns only model IDs
@@ -31,8 +32,13 @@ export const GET: APIRoute = async (context) => {
       // This allows unauthenticated users to see community data without error
     }
 
-    // Lazy refresh if stale
-    await ensureFreshModels(db);
+    // Check data freshness (non-blocking)
+    const freshness = await checkModelsFreshness(db);
+
+    // If critically stale (>2h), attempt fallback sync with lock (prevents thundering herd)
+    if (freshness.isCriticallyStale) {
+      await ensureFreshModels(db);
+    }
 
     // Fetch filtered and sorted models
     const allModels = await getFilteredModels(
@@ -59,20 +65,25 @@ export const GET: APIRoute = async (context) => {
       responseTimeMs: Math.round(performance.now() - startTime),
     });
 
-    return new Response(
-      JSON.stringify({
+    // Build response headers
+    const headers: HeaderMap = apiResponseHeaders({
+      cacheControl: 'private, max-age=60',
+      validation,
+    });
+
+    // Add staleness warning headers if data is stale
+    if (!freshness.isFresh) {
+      headers['X-Data-Stale'] = 'true';
+      headers['X-Data-Age-Seconds'] = String(Math.round(freshness.ageMs / 1000));
+    }
+
+    return jsonResponse(
+      {
         ids,
         count: ids.length,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'private, max-age=60',
-          ...corsHeaders,
-          ...rateLimitHeaders(validation),
-        },
-      }
+        _meta: !freshness.isFresh ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) } : undefined,
+      },
+      { headers }
     );
   } catch (error) {
     console.error('[API/models/ids] Error:', error);
@@ -87,16 +98,13 @@ export const GET: APIRoute = async (context) => {
       responseTimeMs: Math.round(performance.now() - startTime),
     });
 
-    return new Response(JSON.stringify({ error: 'Failed to fetch model IDs' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    return jsonResponse(
+      { error: 'Failed to fetch model IDs' },
+      { status: 500, headers: apiResponseHeaders() }
+    );
   }
 };
 
 export const OPTIONS: APIRoute = async () => {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+  return noContentResponse({ headers: corsHeaders });
 };

@@ -1,0 +1,84 @@
+name: Sync Models
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+      force:
+        description: 'Force sync even if data is fresh'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  sync-staging:
+    name: Sync Staging Models
+    runs-on: ubuntu-latest
+    environment: staging
+    # Run on schedule OR when staging is explicitly selected
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+
+    steps:
+      - name: Trigger model sync (staging)
+        run: |
+          FORCE_PARAM=""
+          if [ "${{ inputs.force }}" = "true" ]; then
+            FORCE_PARAM="?force=true"
+          fi
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "X-Admin-Secret: ${{ secrets.ADMIN_SECRET }}" \
+            "https://staging.freellmrouter.com/api/admin/sync-models${FORCE_PARAM}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          # Accept 200 (success/skipped) or 409 (sync in progress)
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 409 ]; then
+            echo "Sync failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+  sync-production:
+    name: Sync Production Models
+    runs-on: ubuntu-latest
+    environment: production
+    # Run on schedule OR when production is explicitly selected
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+
+    steps:
+      - name: Trigger model sync (production)
+        run: |
+          FORCE_PARAM=""
+          if [ "${{ inputs.force }}" = "true" ]; then
+            FORCE_PARAM="?force=true"
+          fi
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "X-Admin-Secret: ${{ secrets.ADMIN_SECRET }}" \
+            "https://freellmrouter.com/api/admin/sync-models${FORCE_PARAM}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          # Accept 200 (success/skipped) or 409 (sync in progress)
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 409 ]; then
+            echo "Sync failed with status $HTTP_CODE"
+            exit 1
+          fi

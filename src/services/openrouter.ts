@@ -279,7 +279,11 @@ export async function getFilteredModels(
   return sorted;
 }
 
-const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+// Staleness thresholds for model data
+const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour - data considered stale, headers added
+const CRITICAL_STALE_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours - triggers fallback sync
+const SYNC_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes - lock expiration for crashed syncs
+
 const FEEDBACK_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface FeedbackCounts {
@@ -643,11 +647,104 @@ export async function getModelsWithLazyRefresh(db: Database) {
   };
 }
 
-export async function ensureFreshModels(db: Database) {
+/**
+ * Check if models data is fresh enough.
+ * Returns staleness info but NEVER triggers sync - that's done by the admin endpoint or fallback.
+ */
+export async function checkModelsFreshness(db: Database): Promise<{
+  isFresh: boolean;
+  isCriticallyStale: boolean;
+  lastUpdated: Date | null;
+  ageMs: number;
+}> {
   const lastUpdated = await getLastUpdated(db);
 
-  if (!lastUpdated || Date.now() - lastUpdated.getTime() > STALE_THRESHOLD_MS) {
+  if (!lastUpdated) {
+    return { isFresh: false, isCriticallyStale: true, lastUpdated: null, ageMs: Infinity };
+  }
+
+  const ageMs = Date.now() - lastUpdated.getTime();
+  return {
+    isFresh: ageMs <= STALE_THRESHOLD_MS,
+    isCriticallyStale: ageMs > CRITICAL_STALE_THRESHOLD_MS,
+    lastUpdated,
+    ageMs,
+  };
+}
+
+/**
+ * Try to acquire sync lock using sync_meta table.
+ * Uses 'sync_in_progress' key with timestamp to implement distributed locking.
+ */
+async function tryAcquireSyncLock(db: Database): Promise<boolean> {
+  const now = new Date();
+
+  // Check if sync is already in progress
+  const [lockRow] = await db
+    .select()
+    .from(syncMeta)
+    .where(eq(syncMeta.key, 'sync_in_progress'))
+    .limit(1);
+
+  if (lockRow?.value === 'true' && lockRow.updatedAt) {
+    // Check if lock has expired (stale lock from crashed sync)
+    const lockAge = now.getTime() - lockRow.updatedAt.getTime();
+    if (lockAge < SYNC_LOCK_DURATION_MS) {
+      return false; // Lock is still valid
+    }
+    // Lock expired, continue to acquire
+  }
+
+  // Acquire lock
+  await db
+    .insert(syncMeta)
+    .values({
+      key: 'sync_in_progress',
+      value: 'true',
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: syncMeta.key,
+      set: { value: 'true', updatedAt: now },
+    });
+
+  return true;
+}
+
+/**
+ * Release sync lock after sync completes.
+ */
+async function releaseSyncLock(db: Database): Promise<void> {
+  await db
+    .update(syncMeta)
+    .set({ value: 'false', updatedAt: new Date() })
+    .where(eq(syncMeta.key, 'sync_in_progress'));
+}
+
+/**
+ * Sync models with distributed lock to prevent thundering herd.
+ * Returns true if sync was performed, false if skipped (lock not acquired or data fresh).
+ */
+export async function ensureFreshModels(db: Database): Promise<boolean> {
+  const freshness = await checkModelsFreshness(db);
+
+  // Only sync if critically stale (>2 hours)
+  if (!freshness.isCriticallyStale) {
+    return false;
+  }
+
+  // Try to acquire lock
+  const lockAcquired = await tryAcquireSyncLock(db);
+  if (!lockAcquired) {
+    // Another process is syncing, don't block
+    return false;
+  }
+
+  try {
     await syncModels(db);
+    return true;
+  } finally {
+    await releaseSyncLock(db);
   }
 }
 

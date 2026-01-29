@@ -12,6 +12,7 @@ import {
   validateSort,
   DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
+import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
 
 function validateRange(value: string | null): TimeRange {
   const validated = validateTimeRange(value);
@@ -80,27 +81,18 @@ export const GET: APIRoute = async (context) => {
       getFeedbackTimeline(db, range, userId, statsDbUrl),
     ]);
 
-    return new Response(
-      JSON.stringify({
+    return jsonResponse(
+      {
         issues,
         timeline,
         range,
         lastUpdated: new Date().toISOString(),
         count: issues.length,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=60',
-        },
-      }
+      },
+      { headers: apiResponseHeaders({ cacheControl: 'public, max-age=60', cors: false }) }
     );
   } catch (error) {
     console.error('[API/health] Error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch health data' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'Failed to fetch health data' }, { status: 500, headers: apiResponseHeaders({ cors: false }) });
   }
 };
