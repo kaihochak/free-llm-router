@@ -826,12 +826,14 @@ function generateTimeBuckets(range: TimeRange): string[] {
  * Get feedback counts grouped by time bucket and model for charting.
  * Returns array of { date, modelId1: count, modelId2: count, ... }
  * Includes all time buckets even if empty.
+ * @param modelIds - Optional filter to only include specific model IDs in the timeline
  */
 export async function getFeedbackTimeline(
   db: Database,
   range: TimeRange,
   userId?: string,
-  statsDbUrl?: string
+  statsDbUrl?: string,
+  modelIds?: string[]
 ): Promise<TimelinePoint[]> {
   const windowMs = TIME_RANGE_MS[range];
   // Use hourly buckets for 24h, daily for 7d/30d
@@ -848,8 +850,15 @@ export async function getFeedbackTimeline(
     const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
     const rows = await getErrorTimelineStats(statsDbUrl, startTs, endTs);
 
+    // Create a Set for O(1) lookup if modelIds filter is provided
+    const modelIdSet = modelIds ? new Set(modelIds) : null;
+
     const dataMap: Record<string, Record<string, TimelineModelData>> = {};
     for (const row of rows) {
+      // Skip if modelIds filter is provided and this model is not in the list
+      if (modelIdSet && !modelIdSet.has(row.modelId)) {
+        continue;
+      }
       const bucket = row.bucket.toISOString().replace('T', ' ').slice(0, 19);
       if (!dataMap[bucket]) {
         dataMap[bucket] = {};
@@ -885,9 +894,16 @@ export async function getFeedbackTimeline(
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
 
+  // Create a Set for O(1) lookup if modelIds filter is provided
+  const modelIdSet = modelIds ? new Set(modelIds) : null;
+
   // Build map of actual data - store error rate percentage and counts
   const dataMap: Record<string, Record<string, TimelineModelData>> = {};
   for (const row of results) {
+    // Skip if modelIds filter is provided and this model is not in the list
+    if (modelIdSet && !modelIdSet.has(row.modelId)) {
+      continue;
+    }
     if (!dataMap[row.bucket]) {
       dataMap[row.bucket] = {};
     }
