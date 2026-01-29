@@ -16,7 +16,7 @@ import {
   filterModelsByUseCase,
   sortModels,
 } from '../lib/model-types';
-import { type TimeRange, TIME_RANGE_MS } from '../lib/api-definitions';
+import { type TimeRange, TIME_RANGE_MS, DEFAULT_TIME_RANGE } from '../lib/api-definitions';
 
 // Re-export types and validation functions for backwards compatibility
 export { type UseCaseType, type SortType, validateUseCases, validateSort };
@@ -228,7 +228,7 @@ export async function getActiveModels(db: Database) {
  */
 async function getActiveModelsWithFeedback(
   db: Database,
-  timeRange: TimeRange = '24h',
+  timeRange: TimeRange = DEFAULT_TIME_RANGE,
   userId?: string,
   statsDbUrl?: string
 ) {
@@ -258,7 +258,7 @@ export async function getFilteredModels(
   useCases: UseCaseType[],
   sort: SortType,
   maxErrorRate?: number,
-  timeRange: TimeRange = '24h',
+  timeRange: TimeRange = DEFAULT_TIME_RANGE,
   userId?: string,
   statsDbUrl?: string
 ) {
@@ -298,7 +298,7 @@ export interface FeedbackCounts {
 
 export async function getRecentFeedbackCounts(
   db: Database,
-  timeRange: TimeRange = '24h',
+  timeRange: TimeRange = DEFAULT_TIME_RANGE,
   userId?: string,
   statsDbUrl?: string
 ): Promise<FeedbackCounts> {
