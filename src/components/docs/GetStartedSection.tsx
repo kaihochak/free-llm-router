@@ -115,7 +115,7 @@ export function GetStartedSection() {
       </div>
 
       {/* Docs usage steps without the embedded preview to avoid duplication */}
-      <ApiUsageStep showBrowseModels={false} />
+      <ApiUsageStep />
     </section>
   );
 }

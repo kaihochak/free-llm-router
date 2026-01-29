@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCachedSession } from '@/lib/auth-client';
+import { QueryProvider } from '@/components/QueryProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserInfo } from './UserInfoCard';
@@ -7,6 +8,14 @@ import { ApiKeysTab } from './ApiKeysTab';
 import { HistoryTab } from './HistoryTab';
 
 export function DashboardPage() {
+  return (
+    <QueryProvider>
+      <DashboardPageContent />
+    </QueryProvider>
+  );
+}
+
+function DashboardPageContent() {
   const { data: session, isPending } = useCachedSession();
   const [userRateLimit, setUserRateLimit] = useState<{
     remaining: number;
@@ -78,7 +87,7 @@ export function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
-          <HistoryTab />
+          <HistoryTab isSessionReady={!!session?.user} />
         </TabsContent>
       </Tabs>
     </div>
