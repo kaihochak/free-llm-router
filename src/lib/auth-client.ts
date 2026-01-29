@@ -5,6 +5,9 @@ import { apiKeyClient } from 'better-auth/client/plugins';
 export const authClient = createAuthClient({
   baseURL: typeof window !== 'undefined' ? window.location.origin : '',
   plugins: [apiKeyClient()],
+  fetchOptions: {
+    credentials: 'include',
+  },
 });
 
 export type Session = typeof authClient.$Infer.Session;
@@ -45,17 +48,14 @@ export function useCachedSession() {
   const cache = getSessionCache();
   const initialData = cache?.data;
   const [data, setData] = useState<Session | null | undefined>(initialData);
-  // Only show pending state if we're actively fetching, not on initial mount
-  // This prevents the login button from being disabled on first page load
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, setIsPending] = useState(initialData === undefined);
 
   useEffect(() => {
     if (!cache || cache.data !== undefined) {
+      setIsPending(false);
       return;
     }
 
-    // Set pending only when we actually start fetching
-    setIsPending(true);
     fetchSession(cache)
       .then((session) => {
         setData(session);

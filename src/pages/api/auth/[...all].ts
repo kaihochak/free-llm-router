@@ -1,13 +1,18 @@
 import type { APIRoute } from 'astro';
 import { createAuth, type AuthEnv } from '@/lib/auth';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+function getCorsHeaders(request: Request) {
+  const origin = request.headers.get('origin') || '';
+  return {
+    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
 export const ALL: APIRoute = async ({ request, locals }) => {
+  const corsHeaders = getCorsHeaders(request);
   const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
   const env = runtime?.env || {};
 
