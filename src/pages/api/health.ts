@@ -68,18 +68,22 @@ export const GET: APIRoute = async (context) => {
     const maxErrorRateParam = params.get('maxErrorRate');
     const maxErrorRate = maxErrorRateParam ? parseFloat(maxErrorRateParam) : undefined;
 
-    const [issues, timeline] = await Promise.all([
-      getFeedbackCountsByRange(db, {
-        range,
-        userId,
-        statsDbUrl,
-        useCases: useCases && useCases.length > 0 ? useCases : undefined,
-        sort,
-        topN: topN && topN > 0 ? topN : undefined,
-        maxErrorRate: maxErrorRate !== undefined && !isNaN(maxErrorRate) ? maxErrorRate : undefined,
-      }),
-      getFeedbackTimeline(db, range, userId, statsDbUrl),
-    ]);
+    // Get filtered issues first
+    const issues = await getFeedbackCountsByRange(db, {
+      range,
+      userId,
+      statsDbUrl,
+      useCases: useCases && useCases.length > 0 ? useCases : undefined,
+      sort,
+      topN: topN && topN > 0 ? topN : undefined,
+      maxErrorRate: maxErrorRate !== undefined && !isNaN(maxErrorRate) ? maxErrorRate : undefined,
+    });
+
+    // Extract model IDs from filtered issues to filter timeline
+    const filteredModelIds = issues.map((i) => i.modelId);
+
+    // Get timeline filtered to only include the filtered models
+    const timeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, filteredModelIds);
 
     return jsonResponse(
       {
