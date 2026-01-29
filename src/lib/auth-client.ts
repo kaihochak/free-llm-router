@@ -45,14 +45,17 @@ export function useCachedSession() {
   const cache = getSessionCache();
   const initialData = cache?.data;
   const [data, setData] = useState<Session | null | undefined>(initialData);
-  const [isPending, setIsPending] = useState(initialData === undefined);
+  // Only show pending state if we're actively fetching, not on initial mount
+  // This prevents the login button from being disabled on first page load
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     if (!cache || cache.data !== undefined) {
-      setIsPending(false);
       return;
     }
 
+    // Set pending only when we actually start fetching
+    setIsPending(true);
     fetchSession(cache)
       .then((session) => {
         setData(session);
