@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { modelFeedback } from '@/db';
 import { initializeAuthOnly } from '@/lib/api-params';
 import { corsHeaders, logApiRequest } from '@/lib/api-auth';
+import { apiResponseHeaders, jsonResponse, noContentResponse } from '@/lib/api-response';
 
 const VALID_ISSUES = ['rate_limited', 'unavailable', 'error'] as const;
 
@@ -22,33 +23,27 @@ export const POST: APIRoute = async (context) => {
     const { modelId, success, issue, details, dryRun } = body;
 
     if (!modelId || typeof modelId !== 'string') {
-      return new Response(JSON.stringify({ error: 'modelId is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse(
+        { error: 'modelId is required' },
+        { status: 400, headers: apiResponseHeaders() }
+      );
     }
 
     // Validate success/issue logic
     if (success === true) {
       // Success report - issue must not be provided
       if (issue) {
-        return new Response(
-          JSON.stringify({ error: 'Cannot provide both success=true and issue field' }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          }
+        return jsonResponse(
+          { error: 'Cannot provide both success=true and issue field' },
+          { status: 400, headers: apiResponseHeaders() }
         );
       }
     } else {
       // Issue report - issue field required
       if (!issue || !VALID_ISSUES.includes(issue)) {
-        return new Response(
-          JSON.stringify({ error: `issue must be one of: ${VALID_ISSUES.join(', ')}` }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          }
+        return jsonResponse(
+          { error: `issue must be one of: ${VALID_ISSUES.join(', ')}` },
+          { status: 400, headers: apiResponseHeaders() }
         );
       }
     }
@@ -80,10 +75,7 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    return jsonResponse({ received: true }, { headers: apiResponseHeaders() });
   } catch (error) {
     console.error('[API/feedback] Error:', error);
 
@@ -99,16 +91,10 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Failed to submit feedback' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    return jsonResponse({ error: 'Failed to submit feedback' }, { status: 500, headers: apiResponseHeaders() });
   }
 };
 
 export const OPTIONS: APIRoute = async () => {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+  return noContentResponse({ headers: corsHeaders });
 };
