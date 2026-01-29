@@ -228,7 +228,13 @@ export function HistoryTab() {
         </div>
       </CardHeader>
       <CardContent>
-        {activeSection === 'requests' ? <RequestHistoryTable /> : <UsageReportsTable />}
+        {/* Keep both components mounted to prevent refetching on tab switch */}
+        <div className={activeSection === 'requests' ? '' : 'hidden'}>
+          <RequestHistoryTable />
+        </div>
+        <div className={activeSection === 'reports' ? '' : 'hidden'}>
+          <UsageReportsTable />
+        </div>
       </CardContent>
     </Card>
   );

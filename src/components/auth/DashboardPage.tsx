@@ -16,7 +16,9 @@ export function DashboardPage() {
 
   const fetchUserRateLimit = useCallback(async () => {
     try {
-      const response = await fetch('/api/auth/rate-limit');
+      const response = await fetch('/api/auth/rate-limit', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setUserRateLimit({
