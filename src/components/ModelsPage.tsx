@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { QueryProvider } from '@/components/QueryProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { HealthTabContent } from '@/components/HealthTabContent';
+import { HealthTabContent } from '@/components/model-health/HealthTabContent';
 import { AvailabilityTabContent } from '@/components/model-availability/AvailabilityTabContent';
 
 export function ModelsPage() {

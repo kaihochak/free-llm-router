@@ -83,55 +83,25 @@ export const GET: APIRoute = async (context) => {
     // Extract model IDs from filtered issues to filter timeline
     const filteredModelIds = issues.map((i) => i.modelId);
 
-    // Get timeline filtered to only include the filtered models
-    let timeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, filteredModelIds);
+    // Single source: stats DB functions (fma_stats role / RLS-compliant)
+    const timeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, filteredModelIds);
 
-    const normalizeId = (id: string) => id.toLowerCase().replace(/:free$/, '');
-    const issueIdMap = new Map(issues.map((i) => [normalizeId(i.modelId), i.modelId]));
+    // Helper: does timeline have any series data (beyond date/meta)
+    const hasSeries = (points: typeof timeline) =>
+      points.some((p) => Object.keys(p).some((k) => k !== 'date' && !k.endsWith('_meta')));
 
-    const timelineHasData = timeline.some((point) => Object.keys(point).length > 1);
-
-    // Fallback 1: re-fetch without model filter, then remap to issue IDs
-    if (!timelineHasData && issues.length > 0) {
-      const allTimeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, undefined);
-      const filteredTimeline = allTimeline
-        .map((point) => {
-          const next: Record<string, unknown> = { date: point.date };
-          Object.keys(point).forEach((key) => {
-            if (key === 'date' || key.endsWith('_meta')) return;
-            const canonicalId = issueIdMap.get(normalizeId(key));
-            if (!canonicalId) return;
-            next[canonicalId] = point[key];
-            const metaKey = `${key}_meta`;
-            if (point[metaKey]) {
-              next[`${canonicalId}_meta`] = point[metaKey];
-            }
-          });
-          return next;
-        })
-        .filter((p) => Object.keys(p).length > 1);
-
-      if (filteredTimeline.length > 0) {
-        timeline = filteredTimeline;
-      }
+    // Log current timeline
+    try {
+      console.info('[API/health] timeline (stats)', {
+        filteredModelIds: filteredModelIds.length,
+        rows: timeline.length,
+        hasData: hasSeries(timeline),
+        sample: timeline.slice(0, 3),
+      });
+    } catch (err) {
+      console.warn('[API/health] failed to log timeline sample', err);
     }
 
-    // Fallback 2: synthesize a single point from aggregated issues
-    const timelineStillEmpty = timeline.every((point) => Object.keys(point).length <= 1);
-    if (timelineStillEmpty && issues.length > 0) {
-      const nowBucket = new Date().toISOString().replace('T', ' ').slice(0, 19);
-      const fallbackPoint: Record<string, unknown> = { date: nowBucket };
-      for (const issue of issues) {
-        const totalCount = issue.successCount + issue.total;
-        fallbackPoint[issue.modelId] = totalCount > 0 ? issue.errorRate : 0;
-        fallbackPoint[`${issue.modelId}_meta`] = {
-          errorRate: issue.errorRate,
-          errorCount: issue.total,
-          totalCount,
-        };
-      }
-      timeline = [fallbackPoint];
-    }
 
     return jsonResponse(
       {
