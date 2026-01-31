@@ -55,14 +55,19 @@ export const GET: APIRoute = async (context) => {
     const models = topN ? allModels.slice(0, topN) : allModels;
     const ids = models.map((m) => m.id);
 
-    // Log request
-    logApiRequest(databaseUrl, {
+    // Log request and get requestId
+    const requestId = await logApiRequest(databaseUrl, {
       userId: validation.userId!,
       apiKeyId: validation.keyId!,
       endpoint: '/api/v1/models/ids',
       method: 'GET',
       statusCode: 200,
       responseTimeMs: Math.round(performance.now() - startTime),
+      responseData: {
+        ids,
+        count: ids.length,
+        params: { useCases, sort, topN, maxErrorRate, timeRange, myReports },
+      },
     });
 
     // Build response headers
@@ -81,6 +86,7 @@ export const GET: APIRoute = async (context) => {
       {
         ids,
         count: ids.length,
+        requestId,
         _meta: !freshness.isFresh ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) } : undefined,
       },
       { headers }
