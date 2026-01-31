@@ -76,7 +76,8 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
 
   // Get database connection
   const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
+  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
+  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
 
   if (!databaseUrl) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
@@ -117,7 +118,8 @@ export async function getUserIdIfMyReports(
  */
 export async function initializeDb(context: APIContext): Promise<Database | Response> {
   const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
+  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
+  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
 
   if (!databaseUrl) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
@@ -160,7 +162,8 @@ export async function initializeAuthOnly(context: APIContext): Promise<AuthOnlyC
   }
 
   const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
+  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
+  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
 
   if (!databaseUrl) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {

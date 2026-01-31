@@ -17,14 +17,23 @@ const API_LOGS_RETENTION_DAYS = 30;
  * - model_feedback older than 90 days
  * - api_request_logs older than 30 days
  */
+type CleanupDeps = {
+  createDb?: typeof createDb;
+  now?: () => Date;
+};
+
 export const POST: APIRoute = async ({ request, locals }) => {
   const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const adminSecret = runtime?.env?.ADMIN_SECRET || import.meta.env.ADMIN_SECRET;
+  const deps = (locals as { cleanupDeps?: CleanupDeps }).cleanupDeps;
+  const dbFactory = deps?.createDb ?? createDb;
+  const now = deps?.now ? deps.now() : new Date();
+  const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
+  const adminSecret = runtime?.env?.ADMIN_SECRET || importMetaEnv?.ADMIN_SECRET;
   const databaseUrl =
     runtime?.env?.DATABASE_URL_ADMIN ||
-    import.meta.env.DATABASE_URL_ADMIN ||
+    importMetaEnv?.DATABASE_URL_ADMIN ||
     runtime?.env?.DATABASE_URL ||
-    import.meta.env.DATABASE_URL;
+    importMetaEnv?.DATABASE_URL;
 
   // Validate admin secret
   if (!adminSecret) {
@@ -50,8 +59,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const db = createDb(databaseUrl);
-    const now = new Date();
+    const db = dbFactory(databaseUrl);
 
     // Calculate cutoff dates
     const feedbackCutoff = new Date(now.getTime() - MODEL_FEEDBACK_RETENTION_DAYS * 24 * 60 * 60 * 1000);
