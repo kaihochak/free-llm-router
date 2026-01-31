@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 export interface ResponseDataParams {
   useCases?: string[];
@@ -37,6 +37,9 @@ export interface FeedbackItem {
   details: string | null;
   source: string | null;
   createdAt: string;
+  apiKeyId: string | null;
+  apiKeyName: string | null;
+  apiKeyPrefix: string | null;
 }
 
 export interface LinkedFeedbackItem {
@@ -71,26 +74,18 @@ export interface UnifiedHistoryItem {
   details: string | null;
 }
 
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  hasMore: boolean;
-}
-
 interface HistoryResponse<T> {
   items: T[];
-  pagination: Pagination;
+  hasMore: boolean;
 }
 
 interface UseHistoryResult<T> {
   items: T[];
-  pagination: Pagination;
+  hasMore: boolean;
   isLoading: boolean;
+  isFetchingMore: boolean;
   error: string | null;
-  nextPage: () => void;
-  prevPage: () => void;
-  goToPage: (page: number) => void;
+  loadMore: () => void;
   refresh: () => void;
 }
 
@@ -102,7 +97,7 @@ async function fetchHistory<T>(
   type: string,
   page: number,
   limit: number
-): Promise<HistoryResponse<T>> {
+): Promise<HistoryResponse<T> & { page: number }> {
   const response = await fetch(`/api/auth/history?type=${type}&page=${page}&limit=${limit}`, {
     credentials: 'include',
   });
@@ -125,7 +120,8 @@ async function fetchHistory<T>(
 
   return {
     items: payload.items ?? [],
-    pagination: payload.pagination ?? { page, limit, total: 0, hasMore: false },
+    hasMore: payload.hasMore ?? false,
+    page,
   };
 }
 
@@ -134,36 +130,39 @@ export function useHistory<T extends ApiRequestLog | FeedbackItem | UnifiedHisto
   limit = 20,
   options?: UseHistoryOptions
 ): UseHistoryResult<T> {
-  const [page, setPage] = useState(1);
-
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['history', type, page, limit],
-    queryFn: () => fetchHistory<T>(type, page, limit),
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ['history', type, limit],
+    queryFn: ({ pageParam }) => fetchHistory<T>(type, pageParam, limit),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     enabled: options?.enabled ?? true,
   });
 
-  const nextPage = useCallback(() => {
-    if (data?.pagination.hasMore) {
-      setPage((p) => p + 1);
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [data?.pagination.hasMore]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const prevPage = useCallback(() => {
-    setPage((p) => Math.max(1, p - 1));
-  }, []);
-
-  const goToPage = useCallback((newPage: number) => {
-    setPage(Math.max(1, newPage));
-  }, []);
+  // Flatten all pages into a single items array
+  const items = data?.pages.flatMap((page) => page.items) ?? [];
+  const hasMore = hasNextPage ?? false;
 
   return {
-    items: data?.items ?? [],
-    pagination: data?.pagination ?? { page, limit, total: 0, hasMore: false },
+    items,
+    hasMore,
     isLoading,
+    isFetchingMore: isFetchingNextPage,
     error: error instanceof Error ? error.message : error ? String(error) : null,
-    nextPage,
-    prevPage,
-    goToPage,
+    loadMore,
     refresh: refetch,
   };
 }

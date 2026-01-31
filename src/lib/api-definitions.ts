@@ -194,9 +194,9 @@ export const DEFAULT_USE_CASE: UseCaseType[] = [];
 export const DEFAULT_SORT: SortType = 'contextLength';
 export const DEFAULT_TOP_N: number | undefined = 5;
 export const DEFAULT_MAX_ERROR_RATE: number | undefined = 10;
-export const DEFAULT_TIME_RANGE: TimeRange = '30m';
-export const DEFAULT_MY_REPORTS: boolean = true;
-export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = true;
+export const DEFAULT_TIME_RANGE: TimeRange = '24h';
+export const DEFAULT_MY_REPORTS: boolean = false;
+export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = false;
 
 // ==================== UI TOOLTIP CONTENT ====================
 
