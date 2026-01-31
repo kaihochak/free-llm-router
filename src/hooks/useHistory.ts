@@ -1,12 +1,28 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+export interface ResponseDataParams {
+  useCases?: string[];
+  sort?: string;
+  topN?: number;
+  maxErrorRate?: number;
+  timeRange?: string;
+  myReports?: boolean;
+}
+
+export interface ParsedResponseData {
+  ids: string[];
+  count: number;
+  params?: ResponseDataParams;
+}
+
 export interface ApiRequestLog {
   id: string;
   endpoint: string;
   method: string;
   statusCode: number;
   responseTimeMs: number | null;
+  responseData: string | null; // JSON string: {"ids": [...], "count": N, "params": {...}}
   createdAt: string;
   apiKeyId: string | null;
   apiKeyName: string | null;
@@ -21,6 +37,38 @@ export interface FeedbackItem {
   details: string | null;
   source: string | null;
   createdAt: string;
+}
+
+export interface LinkedFeedbackItem {
+  id: string;
+  modelId: string;
+  isSuccess: boolean;
+  issue: string | null;
+  details: string | null;
+  createdAt: string;
+}
+
+export interface UnifiedHistoryItem {
+  id: string;
+  type: 'request' | 'feedback';
+  createdAt: string;
+  // Request fields (null for feedback)
+  endpoint: string | null;
+  method: string | null;
+  statusCode: number | null;
+  responseTimeMs: number | null;
+  responseData: string | null; // JSON string: {"ids": [...], "count": N, "params": {...}}
+  apiKeyId: string | null;
+  apiKeyName: string | null;
+  apiKeyPrefix: string | null;
+  // Linked feedback (for requests only)
+  linkedFeedback?: LinkedFeedbackItem[];
+  timeToFirstFeedbackMs?: number | null;
+  // Feedback fields (null for requests)
+  modelId: string | null;
+  isSuccess: boolean | null;
+  issue: string | null;
+  details: string | null;
 }
 
 export interface Pagination {
@@ -81,8 +129,8 @@ async function fetchHistory<T>(
   };
 }
 
-export function useHistory<T extends ApiRequestLog | FeedbackItem>(
-  type: 'requests' | 'feedback',
+export function useHistory<T extends ApiRequestLog | FeedbackItem | UnifiedHistoryItem>(
+  type: 'requests' | 'feedback' | 'unified',
   limit = 20,
   options?: UseHistoryOptions
 ): UseHistoryResult<T> {

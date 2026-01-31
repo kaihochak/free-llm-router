@@ -23,7 +23,8 @@ export const freeModels = pgTable('free_models', {
 export const modelFeedback = pgTable('model_feedback', {
   id: text('id').primaryKey(),
   modelId: text('model_id').notNull(),
-  isSuccess: boolean('is_success').notNull().default(false), // NEW: true for success reports, false for issues
+  requestId: text('request_id'), // Optional link to api_request_logs.id for correlation
+  isSuccess: boolean('is_success').notNull().default(false), // true for success reports, false for issues
   issue: text('issue'), // 'rate_limited' | 'unavailable' | 'error' (nullable for success reports)
   details: text('details'),
   source: text('source'),
