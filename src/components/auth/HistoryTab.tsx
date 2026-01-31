@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { authClient } from '@/lib/auth-client';
 import {
   useHistory,
   type ApiRequestLog,
@@ -17,7 +18,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Clock, FileText, RefreshCw, ChevronDown } from 'lucide-react';
+import { Clock, FileText, RefreshCw, ChevronDown, Key } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 function formatTimeAgo(dateStr: string): string {
@@ -126,9 +134,9 @@ function SeeMoreButton({
   );
 }
 
-function RequestHistoryTable({ enabled }: { enabled?: boolean }) {
+function RequestHistoryTable({ enabled, apiKeyId }: { enabled?: boolean; apiKeyId?: string | null }) {
   const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
-    useHistory<ApiRequestLog>('requests', 15, { enabled });
+    useHistory<ApiRequestLog>('requests', 15, { enabled, apiKeyId });
 
   if (isLoading && items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">Loading request history...</p>;
@@ -204,9 +212,9 @@ function RequestHistoryTable({ enabled }: { enabled?: boolean }) {
   );
 }
 
-function UsageReportsTable({ enabled }: { enabled?: boolean }) {
+function UsageReportsTable({ enabled, apiKeyId }: { enabled?: boolean; apiKeyId?: string | null }) {
   const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
-    useHistory<FeedbackItem>('feedback', 15, { enabled });
+    useHistory<FeedbackItem>('feedback', 15, { enabled, apiKeyId });
 
   if (isLoading && items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">Loading usage reports...</p>;
@@ -395,9 +403,9 @@ function UnifiedHistoryRows({ items }: { items: UnifiedHistoryItem[] }) {
   );
 }
 
-function UnifiedHistoryTable({ enabled }: { enabled?: boolean }) {
+function UnifiedHistoryTable({ enabled, apiKeyId }: { enabled?: boolean; apiKeyId?: string | null }) {
   const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
-    useHistory<UnifiedHistoryItem>('unified', 15, { enabled });
+    useHistory<UnifiedHistoryItem>('unified', 15, { enabled, apiKeyId });
 
   if (isLoading && items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">Loading activity...</p>;
@@ -447,6 +455,18 @@ function UnifiedHistoryTable({ enabled }: { enabled?: boolean }) {
 
 export function HistoryTab({ isSessionReady }: { isSessionReady?: boolean }) {
   const [filter, setFilter] = useState<'unified' | 'requests' | 'feedback'>('unified');
+  const [apiKeys, setApiKeys] = useState<{ id: string; name: string }[]>([]);
+  const [selectedApiKeyId, setSelectedApiKeyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isSessionReady) {
+      authClient.apiKey.list().then((res) => {
+        if (res.data) {
+          setApiKeys(res.data.map((k) => ({ id: k.id, name: k.name || 'Unnamed' })));
+        }
+      });
+    }
+  }, [isSessionReady]);
 
   return (
     <Card>
@@ -477,18 +497,36 @@ export function HistoryTab({ isSessionReady }: { isSessionReady?: boolean }) {
             <FileText className="h-4 w-4 mr-2" />
             Feedback
           </Button>
+          <div className="flex-1" />
+          <Select
+            value={selectedApiKeyId || 'all'}
+            onValueChange={(v) => setSelectedApiKeyId(v === 'all' ? null : v)}
+          >
+            <SelectTrigger size="sm" className="w-45">
+              <Key className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="All API Keys" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All API Keys</SelectItem>
+              {apiKeys.map((key) => (
+                <SelectItem key={key.id} value={key.id}>
+                  {key.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
         {/* Keep all components mounted to prevent refetching on filter switch */}
         <div className={filter === 'unified' ? '' : 'hidden'}>
-          <UnifiedHistoryTable enabled={isSessionReady} />
+          <UnifiedHistoryTable enabled={isSessionReady} apiKeyId={selectedApiKeyId} />
         </div>
         <div className={filter === 'requests' ? '' : 'hidden'}>
-          <RequestHistoryTable enabled={isSessionReady} />
+          <RequestHistoryTable enabled={isSessionReady} apiKeyId={selectedApiKeyId} />
         </div>
         <div className={filter === 'feedback' ? '' : 'hidden'}>
-          <UsageReportsTable enabled={isSessionReady} />
+          <UsageReportsTable enabled={isSessionReady} apiKeyId={selectedApiKeyId} />
         </div>
       </CardContent>
     </Card>
