@@ -55,3 +55,14 @@ export const siteFeedback = pgTable('site_feedback', {
 
 export type SiteFeedback = typeof siteFeedback.$inferSelect;
 export type NewSiteFeedback = typeof siteFeedback.$inferInsert;
+
+export const modelAvailabilitySnapshots = pgTable('model_availability_snapshots', {
+  id: text('id').primaryKey(), // Format: "{modelId}_{YYYY-MM-DD}"
+  modelId: text('model_id').notNull(),
+  snapshotDate: timestamp('snapshot_date').notNull(),
+  isAvailable: boolean('is_available').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export type ModelAvailabilitySnapshot = typeof modelAvailabilitySnapshots.$inferSelect;
+export type NewModelAvailabilitySnapshot = typeof modelAvailabilitySnapshots.$inferInsert;
