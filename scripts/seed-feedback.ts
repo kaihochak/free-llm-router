@@ -3,7 +3,7 @@
 
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { modelFeedback, freeModels } from '../src/db/schema';
+import { modelFeedback, freeModels, modelAvailabilitySnapshots } from '../src/db/schema';
 import { apiRequestLogs, users, apiKeys } from '../src/db/auth-schema';
 import { eq } from 'drizzle-orm';
 
@@ -261,9 +261,67 @@ async function seed() {
   }
 
   const linkedCount = feedbackRecords.filter((f) => f.requestId).length;
-  console.log('Done seeding!');
+  console.log('Done seeding feedback!');
   console.log(`  - ${requestRecords.length} request logs`);
   console.log(`  - ${feedbackRecords.length} feedback records (${linkedCount} linked to requests)`);
+
+  // Seed availability snapshots
+  await seedAvailability(models);
+}
+
+/**
+ * Seeds historical availability data for all active models.
+ * Creates daily snapshots going back 30 days (or to model's createdAt, whichever is more recent).
+ */
+async function seedAvailability(models: (typeof freeModels.$inferSelect)[]) {
+  console.log('\nSeeding availability snapshots...');
+
+  const maxDays = 30;
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const availabilityRecords: (typeof modelAvailabilitySnapshots.$inferInsert)[] = [];
+
+  for (const model of models) {
+    // Determine start date: either createdAt or maxDays ago, whichever is more recent
+    const modelCreatedAt = model.createdAt ? new Date(model.createdAt) : today;
+    modelCreatedAt.setUTCHours(0, 0, 0, 0);
+
+    const maxDaysAgo = new Date(today);
+    maxDaysAgo.setUTCDate(maxDaysAgo.getUTCDate() - maxDays);
+
+    const startDate = modelCreatedAt > maxDaysAgo ? modelCreatedAt : maxDaysAgo;
+
+    // Create records for each day from startDate to today
+    const currentDate = new Date(startDate);
+    while (currentDate <= today) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      const snapshotId = `${model.id}_${dateString}`;
+
+      availabilityRecords.push({
+        id: snapshotId,
+        modelId: model.id,
+        snapshotDate: new Date(currentDate),
+        isAvailable: true,
+      });
+
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
+  }
+
+  console.log(`Inserting ${availabilityRecords.length} availability snapshots...`);
+
+  // Insert in batches, using onConflictDoNothing to skip existing records
+  const batchSize = 100;
+  let inserted = 0;
+  for (let i = 0; i < availabilityRecords.length; i += batchSize) {
+    const batch = availabilityRecords.slice(i, i + batchSize);
+    await db.insert(modelAvailabilitySnapshots).values(batch).onConflictDoNothing();
+    inserted += batch.length;
+    console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(availabilityRecords.length / batchSize)}`);
+  }
+
+  console.log(`Done seeding availability! ${availabilityRecords.length} records for ${models.length} models over ${maxDays} days`);
 }
 
 seed().catch(console.error);
