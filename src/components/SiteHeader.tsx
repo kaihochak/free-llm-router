@@ -24,8 +24,8 @@ export function SiteHeader({ showSidebarTrigger = true }: SiteHeaderProps) {
             <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
               Docs
             </a>
-            <a href="/health" className="text-sm text-muted-foreground hover:text-foreground">
-              Health
+            <a href="/models" className="text-sm text-muted-foreground hover:text-foreground">
+              Models
             </a>
             <FeedbackDialog />
           </nav>
