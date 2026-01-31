@@ -91,14 +91,23 @@ interface UseHistoryResult<T> {
 
 interface UseHistoryOptions {
   enabled?: boolean;
+  apiKeyId?: string | null;
 }
 
 async function fetchHistory<T>(
   type: string,
   page: number,
-  limit: number
+  limit: number,
+  apiKeyId?: string | null
 ): Promise<HistoryResponse<T> & { page: number }> {
-  const response = await fetch(`/api/auth/history?type=${type}&page=${page}&limit=${limit}`, {
+  const params = new URLSearchParams({
+    type,
+    page: String(page),
+    limit: String(limit),
+  });
+  if (apiKeyId) params.set('apiKeyId', apiKeyId);
+
+  const response = await fetch(`/api/auth/history?${params}`, {
     credentials: 'include',
   });
 
@@ -139,8 +148,8 @@ export function useHistory<T extends ApiRequestLog | FeedbackItem | UnifiedHisto
     hasNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['history', type, limit],
-    queryFn: ({ pageParam }) => fetchHistory<T>(type, pageParam, limit),
+    queryKey: ['history', type, limit, options?.apiKeyId],
+    queryFn: ({ pageParam }) => fetchHistory<T>(type, pageParam, limit, options?.apiKeyId),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     enabled: options?.enabled ?? true,
