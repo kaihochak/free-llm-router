@@ -3,6 +3,7 @@ import {
   freeModels,
   modelFeedback,
   syncMeta,
+  modelAvailabilitySnapshots,
   type Database,
   getFeedbackCounts as getFeedbackCountsStats,
   getErrorTimeline as getErrorTimelineStats,
@@ -181,12 +182,52 @@ export async function syncModels(db: Database): Promise<SyncResult> {
         set: { value: new Date().toISOString(), updatedAt: new Date() },
       });
 
+    // Record daily availability snapshot for all seen models
+    await recordDailyAvailabilitySnapshot(db, seenIds);
+
     return result;
   } catch (error) {
     console.error('[OpenRouterSync] Sync failed:', error);
     result.error = error instanceof Error ? error.message : 'Unknown error';
     return result;
   }
+}
+
+/**
+ * Records a daily availability snapshot for models seen during sync.
+ * Uses composite key {modelId}_{YYYY-MM-DD} to ensure one record per model per day.
+ * Multiple syncs per day will update the same record.
+ */
+export async function recordDailyAvailabilitySnapshot(
+  db: Database,
+  seenModelIds: string[]
+): Promise<{ recorded: number }> {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+  let recorded = 0;
+
+  for (const modelId of seenModelIds) {
+    const snapshotId = `${modelId}_${dateString}`;
+
+    await db
+      .insert(modelAvailabilitySnapshots)
+      .values({
+        id: snapshotId,
+        modelId,
+        snapshotDate: today,
+        isAvailable: true,
+      })
+      .onConflictDoUpdate({
+        target: modelAvailabilitySnapshots.id,
+        set: { isAvailable: true },
+      });
+
+    recorded++;
+  }
+
+  return { recorded };
 }
 
 export async function getLastUpdated(db: Database): Promise<Date | null> {
@@ -851,34 +892,65 @@ export async function getFeedbackTimeline(
     : null;
   const normalizeBucket = (bucket: string) => bucket.replace('T', ' ').replace(/([+-].*|Z)$/, '').slice(0, 19);
 
+  const bucketForRange = (bucket: string): string => {
+    const d = new Date(bucket);
+    if (range === '15m' || range === '1h') {
+      d.setUTCSeconds(0, 0);
+    } else if (range === '6h' || range === '24h') {
+      d.setUTCMinutes(0, 0, 0);
+    } else {
+      // 7d, 30d
+      d.setUTCHours(0, 0, 0, 0);
+    }
+    return d.toISOString().replace('T', ' ').slice(0, 19);
+  };
+
   if (!userId && statsDbUrl) {
     const endTs = new Date();
     const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
     const rows = await getErrorTimelineStats(statsDbUrl, startTs, endTs);
 
-    const dataMap: Record<string, Record<string, TimelineModelData>> = {};
+    // Debug: log basic stats DB timeline info (sample row, count)
+    try {
+      console.info('[health.timeline] stats rows', {
+        rows: rows.length,
+        sample: rows.slice(0, 3),
+      });
+    } catch {
+      // ignore logging errors
+    }
+
+    const dataMap: Record<string, Record<string, { errorCount: number; totalCount: number }>> = {};
     for (const row of rows) {
       // Skip if modelIds filter is provided and this model is not in the list
       const normalizedId = normalizeModelId(row.modelId);
       const targetModelId = modelIdMap?.get(normalizedId) ?? row.modelId;
       if (modelIdMap && !modelIdMap.has(normalizedId)) continue;
 
-      const bucket = normalizeBucket(row.bucket);
+      const bucket = bucketForRange(row.bucket);
       if (!dataMap[bucket]) {
         dataMap[bucket] = {};
       }
-      dataMap[bucket][targetModelId] = {
-        errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
-        errorCount: row.errorCount,
-        totalCount: row.totalCount,
-      };
+      if (!dataMap[bucket][targetModelId]) {
+        dataMap[bucket][targetModelId] = { errorCount: 0, totalCount: 0 };
+      }
+      dataMap[bucket][targetModelId].errorCount += row.errorCount;
+      dataMap[bucket][targetModelId].totalCount += row.totalCount;
     }
 
-    const allBuckets = generateTimeBuckets(range);
-    return allBuckets.map((bucket) => ({
-      date: bucket,
-      ...(dataMap[bucket] || {}),
-    }));
+    // Build timeline with computed error rates per bucket/model
+    const allBuckets = Object.keys(dataMap).sort();
+    return allBuckets.map((bucket) => {
+      const point: Record<string, string | number | TimelineModelData> = { date: bucket };
+      const bucketData = dataMap[bucket];
+      for (const modelId in bucketData) {
+        const { errorCount, totalCount } = bucketData[modelId];
+        const errorRate = totalCount > 0 ? Math.round((errorCount / totalCount) * 10000) / 100 : 0;
+        point[modelId] = errorRate;
+        point[`${modelId}_meta`] = { errorRate, errorCount, totalCount };
+      }
+      return point as TimelinePoint;
+    });
   }
 
   const conditions: SQL<unknown>[] = [
@@ -897,6 +969,15 @@ export async function getFeedbackTimeline(
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
+
+  try {
+    console.info('[health.timeline] main rows', {
+      rows: results.length,
+      sample: results.slice(0, 3),
+    });
+  } catch {
+    // ignore logging errors
+  }
 
   // Build map of actual data - store error rate percentage and counts
   const dataMap: Record<string, Record<string, TimelineModelData>> = {};
@@ -931,4 +1012,112 @@ export async function getFeedbackTimeline(
   }
 
   return timeline;
+}
+
+// ============================================================================
+// Model Availability Functions
+// ============================================================================
+
+export interface AvailabilityData {
+  modelId: string;
+  modelName: string;
+  modality: string | null;
+  inputModalities: string[] | null;
+  outputModalities: string[] | null;
+  supportedParameters: string[] | null;
+  contextLength: number | null;
+  maxCompletionTokens: number | null;
+  availability: Record<string, boolean>; // { "2026-01-31": true, "2026-01-30": false, ... }
+}
+
+export interface AvailabilityFilterOptions {
+  days?: number; // Default 90, max 90
+  useCases?: UseCaseType[];
+  sort?: SortType;
+}
+
+/**
+ * Get model availability history over a date range.
+ * Returns models with their daily availability status and all dates in range.
+ */
+export async function getModelAvailability(
+  db: Database,
+  options: AvailabilityFilterOptions = {}
+): Promise<{ models: AvailabilityData[]; dates: string[] }> {
+  const days = Math.min(options.days ?? 90, 90);
+  const cutoffDate = new Date();
+  cutoffDate.setUTCDate(cutoffDate.getUTCDate() - days);
+  cutoffDate.setUTCHours(0, 0, 0, 0);
+
+  // Get all snapshots within range
+  const snapshots = await db
+    .select({
+      modelId: modelAvailabilitySnapshots.modelId,
+      snapshotDate: modelAvailabilitySnapshots.snapshotDate,
+      isAvailable: modelAvailabilitySnapshots.isAvailable,
+    })
+    .from(modelAvailabilitySnapshots)
+    .where(gte(modelAvailabilitySnapshots.snapshotDate, cutoffDate));
+
+  // Get model metadata (all models, not just active, to show historical data)
+  const models = await db
+    .select({
+      id: freeModels.id,
+      name: freeModels.name,
+      modality: freeModels.modality,
+      inputModalities: freeModels.inputModalities,
+      outputModalities: freeModels.outputModalities,
+      supportedParameters: freeModels.supportedParameters,
+      contextLength: freeModels.contextLength,
+      maxCompletionTokens: freeModels.maxCompletionTokens,
+    })
+    .from(freeModels);
+
+  // Build availability map: { modelId: { "2026-01-31": true, ... } }
+  const availabilityMap: Record<string, Record<string, boolean>> = {};
+
+  for (const snapshot of snapshots) {
+    const dateStr = snapshot.snapshotDate.toISOString().split('T')[0];
+
+    if (!availabilityMap[snapshot.modelId]) {
+      availabilityMap[snapshot.modelId] = {};
+    }
+    availabilityMap[snapshot.modelId][dateStr] = snapshot.isAvailable;
+  }
+
+  // Generate all dates in range (oldest first)
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+
+  // Only include models that have at least one availability record
+  const modelsWithAvailability = models.filter((model) => availabilityMap[model.id]);
+
+  // Combine model data with availability
+  let result: AvailabilityData[] = modelsWithAvailability.map((model) => ({
+    modelId: model.id,
+    modelName: model.name,
+    modality: model.modality,
+    inputModalities: model.inputModalities,
+    outputModalities: model.outputModalities,
+    supportedParameters: model.supportedParameters,
+    contextLength: model.contextLength,
+    maxCompletionTokens: model.maxCompletionTokens,
+    availability: availabilityMap[model.id] ?? {},
+  }));
+
+  // Apply use case filtering
+  if (options.useCases && options.useCases.length > 0) {
+    result = filterModelsByUseCase(result, options.useCases);
+  }
+
+  // Apply sorting
+  if (options.sort) {
+    result = sortModels(result, options.sort);
+  }
+
+  return { models: result, dates };
 }
