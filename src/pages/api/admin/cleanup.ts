@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
-import { createDb, modelFeedback, apiRequestLogs } from '@/db';
+import { createDb, modelFeedback, apiRequestLogs, modelAvailabilitySnapshots } from '@/db';
 import { lt } from 'drizzle-orm';
 import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
 
 const MODEL_FEEDBACK_RETENTION_DAYS = 90;
 const API_LOGS_RETENTION_DAYS = 30;
+const AVAILABILITY_SNAPSHOTS_RETENTION_DAYS = 90;
 
 /**
  * Admin endpoint to clean up old data.
@@ -64,6 +65,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Calculate cutoff dates
     const feedbackCutoff = new Date(now.getTime() - MODEL_FEEDBACK_RETENTION_DAYS * 24 * 60 * 60 * 1000);
     const logsCutoff = new Date(now.getTime() - API_LOGS_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const availabilityCutoff = new Date(now.getTime() - AVAILABILITY_SNAPSHOTS_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
     // Delete old model feedback
     const feedbackResult = await db
@@ -75,16 +77,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .delete(apiRequestLogs)
       .where(lt(apiRequestLogs.createdAt, logsCutoff));
 
+    // Delete old availability snapshots
+    const availabilityResult = await db
+      .delete(modelAvailabilitySnapshots)
+      .where(lt(modelAvailabilitySnapshots.snapshotDate, availabilityCutoff));
+
     return jsonResponse(
       {
         success: true,
         deleted: {
           modelFeedback: feedbackResult.rowCount ?? 0,
           apiRequestLogs: logsResult.rowCount ?? 0,
+          availabilitySnapshots: availabilityResult.rowCount ?? 0,
         },
         cutoffs: {
           modelFeedback: feedbackCutoff.toISOString(),
           apiRequestLogs: logsCutoff.toISOString(),
+          availabilitySnapshots: availabilityCutoff.toISOString(),
         },
       },
       { headers: apiResponseHeaders({ cors: false }) }

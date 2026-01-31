@@ -2,12 +2,11 @@ import { useMemo, useCallback } from 'react';
 import { useHealth, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
-import { IssuesChart } from '@/components/HealthChart';
-import { QueryProvider } from '@/components/QueryProvider';
+import { IssuesChart } from '@/components/model-health/HealthChart';
 import { ModelControls } from '@/components/ModelControls';
 import type { Model } from '@/hooks/useModels';
 
-function IssuesPageContent() {
+export function HealthTabContent() {
   const {
     issues,
     timeline,
@@ -61,13 +60,12 @@ function IssuesPageContent() {
   }, [issues]);
 
   return (
-    <section className="scroll-mt-16 sm:mt-4">
-      <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Model Health</h2>
+    <div>
       <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
         {myReports ? 'Your personal' : 'Community-reported'} model health data based on both
         successful requests and reported issues.
       </p>
-      <p className="mb-8 text-sm text-muted-foreground sm:mb-12 sm:text-base">
+      <p className="mb-8 text-sm text-muted-foreground sm:text-base">
         Error rates show the percentage of failed requests relative to total reports. Lower
         percentages indicate healthier models. Help improve this data by reporting both successes
         and issues via the API.
@@ -102,7 +100,7 @@ function IssuesPageContent() {
       {/* Chart */}
       <div className="mt-6 mb-3 flex items-center gap-2">
         <span className="font-medium">Error Rate Over Time</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
+        <span className="text-sm text-emerald-600 dark:text-emerald-400">&#8595; Lower is better</span>
       </div>
       <div className="mb-8">
         <IssuesChart timeline={timeline} issues={issues} range={range} />
@@ -111,17 +109,9 @@ function IssuesPageContent() {
       {/* Issues list */}
       <div className="mb-3 flex items-center gap-2">
         <span className="font-medium">Models by Error Rate</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
+        <span className="text-sm text-emerald-600 dark:text-emerald-400">&#8595; Lower is better</span>
       </div>
       <ModelList models={models} loading={loading} error={error} currentPage={1} />
-    </section>
-  );
-}
-
-export function IssuesPage() {
-  return (
-    <QueryProvider>
-      <IssuesPageContent />
-    </QueryProvider>
+    </div>
   );
 }
