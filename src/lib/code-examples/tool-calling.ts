@@ -1,4 +1,4 @@
-export const toolCalling = `import { getModelIds, reportIssue, issueFromStatus } from './free-llm-router';
+export const toolCalling = `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-llm-router';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, tool } from 'ai';
 import { z } from 'zod';
@@ -22,7 +22,7 @@ async function askWithTools(prompt: string) {
   try {
     // Filter for models that support tool calling
     // SDK has built-in 15-min cache, so this won't hit the API on every call
-    const models = await getModelIds(['tools'], 'capable', 3);
+    const { ids: models, requestId } = await getModelIds(['tools'], 'capable', 3);
 
     for (const id of models) {
       try {
@@ -31,10 +31,11 @@ async function askWithTools(prompt: string) {
           prompt,
           tools,
         });
+        reportSuccess(id, requestId); // Helps improve health metrics
         return { text, toolCalls };
       } catch (e) {
         // Report with correct issue type - free, doesn't use quota
-        reportIssue(id, issueFromStatus(e.status), e.message);
+        reportIssue(id, issueFromStatus(e.status), requestId, e.message);
       }
     }
   } catch {
