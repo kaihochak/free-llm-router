@@ -7,13 +7,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
   try {
     const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
     const env = runtime?.env || {};
+    const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
 
-    const databaseUrl = env.DATABASE_URL || import.meta.env.DATABASE_URL;
-    const databaseUrlAdmin = env.DATABASE_URL_ADMIN || import.meta.env.DATABASE_URL_ADMIN;
-    const baseUrl = env.BETTER_AUTH_URL || import.meta.env.BETTER_AUTH_URL;
-    const secret = env.BETTER_AUTH_SECRET || import.meta.env.BETTER_AUTH_SECRET;
-    const githubClientId = env.GITHUB_CLIENT_ID || import.meta.env.GITHUB_CLIENT_ID;
-    const githubClientSecret = env.GITHUB_CLIENT_SECRET || import.meta.env.GITHUB_CLIENT_SECRET;
+    const databaseUrl = env.DATABASE_URL || importMetaEnv?.DATABASE_URL;
+    const databaseUrlAdmin = env.DATABASE_URL_ADMIN || importMetaEnv?.DATABASE_URL_ADMIN;
+    const baseUrl = env.BETTER_AUTH_URL || importMetaEnv?.BETTER_AUTH_URL;
+    const secret = env.BETTER_AUTH_SECRET || importMetaEnv?.BETTER_AUTH_SECRET;
+    const githubClientId = env.GITHUB_CLIENT_ID || importMetaEnv?.GITHUB_CLIENT_ID;
+    const githubClientSecret = env.GITHUB_CLIENT_SECRET || importMetaEnv?.GITHUB_CLIENT_SECRET;
 
     if (!databaseUrl || !baseUrl || !secret) {
       return new Response(JSON.stringify({ error: 'Server configuration error' }), {
