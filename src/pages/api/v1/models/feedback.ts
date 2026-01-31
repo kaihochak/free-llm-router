@@ -20,7 +20,7 @@ export const POST: APIRoute = async (context) => {
     const { db, databaseUrl, userId, keyId } = authCtx;
 
     const body = await context.request.json();
-    const { modelId, success, issue, details, dryRun } = body;
+    const { modelId, success, issue, details, dryRun, requestId } = body;
 
     if (!modelId || typeof modelId !== 'string') {
       return jsonResponse(
@@ -55,6 +55,7 @@ export const POST: APIRoute = async (context) => {
       await db.insert(modelFeedback).values({
         id,
         modelId,
+        requestId: requestId || null, // Optional link to api_request_logs.id
         isSuccess: success === true,
         issue: success === true ? null : issue,
         details: details || null,
