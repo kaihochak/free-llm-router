@@ -56,6 +56,7 @@ export const POST: APIRoute = async (context) => {
         id,
         modelId,
         requestId: requestId || null, // Optional link to api_request_logs.id
+        apiKeyId: keyId || null, // Track which API key was used
         isSuccess: success === true,
         issue: success === true ? null : issue,
         details: details || null,

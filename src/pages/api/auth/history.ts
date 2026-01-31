@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createAuth, type AuthEnv } from '@/lib/auth';
 import { apiRequestLogs, modelFeedback, apiKeys, withUserContext } from '@/db';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, and, isNull } from 'drizzle-orm';
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
   try {
@@ -49,49 +49,40 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
 
     if (type === 'requests') {
       // Fetch request logs with API key info (RLS-protected)
-      const [items, countResult] = await withUserContext(
+      // Fetch limit+1 to check if there are more items
+      const items = await withUserContext(
         databaseUrl,
         session.user.id,
         async (db) => {
-          return Promise.all([
-            db
-              .select({
-                id: apiRequestLogs.id,
-                endpoint: apiRequestLogs.endpoint,
-                method: apiRequestLogs.method,
-                statusCode: apiRequestLogs.statusCode,
-                responseTimeMs: apiRequestLogs.responseTimeMs,
-                responseData: apiRequestLogs.responseData,
-                createdAt: apiRequestLogs.createdAt,
-                apiKeyId: apiRequestLogs.apiKeyId,
-                apiKeyName: apiKeys.name,
-                apiKeyPrefix: apiKeys.prefix,
-              })
-              .from(apiRequestLogs)
-              .leftJoin(apiKeys, eq(apiRequestLogs.apiKeyId, apiKeys.id))
-              .where(eq(apiRequestLogs.userId, session.user.id)) // Keep WHERE as defense-in-depth
-              .orderBy(desc(apiRequestLogs.createdAt))
-              .limit(limit)
-              .offset(offset),
-            db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(apiRequestLogs)
-              .where(eq(apiRequestLogs.userId, session.user.id)), // Keep WHERE as defense-in-depth
-          ]);
+          return db
+            .select({
+              id: apiRequestLogs.id,
+              endpoint: apiRequestLogs.endpoint,
+              method: apiRequestLogs.method,
+              statusCode: apiRequestLogs.statusCode,
+              responseTimeMs: apiRequestLogs.responseTimeMs,
+              responseData: apiRequestLogs.responseData,
+              createdAt: apiRequestLogs.createdAt,
+              apiKeyId: apiRequestLogs.apiKeyId,
+              apiKeyName: apiKeys.name,
+              apiKeyPrefix: apiKeys.prefix,
+            })
+            .from(apiRequestLogs)
+            .leftJoin(apiKeys, eq(apiRequestLogs.apiKeyId, apiKeys.id))
+            .where(eq(apiRequestLogs.userId, session.user.id))
+            .orderBy(desc(apiRequestLogs.createdAt))
+            .limit(limit + 1)
+            .offset(offset);
         }
       );
 
-      const total = countResult[0]?.count ?? 0;
+      const hasMore = items.length > limit;
+      const returnItems = hasMore ? items.slice(0, limit) : items;
 
       return new Response(
         JSON.stringify({
-          items,
-          pagination: {
-            page,
-            limit,
-            total,
-            hasMore: offset + items.length < total,
-          },
+          items: returnItems,
+          hasMore,
         }),
         {
           status: 200,
@@ -99,38 +90,42 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         }
       );
     } else if (type === 'feedback') {
-      // Fetch feedback submitted by this user (RLS-protected)
-      const [items, countResult] = await withUserContext(
+      // Fetch feedback submitted by this user with API key info (RLS-protected)
+      // Fetch limit+1 to check if there are more items
+      const items = await withUserContext(
         databaseUrl,
         session.user.id,
         async (db) => {
-          return Promise.all([
-            db
-              .select()
-              .from(modelFeedback)
-              .where(eq(modelFeedback.source, session.user.id)) // Keep WHERE as defense-in-depth
-              .orderBy(desc(modelFeedback.createdAt))
-              .limit(limit)
-              .offset(offset),
-            db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(modelFeedback)
-              .where(eq(modelFeedback.source, session.user.id)), // Keep WHERE as defense-in-depth
-          ]);
+          return db
+            .select({
+              id: modelFeedback.id,
+              modelId: modelFeedback.modelId,
+              requestId: modelFeedback.requestId,
+              isSuccess: modelFeedback.isSuccess,
+              issue: modelFeedback.issue,
+              details: modelFeedback.details,
+              source: modelFeedback.source,
+              createdAt: modelFeedback.createdAt,
+              apiKeyId: modelFeedback.apiKeyId,
+              apiKeyName: apiKeys.name,
+              apiKeyPrefix: apiKeys.prefix,
+            })
+            .from(modelFeedback)
+            .leftJoin(apiKeys, eq(modelFeedback.apiKeyId, apiKeys.id))
+            .where(eq(modelFeedback.source, session.user.id))
+            .orderBy(desc(modelFeedback.createdAt))
+            .limit(limit + 1)
+            .offset(offset);
         }
       );
 
-      const total = countResult[0]?.count ?? 0;
+      const hasMore = items.length > limit;
+      const returnItems = hasMore ? items.slice(0, limit) : items;
 
       return new Response(
         JSON.stringify({
-          items,
-          pagination: {
-            page,
-            limit,
-            total,
-            hasMore: offset + items.length < total,
-          },
+          items: returnItems,
+          hasMore,
         }),
         {
           status: 200,
@@ -141,7 +136,10 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
 
     if (type === 'unified') {
       // Fetch both requests and feedback, merge by createdAt
-      const [requests, feedback, requestCount, feedbackCount] = await withUserContext(
+      // For "See More" pattern: fetch offset+limit+1 from each source to check hasMore
+      const fetchLimit = offset + limit + 1;
+
+      const [requests, feedback] = await withUserContext(
         databaseUrl,
         session.user.id,
         async (db) => {
@@ -163,21 +161,26 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
               .leftJoin(apiKeys, eq(apiRequestLogs.apiKeyId, apiKeys.id))
               .where(eq(apiRequestLogs.userId, session.user.id))
               .orderBy(desc(apiRequestLogs.createdAt))
-              .limit(limit * 2), // Fetch more for merge
+              .limit(fetchLimit),
             db
-              .select()
+              .select({
+                id: modelFeedback.id,
+                modelId: modelFeedback.modelId,
+                requestId: modelFeedback.requestId,
+                isSuccess: modelFeedback.isSuccess,
+                issue: modelFeedback.issue,
+                details: modelFeedback.details,
+                source: modelFeedback.source,
+                createdAt: modelFeedback.createdAt,
+                apiKeyId: modelFeedback.apiKeyId,
+                apiKeyName: apiKeys.name,
+                apiKeyPrefix: apiKeys.prefix,
+              })
               .from(modelFeedback)
+              .leftJoin(apiKeys, eq(modelFeedback.apiKeyId, apiKeys.id))
               .where(eq(modelFeedback.source, session.user.id))
               .orderBy(desc(modelFeedback.createdAt))
-              .limit(limit * 2),
-            db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(apiRequestLogs)
-              .where(eq(apiRequestLogs.userId, session.user.id)),
-            db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(modelFeedback)
-              .where(eq(modelFeedback.source, session.user.id)),
+              .limit(fetchLimit),
           ]);
         }
       );
@@ -281,9 +284,9 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         statusCode: null,
         responseTimeMs: null,
         responseData: null,
-        apiKeyId: null,
-        apiKeyName: null,
-        apiKeyPrefix: null,
+        apiKeyId: f.apiKeyId,
+        apiKeyName: f.apiKeyName,
+        apiKeyPrefix: f.apiKeyPrefix,
         modelId: f.modelId,
         isSuccess: f.isSuccess,
         issue: f.issue,
@@ -297,21 +300,15 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         return timeB - timeA;
       });
 
-      // Apply pagination
+      // Apply pagination - take items from offset to offset+limit
       const paginatedItems = merged.slice(offset, offset + limit);
-      // Note: total count includes linked feedback that won't appear at top level
-      // This is acceptable for now - exact pagination isn't critical
-      const total = (requestCount[0]?.count ?? 0) + (feedbackCount[0]?.count ?? 0);
+      // hasMore = there are more items beyond what we returned
+      const hasMore = merged.length > offset + limit;
 
       return new Response(
         JSON.stringify({
           items: paginatedItems,
-          pagination: {
-            page,
-            limit,
-            total,
-            hasMore: offset + paginatedItems.length < total,
-          },
+          hasMore,
         }),
         {
           status: 200,

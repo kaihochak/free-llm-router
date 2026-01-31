@@ -17,16 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from '@/components/ui/pagination';
-import { Clock, FileText, RefreshCw } from 'lucide-react';
+import { Clock, FileText, RefreshCw, ChevronDown } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 function formatTimeAgo(dateStr: string): string {
   const date = new Date(dateStr);
@@ -51,159 +43,6 @@ function getStatusBadgeVariant(
   if (statusCode >= 400 && statusCode < 500) return 'secondary';
   if (statusCode >= 500) return 'destructive';
   return 'outline';
-}
-
-function RequestHistoryTable({ enabled }: { enabled?: boolean }) {
-  const { items, pagination, isLoading, error, nextPage, prevPage, goToPage, refresh } =
-    useHistory<ApiRequestLog>('requests', 15, { enabled });
-
-  if (isLoading && items.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">Loading request history...</p>;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-500 mb-2">{error}</p>
-        <Button variant="outline" size="sm" onClick={refresh}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
-        </Button>
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <p className="text-center text-muted-foreground py-8">
-        No API requests yet. Make your first API call to see it here.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Endpoint</TableHead>
-            <TableHead>API Key</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Time</TableHead>
-            <TableHead className="text-right">Response</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {item.method}
-                  </Badge>
-                  <code className="text-sm truncate max-w-50">{item.endpoint}</code>
-                </div>
-              </TableCell>
-              <TableCell>
-                <code className="text-xs text-muted-foreground">
-                  {item.apiKeyName || item.apiKeyPrefix || 'Deleted'}
-                </code>
-              </TableCell>
-              <TableCell>
-                <Badge variant={getStatusBadgeVariant(item.statusCode)}>{item.statusCode}</Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {formatTimeAgo(item.createdAt)}
-              </TableCell>
-              <TableCell className="text-right text-muted-foreground text-sm">
-                {item.responseTimeMs ? `${item.responseTimeMs}ms` : '-'}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <PaginationControls
-        pagination={pagination}
-        onNext={nextPage}
-        onPrev={prevPage}
-        onGoToPage={goToPage}
-      />
-    </div>
-  );
-}
-
-function UsageReportsTable({ enabled }: { enabled?: boolean }) {
-  const { items, pagination, isLoading, error, nextPage, prevPage, goToPage, refresh } =
-    useHistory<FeedbackItem>('feedback', 15, { enabled });
-
-  if (isLoading && items.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">Loading usage reports...</p>;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-500 mb-2">{error}</p>
-        <Button variant="outline" size="sm" onClick={refresh}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
-        </Button>
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <p className="text-center text-muted-foreground py-8">
-        No usage reports yet. Report model successes or issues to see them here.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Model</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Details</TableHead>
-            <TableHead>Time</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                <code className="text-sm truncate max-w-50 block">{item.modelId}</code>
-              </TableCell>
-              <TableCell>
-                {item.isSuccess ? (
-                  <Badge variant="default">Success</Badge>
-                ) : (
-                  <Badge variant="destructive">{item.issue || 'Error'}</Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
-                {item.details || '-'}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {formatTimeAgo(item.createdAt)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <PaginationControls
-        pagination={pagination}
-        onNext={nextPage}
-        onPrev={prevPage}
-        onGoToPage={goToPage}
-      />
-    </div>
-  );
 }
 
 interface ParsedResponseData {
@@ -240,6 +79,205 @@ function formatParams(params: ParsedResponseData['params']): string {
   return parts.length > 0 ? parts.join(', ') : '-';
 }
 
+function TruncatedWithTooltip({ text, className }: { text: string; className?: string }) {
+  if (text === '-' || text.length < 30) {
+    return <span className={className}>{text}</span>;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`cursor-help ${className || ''}`}>{text}</span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs wrap-break-word">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function SeeMoreButton({
+  hasMore,
+  isFetchingMore,
+  onLoadMore,
+}: {
+  hasMore: boolean;
+  isFetchingMore: boolean;
+  onLoadMore: () => void;
+}) {
+  if (!hasMore) return null;
+
+  return (
+    <div className="flex justify-center pt-4">
+      <Button variant="outline" onClick={onLoadMore} disabled={isFetchingMore}>
+        {isFetchingMore ? (
+          <>
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            Loading...
+          </>
+        ) : (
+          <>
+            <ChevronDown className="h-4 w-4 mr-2" />
+            See More
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function RequestHistoryTable({ enabled }: { enabled?: boolean }) {
+  const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
+    useHistory<ApiRequestLog>('requests', 15, { enabled });
+
+  if (isLoading && items.length === 0) {
+    return <p className="text-center text-muted-foreground py-8">Loading request history...</p>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500 mb-2">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => refresh()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <p className="text-center text-muted-foreground py-8">
+        No API requests yet. Make your first API call to see it here.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Target</TableHead>
+            <TableHead>API Key</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Time</TableHead>
+            <TableHead>Details</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => {
+            const responseData = parseResponseData(item.responseData);
+            return (
+              <TableRow key={item.id}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {item.method}
+                    </Badge>
+                    <code className="text-sm truncate max-w-50">{item.endpoint}</code>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <code className="text-xs text-muted-foreground">
+                    {item.apiKeyName || item.apiKeyPrefix || 'Deleted'}
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={getStatusBadgeVariant(item.statusCode)}>{item.statusCode}</Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {formatTimeAgo(item.createdAt)}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
+                  <TruncatedWithTooltip text={formatParams(responseData?.params)} />
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+
+      <SeeMoreButton hasMore={hasMore} isFetchingMore={isFetchingMore} onLoadMore={loadMore} />
+    </div>
+  );
+}
+
+function UsageReportsTable({ enabled }: { enabled?: boolean }) {
+  const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
+    useHistory<FeedbackItem>('feedback', 15, { enabled });
+
+  if (isLoading && items.length === 0) {
+    return <p className="text-center text-muted-foreground py-8">Loading usage reports...</p>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500 mb-2">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => refresh()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <p className="text-center text-muted-foreground py-8">
+        No usage reports yet. Report model successes or issues to see them here.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Target</TableHead>
+            <TableHead>API Key</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Time</TableHead>
+            <TableHead>Details</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => (
+            <TableRow key={item.id}>
+              <TableCell>
+                <code className="text-sm truncate max-w-50 block">{item.modelId}</code>
+              </TableCell>
+              <TableCell>
+                <code className="text-xs text-muted-foreground">
+                  {item.apiKeyName || item.apiKeyPrefix || '-'}
+                </code>
+              </TableCell>
+              <TableCell>
+                {item.isSuccess ? (
+                  <Badge variant="default">Success</Badge>
+                ) : (
+                  <Badge variant="destructive">{item.issue || 'Error'}</Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {formatTimeAgo(item.createdAt)}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
+                <TruncatedWithTooltip text={item.details || '-'} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <SeeMoreButton hasMore={hasMore} isFetchingMore={isFetchingMore} onLoadMore={loadMore} />
+    </div>
+  );
+}
+
 function RequestRow({ item }: { item: UnifiedHistoryItem }) {
   const responseData = parseResponseData(item.responseData);
 
@@ -265,7 +303,7 @@ function RequestRow({ item }: { item: UnifiedHistoryItem }) {
         {formatTimeAgo(item.createdAt)}
       </TableCell>
       <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
-        {formatParams(responseData?.params)}
+        <TruncatedWithTooltip text={formatParams(responseData?.params)} />
       </TableCell>
     </TableRow>
   );
@@ -291,7 +329,7 @@ function FeedbackRow({ item }: { item: UnifiedHistoryItem }) {
         {formatTimeAgo(item.createdAt)}
       </TableCell>
       <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
-        {item.details || '-'}
+        <TruncatedWithTooltip text={item.details || '-'} />
       </TableCell>
     </TableRow>
   );
@@ -321,7 +359,7 @@ function ChildFeedbackRow({ feedback, isUsed }: { feedback: LinkedFeedbackItem; 
         {feedback.createdAt ? formatTimeAgo(feedback.createdAt) : '-'}
       </TableCell>
       <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
-        {feedback.details || '-'}
+        <TruncatedWithTooltip text={feedback.details || '-'} />
       </TableCell>
     </TableRow>
   );
@@ -358,7 +396,7 @@ function UnifiedHistoryRows({ items }: { items: UnifiedHistoryItem[] }) {
 }
 
 function UnifiedHistoryTable({ enabled }: { enabled?: boolean }) {
-  const { items, pagination, isLoading, error, nextPage, prevPage, goToPage, refresh } =
+  const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
     useHistory<UnifiedHistoryItem>('unified', 15, { enabled });
 
   if (isLoading && items.length === 0) {
@@ -369,7 +407,7 @@ function UnifiedHistoryTable({ enabled }: { enabled?: boolean }) {
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-2">{error}</p>
-        <Button variant="outline" size="sm" onClick={refresh}>
+        <Button variant="outline" size="sm" onClick={() => refresh()}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry
         </Button>
@@ -402,12 +440,7 @@ function UnifiedHistoryTable({ enabled }: { enabled?: boolean }) {
         </TableBody>
       </Table>
 
-      <PaginationControls
-        pagination={pagination}
-        onNext={nextPage}
-        onPrev={prevPage}
-        onGoToPage={goToPage}
-      />
+      <SeeMoreButton hasMore={hasMore} isFetchingMore={isFetchingMore} onLoadMore={loadMore} />
     </div>
   );
 }
@@ -459,77 +492,5 @@ export function HistoryTab({ isSessionReady }: { isSessionReady?: boolean }) {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-type PaginationControlsProps = {
-  pagination: { page: number; limit: number; total: number; hasMore: boolean };
-  onNext: () => void;
-  onPrev: () => void;
-  onGoToPage: (page: number) => void;
-};
-
-function PaginationControls({ pagination, onNext, onPrev, onGoToPage }: PaginationControlsProps) {
-  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.limit));
-  if (totalPages <= 1) {
-    return null;
-  }
-
-  const pages: number[] = [];
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
-  } else {
-    pages.push(1);
-    const start = Math.max(2, pagination.page - 1);
-    const end = Math.min(totalPages - 1, pagination.page + 1);
-    if (start > 2) pages.push(-1); // ellipsis
-    for (let i = start; i <= end; i++) pages.push(i);
-    if (end < totalPages - 1) pages.push(-1); // ellipsis
-    pages.push(totalPages);
-  }
-
-  return (
-    <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious
-            onClick={(e) => {
-              e.preventDefault();
-              onPrev();
-            }}
-            className={pagination.page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-          />
-        </PaginationItem>
-        {pages.map((page, idx) =>
-          page === -1 ? (
-            <PaginationItem key={`ellipsis-${idx}`}>
-              <PaginationEllipsis />
-            </PaginationItem>
-          ) : (
-            <PaginationItem key={page}>
-              <PaginationLink
-                href="#"
-                isActive={page === pagination.page}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onGoToPage(page);
-                }}
-              >
-                {page}
-              </PaginationLink>
-            </PaginationItem>
-          )
-        )}
-        <PaginationItem>
-          <PaginationNext
-            onClick={(e) => {
-              e.preventDefault();
-              onNext();
-            }}
-            className={!pagination.hasMore ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-          />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
   );
 }

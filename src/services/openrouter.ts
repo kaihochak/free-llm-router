@@ -845,25 +845,29 @@ export async function getFeedbackTimeline(
         : 'day';
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
 
+  const normalizeModelId = (modelId: string) => modelId.replace(/:free$/, '');
+  const modelIdMap = modelIds
+    ? new Map(modelIds.map((id) => [normalizeModelId(id), id]))
+    : null;
+  const normalizeBucket = (bucket: string) => bucket.replace('T', ' ').replace(/([+-].*|Z)$/, '').slice(0, 19);
+
   if (!userId && statsDbUrl) {
     const endTs = new Date();
     const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
     const rows = await getErrorTimelineStats(statsDbUrl, startTs, endTs);
 
-    // Create a Set for O(1) lookup if modelIds filter is provided
-    const modelIdSet = modelIds ? new Set(modelIds) : null;
-
     const dataMap: Record<string, Record<string, TimelineModelData>> = {};
     for (const row of rows) {
       // Skip if modelIds filter is provided and this model is not in the list
-      if (modelIdSet && !modelIdSet.has(row.modelId)) {
-        continue;
-      }
-      const bucket = row.bucket.toISOString().replace('T', ' ').slice(0, 19);
+      const normalizedId = normalizeModelId(row.modelId);
+      const targetModelId = modelIdMap?.get(normalizedId) ?? row.modelId;
+      if (modelIdMap && !modelIdMap.has(normalizedId)) continue;
+
+      const bucket = normalizeBucket(row.bucket);
       if (!dataMap[bucket]) {
         dataMap[bucket] = {};
       }
-      dataMap[bucket][row.modelId] = {
+      dataMap[bucket][targetModelId] = {
         errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
         errorCount: row.errorCount,
         totalCount: row.totalCount,
@@ -894,21 +898,19 @@ export async function getFeedbackTimeline(
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
 
-  // Create a Set for O(1) lookup if modelIds filter is provided
-  const modelIdSet = modelIds ? new Set(modelIds) : null;
-
   // Build map of actual data - store error rate percentage and counts
   const dataMap: Record<string, Record<string, TimelineModelData>> = {};
   for (const row of results) {
     // Skip if modelIds filter is provided and this model is not in the list
-    if (modelIdSet && !modelIdSet.has(row.modelId)) {
-      continue;
-    }
+    const normalizedId = normalizeModelId(row.modelId);
+    const targetModelId = modelIdMap?.get(normalizedId) ?? row.modelId;
+    if (modelIdMap && !modelIdMap.has(normalizedId)) continue;
+
     if (!dataMap[row.bucket]) {
       dataMap[row.bucket] = {};
     }
     // Store error rate and counts for breakdown display
-    dataMap[row.bucket][row.modelId] = {
+    dataMap[row.bucket][targetModelId] = {
       errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
       errorCount: row.errorCount,
       totalCount: row.totalCount,

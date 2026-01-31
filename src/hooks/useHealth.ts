@@ -7,11 +7,8 @@ import {
   VALID_TIME_RANGES_WITH_LABELS,
   TIME_RANGE_DEFINITIONS,
   DEFAULT_MY_REPORTS,
-  DEFAULT_TIME_RANGE,
   DEFAULT_SORT,
-  DEFAULT_TOP_N,
   DEFAULT_USE_CASE,
-  DEFAULT_RELIABILITY_FILTER_ENABLED,
   DEFAULT_MAX_ERROR_RATE,
 } from '@/lib/api-definitions';
 import { useCachedSession } from '@/lib/auth-client';
@@ -104,11 +101,16 @@ export interface UseHealthOptions {
   overrideMaxErrorRate?: number;
 }
 
+const HEALTH_DEFAULT_TIME_RANGE: TimeRange = '7d';
+const HEALTH_DEFAULT_TOP_N: number | undefined = undefined;
+const HEALTH_DEFAULT_RELIABILITY_FILTER_ENABLED = false;
+const HEALTH_DEFAULTS_VERSION = 1;
+
 export function useHealth(options?: UseHealthOptions) {
   // Time range and myReports state
   const [range, setRange] = useLocalStorage<TimeRange>(
     'freeModels:health:range',
-    DEFAULT_TIME_RANGE as TimeRange
+    HEALTH_DEFAULT_TIME_RANGE as TimeRange
   );
   const [myReports, setMyReportsState] = useLocalStorage<boolean>(
     'freeModels:health:myReports',
@@ -127,15 +129,19 @@ export function useHealth(options?: UseHealthOptions) {
   );
   const [activeTopN, setActiveTopN] = useLocalStorage<number | undefined>(
     'freeModels:health:topN',
-    DEFAULT_TOP_N
+    HEALTH_DEFAULT_TOP_N
   );
   const [reliabilityFilterEnabled, setReliabilityFilterEnabled] = useLocalStorage<boolean>(
     'freeModels:health:reliabilityFilterEnabled',
-    DEFAULT_RELIABILITY_FILTER_ENABLED
+    HEALTH_DEFAULT_RELIABILITY_FILTER_ENABLED
   );
   const [activeMaxErrorRate, setActiveMaxErrorRate] = useLocalStorage<number | undefined>(
     'freeModels:health:maxErrorRate',
     DEFAULT_MAX_ERROR_RATE
+  );
+  const [defaultsVersion, setDefaultsVersion] = useLocalStorage<number>(
+    'freeModels:health:defaultsVersion',
+    0
   );
 
   // Force myReports to false if user is not authenticated
@@ -155,6 +161,22 @@ export function useHealth(options?: UseHealthOptions) {
       setMyReportsState(false);
     }
   }, [session, myReports, setMyReportsState]);
+
+  useEffect(() => {
+    if (defaultsVersion < HEALTH_DEFAULTS_VERSION) {
+      // Initialize broader defaults once (without locking the controls).
+      setRange(HEALTH_DEFAULT_TIME_RANGE as TimeRange);
+      setActiveTopN(HEALTH_DEFAULT_TOP_N);
+      setReliabilityFilterEnabled(HEALTH_DEFAULT_RELIABILITY_FILTER_ENABLED);
+      setDefaultsVersion(HEALTH_DEFAULTS_VERSION);
+    }
+  }, [
+    defaultsVersion,
+    setRange,
+    setActiveTopN,
+    setReliabilityFilterEnabled,
+    setDefaultsVersion,
+  ]);
 
   const {
     data,
@@ -202,15 +224,15 @@ export function useHealth(options?: UseHealthOptions) {
     // Always reset useCase and sort to defaults
     setActiveUseCases(DEFAULT_USE_CASE);
     setActiveSort(DEFAULT_SORT);
-    setRange(DEFAULT_TIME_RANGE as TimeRange);
+    setRange(HEALTH_DEFAULT_TIME_RANGE as TimeRange);
     setMyReportsState(DEFAULT_MY_REPORTS);
 
     // Only reset topN/health if not using overrides
     if (options?.overrideTopN === undefined) {
-      setActiveTopN(DEFAULT_TOP_N);
+      setActiveTopN(HEALTH_DEFAULT_TOP_N);
     }
     if (options?.overrideReliabilityFilterEnabled === undefined) {
-      setReliabilityFilterEnabled(DEFAULT_RELIABILITY_FILTER_ENABLED);
+      setReliabilityFilterEnabled(HEALTH_DEFAULT_RELIABILITY_FILTER_ENABLED);
     }
     if (options?.overrideMaxErrorRate === undefined) {
       setActiveMaxErrorRate(DEFAULT_MAX_ERROR_RATE);

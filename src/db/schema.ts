@@ -24,6 +24,7 @@ export const modelFeedback = pgTable('model_feedback', {
   id: text('id').primaryKey(),
   modelId: text('model_id').notNull(),
   requestId: text('request_id'), // Optional link to api_request_logs.id for correlation
+  apiKeyId: text('api_key_id'), // Optional link to apiKeys.id for tracking which key was used
   isSuccess: boolean('is_success').notNull().default(false), // true for success reports, false for issues
   issue: text('issue'), // 'rate_limited' | 'unavailable' | 'error' (nullable for success reports)
   details: text('details'),

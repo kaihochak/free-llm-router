@@ -8,7 +8,7 @@ export interface FeedbackCount {
 }
 
 export interface ErrorTimelinePoint {
-  bucket: Date;
+  bucket: string;
   modelId: string;
   errorCount: number;
   totalCount: number;
@@ -47,11 +47,11 @@ export async function getErrorTimeline(
 ): Promise<ErrorTimelinePoint[]> {
   const sql = neon(statsDbUrl);
   const rows = await sql`
-    SELECT bucket, model_id, error_count, total_count
+    SELECT bucket::text as bucket, model_id, error_count, total_count
     FROM get_error_timeline(${startTs.toISOString()}::timestamptz, ${endTs.toISOString()}::timestamptz)
   `;
   return rows.map((r) => ({
-    bucket: new Date(r.bucket as string),
+    bucket: r.bucket as string,
     modelId: r.model_id as string,
     errorCount: Number(r.error_count),
     totalCount: Number(r.total_count),

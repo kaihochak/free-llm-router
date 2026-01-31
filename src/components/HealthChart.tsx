@@ -227,14 +227,20 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
       // Fill in data for each model - use errorRate for chart, keep full data for tooltip
       modelIds.forEach((modelId) => {
         const data = point[modelId];
-        if (data && typeof data === 'object' && 'errorRate' in data) {
-          // Store errorRate as the chart value, and full data with _meta suffix for tooltip
-          filledPoint[modelId] = data.errorRate;
-          filledPoint[`${modelId}_meta`] = data;
-        } else {
-          filledPoint[modelId] = 0;
-          filledPoint[`${modelId}_meta`] = { errorRate: 0, errorCount: 0, totalCount: 0 };
+        if (typeof data === 'number') {
+          filledPoint[modelId] = data;
+          filledPoint[`${modelId}_meta`] = { errorRate: data, errorCount: 0, totalCount: 0 };
+          return;
         }
+        if (data && typeof data === 'object' && 'errorRate' in data) {
+          const typedData = data as { errorRate: number; errorCount: number; totalCount: number };
+          // Store errorRate as the chart value, and full data with _meta suffix for tooltip
+          filledPoint[modelId] = typedData.errorRate;
+          filledPoint[`${modelId}_meta`] = typedData;
+          return;
+        }
+        filledPoint[modelId] = 0;
+        filledPoint[`${modelId}_meta`] = { errorRate: 0, errorCount: 0, totalCount: 0 };
       });
       return filledPoint;
     });
@@ -283,7 +289,8 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
           visibleSeries.has(modelId) ? (
             <Area
               key={modelId}
-              dataKey={modelId}
+              dataKey={(data) => (data as Record<string, unknown>)[modelId]}
+              name={modelId}
               type="monotone"
               fill={`url(#fill-${index})`}
               stroke={CHART_COLORS[index % CHART_COLORS.length]}
