@@ -1,46 +1,17 @@
 import type { APIRoute } from 'astro';
-import { createAuth, type AuthEnv } from '@/lib/auth';
 import { apiRequestLogs, modelFeedback, apiKeys, withUserContext } from '@/db';
-import { eq, desc, and, isNull } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
+import { getAuthSession, isSessionError } from '@/lib/auth-session';
+import { jsonResponse } from '@/lib/api-response';
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
   try {
-    const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-    const env = runtime?.env || {};
-    const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
-
-    const databaseUrl = env.DATABASE_URL || importMetaEnv?.DATABASE_URL;
-    const databaseUrlAdmin = env.DATABASE_URL_ADMIN || importMetaEnv?.DATABASE_URL_ADMIN;
-    const baseUrl = env.BETTER_AUTH_URL || importMetaEnv?.BETTER_AUTH_URL;
-    const secret = env.BETTER_AUTH_SECRET || importMetaEnv?.BETTER_AUTH_SECRET;
-    const githubClientId = env.GITHUB_CLIENT_ID || importMetaEnv?.GITHUB_CLIENT_ID;
-    const githubClientSecret = env.GITHUB_CLIENT_SECRET || importMetaEnv?.GITHUB_CLIENT_SECRET;
-
-    if (!databaseUrl || !baseUrl || !secret) {
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const result = await getAuthSession(request, locals);
+    if (isSessionError(result)) {
+      return jsonResponse({ error: result.error }, { status: result.status });
     }
 
-    // Get user session using Better Auth
-    const authEnv: AuthEnv = {
-      databaseUrl,
-      databaseUrlAdmin,
-      baseUrl,
-      secret,
-      githubClientId,
-      githubClientSecret,
-    };
-    const auth = createAuth(authEnv);
-    const session = await auth.api.getSession({ headers: request.headers });
-
-    if (!session?.user?.id) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const { session, databaseUrl } = result;
 
     const type = url.searchParams.get('type') || 'requests';
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
@@ -85,16 +56,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       const hasMore = items.length > limit;
       const returnItems = hasMore ? items.slice(0, limit) : items;
 
-      return new Response(
-        JSON.stringify({
-          items: returnItems,
-          hasMore,
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return jsonResponse({ items: returnItems, hasMore });
     } else if (type === 'feedback') {
       // Fetch feedback submitted by this user with API key info (RLS-protected)
       // Fetch limit+1 to check if there are more items
@@ -133,16 +95,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       const hasMore = items.length > limit;
       const returnItems = hasMore ? items.slice(0, limit) : items;
 
-      return new Response(
-        JSON.stringify({
-          items: returnItems,
-          hasMore,
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return jsonResponse({ items: returnItems, hasMore });
     }
 
     if (type === 'unified') {
@@ -326,27 +279,12 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       // hasMore = there are more items beyond what we returned
       const hasMore = merged.length > offset + limit;
 
-      return new Response(
-        JSON.stringify({
-          items: paginatedItems,
-          hasMore,
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return jsonResponse({ items: paginatedItems, hasMore });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid type parameter' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'Invalid type parameter' }, { status: 400 });
   } catch (error) {
     console.error('History fetch error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'Internal server error' }, { status: 500 });
   }
 };
