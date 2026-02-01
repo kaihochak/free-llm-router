@@ -68,7 +68,7 @@ function InteractiveLegendContent({
   const issuesMap = new Map(issues.map((issue) => [issue.modelId, issue]));
 
   return (
-    <div className="flex items-center justify-center gap-x-4 gap-y-2 pt-3 max-h-30 overflow-x-auto custom-scrollbar px-2">
+    <div className="flex items-center justify-center gap-x-4 gap-y-2 pt-3 max-h-30 overflow-x-auto px-2">
       {payload
         .filter((item) => item.type !== 'none')
         .map((item) => {

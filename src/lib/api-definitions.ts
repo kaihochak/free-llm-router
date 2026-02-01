@@ -251,3 +251,57 @@ export function getCutoffDate(range: TimeRange): Date {
   const ms = TIME_RANGE_MS[range];
   return new Date(Date.now() - (ms as number));
 }
+
+// ==================== API KEY PREFERENCES ====================
+
+/** Preferences that can be stored per API key and applied as defaults */
+export interface ApiKeyPreferences {
+  useCases?: UseCaseType[];
+  sort?: SortType;
+  topN?: number;
+  maxErrorRate?: number;
+  timeRange?: TimeRange;
+  myReports?: boolean;
+}
+
+/** Validate and sanitize preferences object from untrusted input */
+export function validatePreferences(input: unknown): ApiKeyPreferences {
+  if (!input || typeof input !== 'object') return {};
+
+  const pref = input as Record<string, unknown>;
+  const result: ApiKeyPreferences = {};
+
+  // Validate useCases
+  if (Array.isArray(pref.useCases)) {
+    result.useCases = pref.useCases.filter((uc) =>
+      VALID_USE_CASES.includes(uc as UseCaseType)
+    ) as UseCaseType[];
+  }
+
+  // Validate sort
+  if (typeof pref.sort === 'string' && VALID_SORTS.includes(pref.sort as SortType)) {
+    result.sort = pref.sort as SortType;
+  }
+
+  // Validate topN
+  if (typeof pref.topN === 'number') {
+    result.topN = Math.min(Math.max(TOP_N_MIN, pref.topN), TOP_N_MAX);
+  }
+
+  // Validate maxErrorRate
+  if (typeof pref.maxErrorRate === 'number') {
+    result.maxErrorRate = Math.min(Math.max(MAX_ERROR_RATE_MIN, pref.maxErrorRate), MAX_ERROR_RATE_MAX);
+  }
+
+  // Validate timeRange
+  if (typeof pref.timeRange === 'string' && VALID_TIME_RANGES.includes(pref.timeRange as TimeRange)) {
+    result.timeRange = pref.timeRange as TimeRange;
+  }
+
+  // Validate myReports
+  if (typeof pref.myReports === 'boolean') {
+    result.myReports = pref.myReports;
+  }
+
+  return result;
+}
