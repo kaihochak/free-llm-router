@@ -7,8 +7,6 @@ import { UseCaseSelector } from '@/components/UseCaseSelector';
 import { SortSelector } from '@/components/SortSelector';
 import { ApiUsageStep } from '@/components/ApiUsageStep';
 import { ModelList } from '@/components/ModelList';
-import { ModelCountHeader } from '@/components/ModelCountHeader';
-import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
@@ -198,45 +196,15 @@ export function OnboardingFlow() {
 
       {/* Model List with Pagination (Hidden on Step 3) */}
       {currentStep !== 2 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <ModelCountHeader count={models.length} lastUpdated={lastUpdated} />
-
-            {totalPages > 1 && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground px-1">
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <ModelList
-            models={models}
-            loading={loading}
-            error={error}
-            currentPage={currentPage}
-            itemsPerPage={ITEMS_PER_PAGE}
-          />
-        </div>
+        <ModelList
+          models={models}
+          loading={loading}
+          error={error}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          itemsPerPage={ITEMS_PER_PAGE}
+          lastUpdated={lastUpdated}
+        />
       )}
     </div>
   );

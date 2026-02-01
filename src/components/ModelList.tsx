@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Model } from '@/hooks/useModels';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ModelListProps {
   models: Model[];
   loading?: boolean;
   error?: string | null;
   currentPage: number;
+  onPageChange?: (page: number) => void;
   itemsPerPage?: number;
+  showHeader?: boolean;
+  headerLabel?: string;
+  headerCount?: number;
+  lastUpdated?: string | null;
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
@@ -88,23 +95,29 @@ export function ModelList({
   loading,
   error,
   currentPage,
+  onPageChange,
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
+  showHeader = true,
+  headerLabel,
+  headerCount,
+  lastUpdated,
 }: ModelListProps) {
+  const totalPages = Math.max(1, Math.ceil(models.length / itemsPerPage));
+  const safePage = Math.min(Math.max(currentPage, 1), totalPages);
   const paginatedModels = models.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (safePage - 1) * itemsPerPage,
+    safePage * itemsPerPage
   );
+  const displayCount = headerCount ?? models.length;
+  const canPaginate = Boolean(onPageChange) && totalPages > 1;
 
+  let content: ReactNode;
   if (loading && models.length === 0) {
-    return <div className="py-8 text-center text-muted-foreground">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="py-8 text-center text-destructive">Error: {error}</div>;
-  }
-
-  return (
-    <div className="space-y-4">
+    content = <div className="py-8 text-center text-muted-foreground">Loading...</div>;
+  } else if (error) {
+    content = <div className="py-8 text-center text-destructive">Error: {error}</div>;
+  } else {
+    content = (
       <div className="rounded-xl border bg-card divide-y">
         {paginatedModels.map((model) => {
           const badges = getCapabilityBadges(model);
@@ -187,7 +200,8 @@ export function ModelList({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="font-medium">
-                          {model.errorRate.toFixed(1)}% ({model.issueCount}/{(model.issueCount ?? 0) + (model.successCount ?? 0)})
+                          {model.errorRate.toFixed(1)}% ({model.issueCount}/
+                          {(model.issueCount ?? 0) + (model.successCount ?? 0)})
                         </p>
                         {(model.rateLimited ?? 0) > 0 && (
                           <p className="text-muted-foreground">Rate limited: {model.rateLimited}</p>
@@ -209,6 +223,42 @@ export function ModelList({
           );
         })}
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {showHeader && (
+        <div className="flex items-center justify-between">
+          <ModelCountHeader count={displayCount} lastUpdated={lastUpdated} label={headerLabel} />
+          {canPaginate && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onPageChange?.(Math.max(1, safePage - 1))}
+                disabled={safePage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground px-1">
+                {safePage} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onPageChange?.(Math.min(totalPages, safePage + 1))}
+                disabled={safePage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {content}
     </div>
   );
 }
