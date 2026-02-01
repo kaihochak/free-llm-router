@@ -910,16 +910,6 @@ export async function getFeedbackTimeline(
     const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
     const rows = await getErrorTimelineStats(statsDbUrl, startTs, endTs);
 
-    // Debug: log basic stats DB timeline info (sample row, count)
-    try {
-      console.info('[health.timeline] stats rows', {
-        rows: rows.length,
-        sample: rows.slice(0, 3),
-      });
-    } catch {
-      // ignore logging errors
-    }
-
     const dataMap: Record<string, Record<string, { errorCount: number; totalCount: number }>> = {};
     for (const row of rows) {
       // Skip if modelIds filter is provided and this model is not in the list
@@ -946,8 +936,9 @@ export async function getFeedbackTimeline(
       for (const modelId in bucketData) {
         const { errorCount, totalCount } = bucketData[modelId];
         const errorRate = totalCount > 0 ? Math.round((errorCount / totalCount) * 10000) / 100 : 0;
-        point[modelId] = errorRate;
-        point[`${modelId}_meta`] = { errorRate, errorCount, totalCount };
+        const obj = { errorRate, errorCount, totalCount };
+        point[modelId] = obj;
+        point[`${modelId}_meta`] = obj;
       }
       return point as TimelinePoint;
     });
@@ -970,17 +961,8 @@ export async function getFeedbackTimeline(
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
 
-  try {
-    console.info('[health.timeline] main rows', {
-      rows: results.length,
-      sample: results.slice(0, 3),
-    });
-  } catch {
-    // ignore logging errors
-  }
-
-  // Build map of actual data - store error rate percentage and counts
-  const dataMap: Record<string, Record<string, TimelineModelData>> = {};
+  // Build map of actual data - store counts, compute rate later
+  const dataMap: Record<string, Record<string, { errorCount: number; totalCount: number }>> = {};
   for (const row of results) {
     // Skip if modelIds filter is provided and this model is not in the list
     const normalizedId = normalizeModelId(row.modelId);
@@ -990,12 +972,11 @@ export async function getFeedbackTimeline(
     if (!dataMap[row.bucket]) {
       dataMap[row.bucket] = {};
     }
-    // Store error rate and counts for breakdown display
-    dataMap[row.bucket][targetModelId] = {
-      errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
-      errorCount: row.errorCount,
-      totalCount: row.totalCount,
-    };
+    if (!dataMap[row.bucket][targetModelId]) {
+      dataMap[row.bucket][targetModelId] = { errorCount: 0, totalCount: 0 };
+    }
+    dataMap[row.bucket][targetModelId].errorCount += row.errorCount;
+    dataMap[row.bucket][targetModelId].totalCount += row.totalCount;
   }
 
   // Generate all buckets and fill with data (or empty)
@@ -1006,7 +987,13 @@ export async function getFeedbackTimeline(
     const point: TimelinePoint = { date: bucket };
     const bucketData = dataMap[bucket];
     if (bucketData) {
-      Object.assign(point, bucketData);
+      for (const modelId in bucketData) {
+        const { errorCount, totalCount } = bucketData[modelId];
+        const errorRate = totalCount > 0 ? Math.round((errorCount / totalCount) * 10000) / 100 : 0;
+        const obj = { errorRate, errorCount, totalCount };
+        (point as Record<string, string | number | TimelineModelData>)[modelId] = obj;
+        (point as Record<string, string | number | TimelineModelData>)[`${modelId}_meta`] = obj;
+      }
     }
     timeline.push(point);
   }
