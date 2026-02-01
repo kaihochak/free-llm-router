@@ -78,15 +78,13 @@ function IssuesPageContent() {
         activeUseCases={activeUseCases}
         activeSort={activeSort}
         activeTopN={activeTopN}
-        reliabilityFilterEnabled={reliabilityFilterEnabled}
-        activeMaxErrorRate={activeMaxErrorRate}
         activeTimeRange={range}
         activeMyReports={myReports}
+        simpleHealthControls
+        showReliabilityControls={false}
         onToggleUseCase={toggleUseCase}
         onSortChange={setActiveSort}
         onTopNChange={setActiveTopN}
-        onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
-        onMaxErrorRateChange={setActiveMaxErrorRate}
         onTimeRangeChange={handleTimeRangeChange}
         onMyReportsChange={setMyReports}
         onReset={resetToDefaults}

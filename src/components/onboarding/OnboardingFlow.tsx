@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useModels } from '@/hooks/useModels';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { OnboardingStep } from '@/components/OnboardingStep';
+import { OnboardingStep } from '@/components/onboarding/OnboardingStep';
 import { UseCaseSelector } from '@/components/UseCaseSelector';
 import { SortSelector } from '@/components/SortSelector';
 import { ApiUsageStep } from '@/components/ApiUsageStep';

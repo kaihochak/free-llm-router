@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { OnboardingFlow } from '@/components/OnboardingFlow';
+import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { useModels } from '@/hooks/useModels';
 import { QueryProvider } from '@/components/QueryProvider';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';

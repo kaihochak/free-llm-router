@@ -90,19 +90,6 @@ export const GET: APIRoute = async (context) => {
     const hasSeries = (points: typeof timeline) =>
       points.some((p) => Object.keys(p).some((k) => k !== 'date' && !k.endsWith('_meta')));
 
-    // Log current timeline
-    try {
-      console.info('[API/health] timeline (stats)', {
-        filteredModelIds: filteredModelIds.length,
-        rows: timeline.length,
-        hasData: hasSeries(timeline),
-        sample: timeline.slice(0, 3),
-      });
-    } catch (err) {
-      console.warn('[API/health] failed to log timeline sample', err);
-    }
-
-
     return jsonResponse(
       {
         issues,

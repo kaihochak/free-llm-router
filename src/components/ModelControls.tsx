@@ -40,6 +40,9 @@ interface ModelControlsProps {
   activeMaxErrorRate?: number;
   activeTimeRange?: string;
   activeMyReports?: boolean;
+  /** When true, render only time range + my reports controls (used on health page). */
+  simpleHealthControls?: boolean;
+  showReliabilityControls?: boolean;
   onToggleUseCase: (useCase: UseCaseType | 'all') => void;
   onSortChange: (sort: SortType) => void;
   onTopNChange?: (topN: number | undefined) => void;
@@ -59,6 +62,8 @@ export function ModelControls({
   activeMaxErrorRate,
   activeTimeRange = DEFAULT_TIME_RANGE,
   activeMyReports = DEFAULT_MY_REPORTS,
+  simpleHealthControls = false,
+  showReliabilityControls = true,
   onToggleUseCase,
   onSortChange,
   onTopNChange,
@@ -207,77 +212,111 @@ export function ModelControls({
           </div>
         )}
 
-        {/* Health Filter group */}
-        {onReliabilityFilterEnabledChange && (
+        {/* Health controls */}
+        {simpleHealthControls ? (
           <div className={`flex flex-col ${gapClass}`}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={`text-muted-foreground ${labelClass} cursor-help`}>
-                  Health Filter {`${reliabilityFilterEnabled && activeMaxErrorRate ? `(error less than ${activeMaxErrorRate}% within the past ${activeTimeRange})` : ''}`}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
-            </Tooltip>
+            <span className={`text-muted-foreground ${labelClass}`}>Health</span>
             <ButtonGroup>
-              <Button
-                variant={reliabilityFilterEnabled ? 'default' : 'outline'}
-                size={size}
-                className={buttonClass}
-                onClick={() => onReliabilityFilterEnabledChange(!reliabilityFilterEnabled)}
-              >
-                {reliabilityFilterEnabled ? 'On' : 'Off'}
-              </Button>
-              {showReliabilitySubControls && (
-                <>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={errorRateInput}
-                    onChange={(e) => setErrorRateInput(e.target.value)}
-                    onBlur={() => {
-                      const value = parseInt(errorRateInput, 10);
-                      if (!isNaN(value) && value >= 0 && value <= 100) {
-                        onMaxErrorRateChange(value);
-                      } else {
-                        setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
-                      }
-                    }}
-                    className={`pr-0! w-14 ${buttonClass} border-r-0!`}
-                  />
-                  <ButtonGroupText
-                    className={`pr-3 pl-0 bg-background shadow-xs border-l-0! dark:bg-input/30 dark:border-input ${buttonClass}`}
-                  >
-                    %
-                  </ButtonGroupText>
-                  <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>
-                    <SelectTrigger className={`w-20 ${buttonClass}`}>
-                      <SelectValue>{activeTimeRange}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIME_RANGE_DEFINITIONS.filter((tr) =>
-                        VALID_TIME_RANGES_WITH_LABELS.includes(tr.value)
-                      ).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant={activeMyReports ? 'default' : 'outline'}
-                    size={size}
-                    className={buttonClass}
-                    onClick={() => onMyReportsChange(!activeMyReports)}
-                  >
-                    {activeMyReports ? 'All Community Reports' : 'My Reports Only'}
-                  </Button>
-                </>
+              <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>
+                <SelectTrigger className={`w-24 ${buttonClass}`}>
+                  <SelectValue>{activeTimeRange}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_RANGE_DEFINITIONS.filter((tr) =>
+                    VALID_TIME_RANGES_WITH_LABELS.includes(tr.value)
+                  ).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {onMyReportsChange && (
+                <Button
+                  variant={activeMyReports ? 'default' : 'outline'}
+                  size={size}
+                  className={buttonClass}
+                  onClick={() => onMyReportsChange(!activeMyReports)}
+                >
+                  {activeMyReports ? 'My Reports' : 'Community'}
+                </Button>
               )}
             </ButtonGroup>
           </div>
+        ) : (
+          showReliabilityControls &&
+          onReliabilityFilterEnabledChange && (
+            <div className={`flex flex-col ${gapClass}`}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={`text-muted-foreground ${labelClass} cursor-help`}>
+                    Health Filter {`${reliabilityFilterEnabled && activeMaxErrorRate ? `(error less than ${activeMaxErrorRate}% within the past ${activeTimeRange})` : ''}`}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
+              </Tooltip>
+              <ButtonGroup>
+                <Button
+                  variant={reliabilityFilterEnabled ? 'default' : 'outline'}
+                  size={size}
+                  className={buttonClass}
+                  onClick={() => onReliabilityFilterEnabledChange(!reliabilityFilterEnabled)}
+                >
+                  {reliabilityFilterEnabled ? 'On' : 'Off'}
+                </Button>
+                {showReliabilitySubControls && (
+                  <>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={errorRateInput}
+                      onChange={(e) => setErrorRateInput(e.target.value)}
+                      onBlur={() => {
+                        const value = parseInt(errorRateInput, 10);
+                        if (!isNaN(value) && value >= 0 && value <= 100) {
+                          onMaxErrorRateChange(value);
+                        } else {
+                          setErrorRateInput(activeMaxErrorRate?.toString() ?? '');
+                        }
+                      }}
+                      className={`pr-0! w-14 ${buttonClass} border-r-0!`}
+                    />
+                    <ButtonGroupText
+                      className={`pr-3 pl-0 bg-background shadow-xs border-l-0! dark:bg-input/30 dark:border-input ${buttonClass}`}
+                    >
+                      %
+                    </ButtonGroupText>
+                    <Select value={activeTimeRange} onValueChange={onTimeRangeChange}>
+                      <SelectTrigger className={`w-20 ${buttonClass}`}>
+                        <SelectValue>{activeTimeRange}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIME_RANGE_DEFINITIONS.filter((tr) =>
+                          VALID_TIME_RANGES_WITH_LABELS.includes(tr.value)
+                        ).map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant={activeMyReports ? 'default' : 'outline'}
+                      size={size}
+                      className={buttonClass}
+                      onClick={() => onMyReportsChange(!activeMyReports)}
+                    >
+                      {activeMyReports ? 'All Community Reports' : 'My Reports Only'}
+                    </Button>
+                  </>
+                )}
+              </ButtonGroup>
+            </div>
+          )
         )}
       </div>
+
 
       {/* Reset button */}
       {onReset && (
