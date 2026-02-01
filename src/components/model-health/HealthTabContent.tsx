@@ -1,7 +1,6 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useHealth, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
-import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { IssuesChart } from '@/components/model-health/HealthChart';
 import { ModelControls } from '@/components/ModelControls';
 import type { Model } from '@/hooks/useModels';
@@ -21,8 +20,6 @@ export function HealthTabContent() {
     activeUseCases,
     activeSort,
     activeTopN,
-    reliabilityFilterEnabled,
-    activeMaxErrorRate,
     toggleUseCase,
     setActiveSort,
     setActiveTopN,
@@ -30,6 +27,7 @@ export function HealthTabContent() {
     setActiveMaxErrorRate,
     resetToDefaults,
   } = useHealth();
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Wrapper to cast string to TimeRange for ModelControls compatibility
   const handleTimeRangeChange = useCallback(
@@ -89,12 +87,6 @@ export function HealthTabContent() {
         size="lg"
       />
 
-      <ModelCountHeader
-        count={issues.length}
-        lastUpdated={lastUpdated}
-        label={`model${issues.length === 1 ? '' : 's'} shown (${count} total with reported usage)`}
-      />
-
       {/* Chart */}
       <div className="mt-6 mb-3 flex items-center gap-2">
         <span className="font-medium">Error Rate Over Time</span>
@@ -109,7 +101,16 @@ export function HealthTabContent() {
         <span className="font-medium">Models by Error Rate</span>
         <span className="text-sm text-emerald-600 dark:text-emerald-400">&#8595; Lower is better</span>
       </div>
-      <ModelList models={models} loading={loading} error={error} currentPage={1} />
+      <ModelList
+        models={models}
+        loading={loading}
+        error={error}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        lastUpdated={lastUpdated}
+        headerCount={issues.length}
+        headerLabel={`model${issues.length === 1 ? '' : 's'} shown (${count} total with reported usage)`}
+      />
     </div>
   );
 }
