@@ -1,14 +1,18 @@
 import type { APIContext } from 'astro';
-import { type Database, createDb } from '@/db';
+import { type Database, createDb, apiKeys } from '@/db';
+import { eq } from 'drizzle-orm';
 import {
   type UseCaseType,
   type SortType,
   type TimeRange,
+  type ApiKeyPreferences,
   validateUseCases,
   validateSort,
   validateTopN,
   validateMaxErrorRate,
   validateTimeRange,
+  DEFAULT_SORT,
+  DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
 import {
   validateApiKey,
@@ -38,21 +42,70 @@ export interface RequestContext {
 /**
  * Parse and validate query parameters common to /models/ids and /models/full endpoints
  * Uses unified validators from api-definitions.ts (single source of truth)
+ *
+ * If savedPreferences is provided, those values are used as defaults when query params are not specified.
+ * Query params always override saved preferences.
  */
-export function parseModelParams(searchParams: URLSearchParams): ParsedModelParams {
-  const useCases = validateUseCases(searchParams.get('useCase'));
-  const sort = validateSort(searchParams.get('sort'));
-  const topN = validateTopN(searchParams.get('topN'));
-  const maxErrorRate = validateMaxErrorRate(searchParams.get('maxErrorRate'));
-  const timeRange = validateTimeRange(searchParams.get('timeRange'));
-  const myReports = searchParams.get('myReports') === 'true';
+export function parseModelParams(
+  searchParams: URLSearchParams,
+  savedPreferences?: ApiKeyPreferences
+): ParsedModelParams {
+  const prefs = savedPreferences || {};
+
+  // Query param provided? Use it. Otherwise use saved preference or default.
+  const useCaseParam = searchParams.get('useCase');
+  const useCases =
+    useCaseParam !== null ? validateUseCases(useCaseParam) : (prefs.useCases || []);
+
+  const sortParam = searchParams.get('sort');
+  const sort = sortParam !== null ? validateSort(sortParam) : (prefs.sort || DEFAULT_SORT);
+
+  const topNParam = searchParams.get('topN');
+  const topN = topNParam !== null ? validateTopN(topNParam) : prefs.topN;
+
+  const maxErrorRateParam = searchParams.get('maxErrorRate');
+  const maxErrorRate =
+    maxErrorRateParam !== null ? validateMaxErrorRate(maxErrorRateParam) : prefs.maxErrorRate;
+
+  const timeRangeParam = searchParams.get('timeRange');
+  const timeRange =
+    timeRangeParam !== null ? validateTimeRange(timeRangeParam) : (prefs.timeRange || DEFAULT_TIME_RANGE);
+
+  const myReportsParam = searchParams.get('myReports');
+  const myReports =
+    myReportsParam !== null ? myReportsParam === 'true' : (prefs.myReports || false);
 
   return { useCases, sort, topN, maxErrorRate, timeRange, myReports };
 }
 
 /**
+ * Load saved preferences from an API key's metadata field
+ */
+async function loadApiKeyPreferences(
+  db: Database,
+  keyId: string
+): Promise<ApiKeyPreferences> {
+  try {
+    const [key] = await db
+      .select({ metadata: apiKeys.metadata })
+      .from(apiKeys)
+      .where(eq(apiKeys.id, keyId))
+      .limit(1);
+
+    if (!key?.metadata) return {};
+
+    const parsed = JSON.parse(key.metadata);
+    return parsed.preferences || {};
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Initialize common request context: validate auth, connect to DB, and parse params
  * Returns RequestContext if successful, or Response if error
+ *
+ * If the API key has saved preferences, they are used as defaults for any query params not specified.
  */
 export async function initializeRequest(context: APIContext): Promise<RequestContext | Response> {
   // Validate API key
@@ -88,8 +141,13 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
 
   const db = createDb(databaseUrl);
 
-  // Parse parameters
-  const params = parseModelParams(context.url.searchParams);
+  // Load saved preferences from API key metadata
+  const savedPreferences = validation.keyId
+    ? await loadApiKeyPreferences(db, validation.keyId)
+    : undefined;
+
+  // Parse parameters with saved preferences as fallback defaults
+  const params = parseModelParams(context.url.searchParams, savedPreferences);
 
   return { db, databaseUrl, params, validation };
 }
