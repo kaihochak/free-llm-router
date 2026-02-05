@@ -154,10 +154,6 @@ export function getModelControlsProps(models: ReturnType<typeof useModels>) {
   };
 }
 
-export function getFullApiUrl(apiUrl: string): string {
-  return `${API_BASE}${apiUrl}`;
-}
-
 export interface UseModelsOptions {
   overrideTimeRange?: string;
   overrideMyReports?: boolean;
