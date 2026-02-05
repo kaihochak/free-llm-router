@@ -61,7 +61,7 @@ export function ApiUsageStep() {
         <div className="flex justify-center py-4">
           {session?.user ? (
             <Button asChild size="xl">
-              <a href="/dashboard">Go to Dashboard</a>
+              <a href="/dashboard?tab=api">Go to Dashboard</a>
             </Button>
           ) : (
             <Button asChild size="xl">
