@@ -42,9 +42,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-    const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
+    const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
+    const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
     const turnstileSecret =
-      runtime?.env?.TURNSTILE_SECRET_KEY || import.meta.env.TURNSTILE_SECRET_KEY;
+      runtime?.env?.TURNSTILE_SECRET_KEY || importMetaEnv?.TURNSTILE_SECRET_KEY;
 
     if (!databaseUrl) {
       return new Response(JSON.stringify({ error: 'Database not configured' }), {

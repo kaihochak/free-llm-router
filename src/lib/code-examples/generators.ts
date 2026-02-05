@@ -32,7 +32,7 @@ export const basicUsage = (
 
   return `// 1. Fetch free models and try each until one succeeds
 try {
-  const freeModels = await getModelIds(${useCaseStr}, '${sort}'${topNStr}${optionsStr});
+  const { ids: freeModels, requestId } = await getModelIds(${useCaseStr}, '${sort}'${topNStr}${optionsStr});
 
   // 2. (Optional) Add stable fallback models you trust (usually paid)
   const stableFallback = ['anthropic/claude-3.5-sonnet'];
@@ -42,11 +42,11 @@ try {
   for (const id of models) {
     try {
       const res = await client.chat.completions.create({ model: id, messages });
-      reportSuccess(id); // Helps improve health metrics
+      reportSuccess(id, requestId); // Helps improve health metrics
       return res;
     } catch (e) {
       const status = e.status || e.response?.status;
-      reportIssue(id, issueFromStatus(status), e.message); // Helps improve health metrics
+      reportIssue(id, issueFromStatus(status), requestId, e.message); // Helps improve health metrics
     }
   }
 } catch {
@@ -86,6 +86,6 @@ export const getModelIdsCall = (
     optionsStr = `, { ${optionParts.join(', ')} }`;
   }
 
-  return `// This is how you fetch free model IDs
-getModelIds(${useCaseStr}, '${sort}'${topNStr}${optionsStr})`;
+  return `// This is how you fetch free model IDs (returns { ids, requestId })
+const { ids, requestId } = await getModelIds(${useCaseStr}, '${sort}'${topNStr}${optionsStr})`;
 };

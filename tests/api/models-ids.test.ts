@@ -11,9 +11,11 @@ describe('/api/v1/models/ids', () => {
       locals: {
         runtime: {
           env: {
-            DATABASE_URL: 'postgres://fake',
+            DATABASE_URL: 'postgresql://user:password@host.example.com/db',
             BETTER_AUTH_URL: 'http://localhost:4321',
             BETTER_AUTH_SECRET: 'test-secret',
+            GITHUB_CLIENT_ID: 'test-client-id',
+            GITHUB_CLIENT_SECRET: 'test-client-secret',
           },
         },
       },
@@ -37,9 +39,11 @@ describe('/api/v1/models/ids', () => {
       locals: {
         runtime: {
           env: {
-            DATABASE_URL: 'postgres://fake',
+            DATABASE_URL: 'postgresql://user:password@host.example.com/db',
             BETTER_AUTH_URL: 'http://localhost:4321',
             BETTER_AUTH_SECRET: 'test-secret',
+            GITHUB_CLIENT_ID: 'test-client-id',
+            GITHUB_CLIENT_SECRET: 'test-client-secret',
           },
         },
       },
@@ -63,9 +67,11 @@ describe('/api/v1/models/ids', () => {
       locals: {
         runtime: {
           env: {
-            DATABASE_URL: 'postgres://fake',
+            DATABASE_URL: 'postgresql://user:password@host.example.com/db',
             BETTER_AUTH_URL: 'http://localhost:4321',
             BETTER_AUTH_SECRET: 'test-secret',
+            GITHUB_CLIENT_ID: 'test-client-id',
+            GITHUB_CLIENT_SECRET: 'test-client-secret',
           },
         },
       },
@@ -86,9 +92,11 @@ describe('/api/v1/models/ids', () => {
       locals: {
         runtime: {
           env: {
-            DATABASE_URL: 'postgres://fake',
+            DATABASE_URL: 'postgresql://user:password@host.example.com/db',
             BETTER_AUTH_URL: 'http://localhost:4321',
             BETTER_AUTH_SECRET: 'test-secret',
+            GITHUB_CLIENT_ID: 'test-client-id',
+            GITHUB_CLIENT_SECRET: 'test-client-secret',
           },
         },
       },

@@ -1,4 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+
+export interface ResponseDataParams {
+  useCases?: string[];
+  sort?: string;
+  topN?: number;
+  maxErrorRate?: number;
+  timeRange?: string;
+  myReports?: boolean;
+}
+
+export interface ParsedResponseData {
+  ids: string[];
+  count: number;
+  params?: ResponseDataParams;
+}
 
 export interface ApiRequestLog {
   id: string;
@@ -6,6 +22,7 @@ export interface ApiRequestLog {
   method: string;
   statusCode: number;
   responseTimeMs: number | null;
+  responseData: string | null; // JSON string: {"ids": [...], "count": N, "params": {...}}
   createdAt: string;
   apiKeyId: string | null;
   apiKeyName: string | null;
@@ -20,99 +37,134 @@ export interface FeedbackItem {
   details: string | null;
   source: string | null;
   createdAt: string;
+  apiKeyId: string | null;
+  apiKeyName: string | null;
+  apiKeyPrefix: string | null;
 }
 
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
+export interface LinkedFeedbackItem {
+  id: string;
+  modelId: string;
+  isSuccess: boolean;
+  issue: string | null;
+  details: string | null;
+  createdAt: string;
+}
+
+export interface UnifiedHistoryItem {
+  id: string;
+  type: 'request' | 'feedback';
+  createdAt: string;
+  // Request fields (null for feedback)
+  endpoint: string | null;
+  method: string | null;
+  statusCode: number | null;
+  responseTimeMs: number | null;
+  responseData: string | null; // JSON string: {"ids": [...], "count": N, "params": {...}}
+  apiKeyId: string | null;
+  apiKeyName: string | null;
+  apiKeyPrefix: string | null;
+  // Linked feedback (for requests only)
+  linkedFeedback?: LinkedFeedbackItem[];
+  timeToFirstFeedbackMs?: number | null;
+  // Feedback fields (null for requests)
+  modelId: string | null;
+  isSuccess: boolean | null;
+  issue: string | null;
+  details: string | null;
+}
+
+interface HistoryResponse<T> {
+  items: T[];
   hasMore: boolean;
 }
 
 interface UseHistoryResult<T> {
   items: T[];
-  pagination: Pagination;
+  hasMore: boolean;
   isLoading: boolean;
+  isFetchingMore: boolean;
   error: string | null;
-  nextPage: () => void;
-  prevPage: () => void;
-  goToPage: (page: number) => void;
+  loadMore: () => void;
   refresh: () => void;
 }
 
-export function useHistory<T extends ApiRequestLog | FeedbackItem>(
-  type: 'requests' | 'feedback',
-  limit = 20
-): UseHistoryResult<T> {
-  const [page, setPage] = useState(1);
-  const [items, setItems] = useState<T[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
-    page: 1,
-    limit,
-    total: 0,
-    hasMore: false,
+interface UseHistoryOptions {
+  enabled?: boolean;
+  apiKeyId?: string | null;
+}
+
+async function fetchHistory<T>(
+  type: string,
+  page: number,
+  limit: number,
+  apiKeyId?: string | null
+): Promise<HistoryResponse<T> & { page: number }> {
+  const params = new URLSearchParams({
+    type,
+    page: String(page),
+    limit: String(limit),
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  if (apiKeyId) params.set('apiKeyId', apiKeyId);
 
-  const fetchHistory = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const response = await fetch(`/api/auth/history?${params}`, {
+    credentials: 'include',
+  });
 
-    try {
-      const response = await fetch(`/api/auth/history?type=${type}&page=${page}&limit=${limit}`);
-      const contentType = response.headers.get('content-type') || '';
-      const isJson = contentType.includes('application/json');
-      const payload = isJson ? await response.json() : await response.text();
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
+  const payload = isJson ? await response.json() : await response.text();
 
-      if (!response.ok) {
-        const message =
-          isJson && payload && typeof payload === 'object' && 'error' in payload
-            ? String(payload.error)
-            : `Failed to fetch history (${response.status})`;
-        throw new Error(message);
-      }
+  if (!response.ok) {
+    const message =
+      isJson && payload && typeof payload === 'object' && 'error' in payload
+        ? String(payload.error)
+        : `Failed to fetch history (${response.status})`;
+    throw new Error(message);
+  }
 
-      if (!isJson || !payload || typeof payload !== 'object') {
-        throw new Error('Unexpected response format from history endpoint');
-      }
+  if (!isJson || !payload || typeof payload !== 'object') {
+    throw new Error('Unexpected response format from history endpoint');
+  }
 
-      setItems(payload.items ?? []);
-      setPagination(payload.pagination ?? { page, limit, total: 0, hasMore: false });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setItems([]);
-    } finally {
-      setIsLoading(false);
+  return {
+    items: payload.items ?? [],
+    hasMore: payload.hasMore ?? false,
+    page,
+  };
+}
+
+export function useHistory<T extends ApiRequestLog | FeedbackItem | UnifiedHistoryItem>(
+  type: 'requests' | 'feedback' | 'unified',
+  limit = 20,
+  options?: UseHistoryOptions
+): UseHistoryResult<T> {
+  const { data, isLoading, isFetchingNextPage, error, fetchNextPage, hasNextPage, refetch } =
+    useInfiniteQuery({
+      queryKey: ['history', type, limit, options?.apiKeyId],
+      queryFn: ({ pageParam }) => fetchHistory<T>(type, pageParam, limit, options?.apiKeyId),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+      enabled: options?.enabled ?? true,
+    });
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [type, page, limit]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
-
-  const nextPage = useCallback(() => {
-    if (pagination.hasMore) {
-      setPage((p) => p + 1);
-    }
-  }, [pagination.hasMore]);
-
-  const prevPage = useCallback(() => {
-    setPage((p) => Math.max(1, p - 1));
-  }, []);
-
-  const goToPage = useCallback((newPage: number) => {
-    setPage(Math.max(1, newPage));
-  }, []);
+  // Flatten all pages into a single items array
+  const items = data?.pages.flatMap((page) => page.items) ?? [];
+  const hasMore = hasNextPage ?? false;
 
   return {
     items,
-    pagination,
+    hasMore,
     isLoading,
-    error,
-    nextPage,
-    prevPage,
-    goToPage,
-    refresh: fetchHistory,
+    isFetchingMore: isFetchingNextPage,
+    error: error instanceof Error ? error.message : error ? String(error) : null,
+    loadMore,
+    refresh: refetch,
   };
 }

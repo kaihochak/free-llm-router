@@ -15,7 +15,7 @@ async function chat(userMessage: string) {
 
   try {
     // SDK has built-in 15-min cache, so this won't hit the API on every call
-    const models = await getModelIds(['chat'], 'capable', 5);
+    const { ids: models, requestId } = await getModelIds(['chat'], 'capable', 5);
 
     for (const id of models) {
       try {
@@ -26,11 +26,11 @@ async function chat(userMessage: string) {
         const reply = res.choices[0].message.content;
         messages.push({ role: 'assistant', content: reply });
         // Report success - helps other users know this model works!
-        reportSuccess(id);
+        reportSuccess(id, requestId);
         return reply;
       } catch (e) {
         // Report with correct issue type - free, doesn't use quota
-        reportIssue(id, issueFromStatus(e.status), e.message);
+        reportIssue(id, issueFromStatus(e.status), requestId, e.message);
       }
     }
   } catch {

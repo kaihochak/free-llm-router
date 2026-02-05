@@ -96,6 +96,7 @@ export const apiRequestLogs = pgTable('api_request_logs', {
   method: text('method').notNull(),
   statusCode: integer('status_code').notNull(),
   responseTimeMs: integer('response_time_ms'),
+  responseData: text('response_data'), // JSON string: {"ids": [...], "count": N}
   createdAt: timestamp('created_at').defaultNow(),
 });
 

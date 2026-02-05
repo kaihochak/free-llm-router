@@ -1,7 +1,9 @@
 import { sql as drizzleSql } from 'drizzle-orm';
 import { createDb, type Database } from './pool';
 
-type RlsTransaction = Parameters<Database['transaction']>[0] extends (tx: infer T) => any ? T : never;
+type RlsTransaction = Parameters<Database['transaction']>[0] extends (tx: infer T) => any
+  ? T
+  : never;
 
 /**
  * Execute Drizzle ORM queries within an RLS-protected transaction.

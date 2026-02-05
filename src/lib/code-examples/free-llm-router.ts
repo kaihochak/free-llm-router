@@ -9,11 +9,13 @@
  *   - Falls back to stale cache on API errors (resilient to outages)
  *
  * Usage:
- *   const ids = await getModelIds(['tools']);
- *   const fresh = await getModelIds(['chat'], 'contextLength', 5, { maxErrorRate: 20, timeRange: '24h', myReports: true, cache: 'no-store' });
+ *   const { ids, requestId } = await getModelIds(['tools']);
+ *   // Pass requestId to reportSuccess/reportIssue for request-feedback correlation
+ *   reportSuccess(modelId, requestId);
+ *   reportIssue(modelId, issueFromStatus(e.status), requestId, e.message);
  */
 
-const API = 'https://free-llm-router.pages.dev/api/v1';
+const API = 'https://freellmrouter.com/api/v1';
 const API_KEY = process.env.FREE_LLM_ROUTER_API_KEY;
 
 /**
@@ -31,12 +33,19 @@ type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'all';
 // In-memory cache - 15 minute TTL (matches server refresh rate)
 // NOTE: Cache is per-instance and resets on serverless cold starts
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
-const cache = new Map<string, { data: string[]; timestamp: number }>();
+
+interface GetModelIdsResult {
+  ids: string[];
+  requestId: string;
+}
+
+const cache = new Map<string, { data: GetModelIdsResult; timestamp: number }>();
 
 /**
  * Get available free model IDs with optional filtering and sorting.
+ * Returns { ids, requestId } - use requestId when calling reportSuccess/reportIssue for correlation.
  * Default sort is 'contextLength' (largest context window first).
- * Default maxErrorRate is undefined (no filtering), timeRange is '24h', myReports is false.
+ * Default maxErrorRate is undefined (no filtering), timeRange is '30m' (server default), myReports is false.
  */
 export async function getModelIds(
   useCase?: UseCase[],
@@ -48,7 +57,7 @@ export async function getModelIds(
     timeRange?: TimeRange;
     myReports?: boolean;
   }
-): Promise<string[]> {
+): Promise<GetModelIdsResult> {
   // Sort useCase array for deterministic cache keys (avoid fragmentation)
   const normalizedUseCase = useCase ? [...useCase].sort() : undefined;
 
@@ -85,14 +94,16 @@ export async function getModelIds(
       params.set('myReports', 'true');
     }
 
-    const { ids } = await fetch(`${API}/models/ids?${params}`, {
+    const { ids, requestId } = await fetch(`${API}/models/ids?${params}`, {
       headers: { Authorization: `Bearer ${API_KEY}` },
     }).then((r) => r.json());
 
-    // Store in cache
-    cache.set(cacheKey, { data: ids, timestamp: Date.now() });
+    const result: GetModelIdsResult = { ids, requestId };
 
-    return ids;
+    // Store in cache
+    cache.set(cacheKey, { data: result, timestamp: Date.now() });
+
+    return result;
   } catch (error) {
     // Fall back to stale cache if available (resilient to API outages)
     if (cached) {
@@ -108,9 +119,11 @@ export async function getModelIds(
 
 // Report issues to help improve model health data.
 // This does NOT count towards your rate limit - you're contributing!
+// Pass requestId from getModelIds() to correlate feedback with the request.
 export function reportIssue(
   modelId: string,
   issue: 'error' | 'rate_limited' | 'unavailable',
+  requestId?: string,
   details?: string
 ) {
   fetch(`${API}/models/feedback`, {
@@ -119,20 +132,21 @@ export function reportIssue(
       Authorization: `Bearer ${API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ modelId, issue, details }),
+    body: JSON.stringify({ modelId, issue, requestId, details }),
   }).catch(() => {}); // Fire-and-forget, don't block on errors
 }
 
 // Report successful model usage to improve health metrics.
 // This does NOT count towards your rate limit - you're contributing!
-export function reportSuccess(modelId: string, details?: string) {
+// Pass requestId from getModelIds() to correlate feedback with the request.
+export function reportSuccess(modelId: string, requestId?: string, details?: string) {
   fetch(`${API}/models/feedback`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ modelId, success: true, details }),
+    body: JSON.stringify({ modelId, success: true, requestId, details }),
   }).catch(() => {}); // Fire-and-forget, don't block on errors
 }
 
