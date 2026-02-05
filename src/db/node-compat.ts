@@ -8,7 +8,7 @@
  */
 export {};
 
-if (typeof globalThis.process !== 'undefined') {
+if (typeof WebSocket === 'undefined') {
   const net = await import('net');
   if (net.setDefaultAutoSelectFamily) {
     net.setDefaultAutoSelectFamily(false);
