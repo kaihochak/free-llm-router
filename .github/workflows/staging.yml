@@ -17,7 +17,6 @@ jobs:
     environment: staging
     permissions:
       contents: read
-      deployments: write
 
     steps:
       - name: Checkout code
@@ -42,15 +41,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-
-      - name: Deploy to Cloudflare Pages (staging)
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: free-llm-router
-          directory: dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
   reset-feedback-data:
     name: Reset Staging Feedback Data
