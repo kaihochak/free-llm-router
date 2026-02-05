@@ -25,8 +25,8 @@ export function AvailabilityTabContent() {
         available as a free model on that day.
       </p>
       <p className="mb-8 text-sm text-muted-foreground sm:text-base">
-        Data is recorded each time models are synced from OpenRouter. Models that are no longer
-        free or have been removed will show as unavailable.
+        Data is recorded each time models are synced from OpenRouter. Models that are no longer free
+        or have been removed will show as unavailable.
       </p>
 
       {/* Controls - reuse ModelControls with subset of options */}

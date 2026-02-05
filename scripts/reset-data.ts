@@ -79,9 +79,7 @@ async function resetTables(
     countsAfter[table] = Number(row?.count ?? 0);
   }
   if (verbose) {
-    const changed = tables.filter(
-      (table) => countsBefore[table] !== 0 || countsAfter[table] !== 0
-    );
+    const changed = tables.filter((table) => countsBefore[table] !== 0 || countsAfter[table] !== 0);
     if (changed.length === 0) {
       console.log('Row counts: no rows removed (all tables already empty).');
     } else {
@@ -149,9 +147,13 @@ function ensureRoleUrls(ownerUrl: string): {
   return {
     appUrl: appUrl && appPassword ? appUrl : buildRoleUrl(ownerUrl, 'fma_app', resolvedAppPassword),
     adminUrl:
-      adminUrl && adminPassword ? adminUrl : buildRoleUrl(ownerUrl, 'fma_admin', resolvedAdminPassword),
+      adminUrl && adminPassword
+        ? adminUrl
+        : buildRoleUrl(ownerUrl, 'fma_admin', resolvedAdminPassword),
     statsUrl:
-      statsUrl && statsPassword ? statsUrl : buildRoleUrl(ownerUrl, 'fma_stats', resolvedStatsPassword),
+      statsUrl && statsPassword
+        ? statsUrl
+        : buildRoleUrl(ownerUrl, 'fma_stats', resolvedStatsPassword),
     generated: missingApp || missingAdmin || missingStats,
   };
 }
@@ -220,7 +222,7 @@ async function main() {
       env: { ...process.env, DATABASE_URL: databaseUrl },
     });
     const result = await neon(databaseUrl).query(
-      "SELECT COUNT(*)::int AS count FROM \"model_feedback\" WHERE source = 'seed-script'"
+      'SELECT COUNT(*)::int AS count FROM "model_feedback" WHERE source = \'seed-script\''
     );
     const row = Array.isArray(result) ? result[0] : result?.rows?.[0];
     const seededCount = Number(row?.count ?? 0);
@@ -234,7 +236,9 @@ async function main() {
   console.log('===== Step 4/4: Done =====');
   if (generated) {
     console.log('');
-    console.log('Add the generated DATABASE_URL, DATABASE_URL_ADMIN, and DATABASE_URL_STATS to .env.');
+    console.log(
+      'Add the generated DATABASE_URL, DATABASE_URL_ADMIN, and DATABASE_URL_STATS to .env.'
+    );
   }
 }
 

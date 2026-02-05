@@ -90,7 +90,9 @@ export function HealthTabContent() {
       {/* Chart */}
       <div className="mt-6 mb-3 flex items-center gap-2">
         <span className="font-medium">Error Rate Over Time</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">&#8595; Lower is better</span>
+        <span className="text-sm text-emerald-600 dark:text-emerald-400">
+          &#8595; Lower is better
+        </span>
       </div>
       <div className="mb-8">
         <IssuesChart timeline={timeline} issues={issues} range={range} />
@@ -99,7 +101,9 @@ export function HealthTabContent() {
       {/* Issues list */}
       <div className="mb-3 flex items-center gap-2">
         <span className="font-medium">Models by Error Rate</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">&#8595; Lower is better</span>
+        <span className="text-sm text-emerald-600 dark:text-emerald-400">
+          &#8595; Lower is better
+        </span>
       </div>
       <ModelList
         models={models}

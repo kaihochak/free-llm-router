@@ -97,9 +97,7 @@ function TruncatedWithTooltip({ text, className }: { text: string; className?: s
       <TooltipTrigger asChild>
         <span className={`cursor-help ${className || ''}`}>{text}</span>
       </TooltipTrigger>
-      <TooltipContent className="max-w-xs wrap-break-word">
-        {text}
-      </TooltipContent>
+      <TooltipContent className="max-w-xs wrap-break-word">{text}</TooltipContent>
     </Tooltip>
   );
 }
@@ -134,7 +132,13 @@ function SeeMoreButton({
   );
 }
 
-function RequestHistoryTable({ enabled, apiKeyId }: { enabled?: boolean; apiKeyId?: string | null }) {
+function RequestHistoryTable({
+  enabled,
+  apiKeyId,
+}: {
+  enabled?: boolean;
+  apiKeyId?: string | null;
+}) {
   const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
     useHistory<ApiRequestLog>('requests', 15, { enabled, apiKeyId });
 
@@ -384,11 +388,7 @@ function UnifiedHistoryRows({ items }: { items: UnifiedHistoryItem[] }) {
           if (item.linkedFeedback?.length) {
             rows.push(
               ...item.linkedFeedback.map((fb) => (
-                <ChildFeedbackRow
-                  key={fb.id}
-                  feedback={fb}
-                  isUsed={fb.modelId === usedModelId}
-                />
+                <ChildFeedbackRow key={fb.id} feedback={fb} isUsed={fb.modelId === usedModelId} />
               ))
             );
           }
@@ -403,7 +403,13 @@ function UnifiedHistoryRows({ items }: { items: UnifiedHistoryItem[] }) {
   );
 }
 
-function UnifiedHistoryTable({ enabled, apiKeyId }: { enabled?: boolean; apiKeyId?: string | null }) {
+function UnifiedHistoryTable({
+  enabled,
+  apiKeyId,
+}: {
+  enabled?: boolean;
+  apiKeyId?: string | null;
+}) {
   const { items, hasMore, isLoading, isFetchingMore, error, loadMore, refresh } =
     useHistory<UnifiedHistoryItem>('unified', 15, { enabled, apiKeyId });
 

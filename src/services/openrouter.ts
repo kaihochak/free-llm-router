@@ -489,7 +489,7 @@ export async function getFeedbackCountsByRange(
       })
       .from(freeModels);
 
-    const modelMap = new Map<string, typeof modelRows[number]>();
+    const modelMap = new Map<string, (typeof modelRows)[number]>();
     for (const model of modelRows) {
       modelMap.set(model.id, model);
     }
@@ -887,10 +887,12 @@ export async function getFeedbackTimeline(
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
 
   const normalizeModelId = (modelId: string) => modelId.replace(/:free$/, '');
-  const modelIdMap = modelIds
-    ? new Map(modelIds.map((id) => [normalizeModelId(id), id]))
-    : null;
-  const normalizeBucket = (bucket: string) => bucket.replace('T', ' ').replace(/([+-].*|Z)$/, '').slice(0, 19);
+  const modelIdMap = modelIds ? new Map(modelIds.map((id) => [normalizeModelId(id), id])) : null;
+  const normalizeBucket = (bucket: string) =>
+    bucket
+      .replace('T', ' ')
+      .replace(/([+-].*|Z)$/, '')
+      .slice(0, 19);
 
   const bucketForRange = (bucket: string): string => {
     const d = new Date(bucket);

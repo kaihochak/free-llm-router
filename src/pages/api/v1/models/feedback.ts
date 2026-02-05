@@ -93,7 +93,10 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    return jsonResponse({ error: 'Failed to submit feedback' }, { status: 500, headers: apiResponseHeaders() });
+    return jsonResponse(
+      { error: 'Failed to submit feedback' },
+      { status: 500, headers: apiResponseHeaders() }
+    );
   }
 };
 

@@ -66,7 +66,11 @@ export function AvailabilityMatrix({ models, dates, loading, error }: Availabili
       const month = formatMonthHeader(date);
       if (month !== currentMonth) {
         if (currentMonth) {
-          headers.push({ month: currentMonth, startIndex: currentStart, span: index - currentStart });
+          headers.push({
+            month: currentMonth,
+            startIndex: currentStart,
+            span: index - currentStart,
+          });
         }
         currentMonth = month;
         currentStart = index;
@@ -95,7 +99,9 @@ export function AvailabilityMatrix({ models, dates, loading, error }: Availabili
 
   if (error) {
     return (
-      <div className="rounded-xl border bg-card p-8 text-center text-destructive">Error: {error}</div>
+      <div className="rounded-xl border bg-card p-8 text-center text-destructive">
+        Error: {error}
+      </div>
     );
   }
 

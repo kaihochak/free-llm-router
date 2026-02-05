@@ -86,9 +86,13 @@ function ensureRoleUrls(ownerUrl: string): {
   return {
     appUrl: appUrl && appPassword ? appUrl : buildRoleUrl(ownerUrl, 'fma_app', resolvedAppPassword),
     adminUrl:
-      adminUrl && adminPassword ? adminUrl : buildRoleUrl(ownerUrl, 'fma_admin', resolvedAdminPassword),
+      adminUrl && adminPassword
+        ? adminUrl
+        : buildRoleUrl(ownerUrl, 'fma_admin', resolvedAdminPassword),
     statsUrl:
-      statsUrl && statsPassword ? statsUrl : buildRoleUrl(ownerUrl, 'fma_stats', resolvedStatsPassword),
+      statsUrl && statsPassword
+        ? statsUrl
+        : buildRoleUrl(ownerUrl, 'fma_stats', resolvedStatsPassword),
     generated: missingApp || missingAdmin || missingStats,
   };
 }
@@ -170,7 +174,7 @@ async function main() {
     env: { ...process.env, DATABASE_URL: databaseUrl },
   });
   const seedResult = await neon(databaseUrl).query(
-    "SELECT COUNT(*)::int AS count FROM \"model_feedback\" WHERE source = 'seed-script'"
+    'SELECT COUNT(*)::int AS count FROM "model_feedback" WHERE source = \'seed-script\''
   );
   const row = Array.isArray(seedResult) ? seedResult[0] : seedResult?.rows?.[0];
   const seededCount = Number(row?.count ?? 0);
@@ -183,7 +187,9 @@ async function main() {
   console.log('===== Step 6/6: Done =====');
   if (generated) {
     console.log('');
-    console.log('Add the generated DATABASE_URL, DATABASE_URL_ADMIN, and DATABASE_URL_STATS to .env.');
+    console.log(
+      'Add the generated DATABASE_URL, DATABASE_URL_ADMIN, and DATABASE_URL_STATS to .env.'
+    );
   }
 }
 

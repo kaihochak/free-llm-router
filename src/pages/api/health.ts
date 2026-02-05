@@ -102,6 +102,9 @@ export const GET: APIRoute = async (context) => {
     );
   } catch (error) {
     console.error('[API/health] Error:', error);
-    return jsonResponse({ error: 'Failed to fetch health data' }, { status: 500, headers: apiResponseHeaders({ cors: false }) });
+    return jsonResponse(
+      { error: 'Failed to fetch health data' },
+      { status: 500, headers: apiResponseHeaders({ cors: false }) }
+    );
   }
 };

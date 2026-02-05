@@ -2,7 +2,12 @@ import type { APIRoute } from 'astro';
 import { getFilteredModels, checkModelsFreshness, ensureFreshModels } from '@/services/openrouter';
 import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
 import { corsHeaders, logApiRequest } from '@/lib/api-auth';
-import { apiResponseHeaders, jsonResponse, noContentResponse, type HeaderMap } from '@/lib/api-response';
+import {
+  apiResponseHeaders,
+  jsonResponse,
+  noContentResponse,
+  type HeaderMap,
+} from '@/lib/api-response';
 
 /**
  * Lightweight endpoint that returns only model IDs
@@ -87,7 +92,9 @@ export const GET: APIRoute = async (context) => {
         ids,
         count: ids.length,
         requestId,
-        _meta: !freshness.isFresh ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) } : undefined,
+        _meta: !freshness.isFresh
+          ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) }
+          : undefined,
       },
       { headers }
     );

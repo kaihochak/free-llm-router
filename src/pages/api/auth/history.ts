@@ -22,36 +22,32 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
     if (type === 'requests') {
       // Fetch request logs with API key info (RLS-protected)
       // Fetch limit+1 to check if there are more items
-      const items = await withUserContext(
-        databaseUrl,
-        session.user.id,
-        async (db) => {
-          return db
-            .select({
-              id: apiRequestLogs.id,
-              endpoint: apiRequestLogs.endpoint,
-              method: apiRequestLogs.method,
-              statusCode: apiRequestLogs.statusCode,
-              responseTimeMs: apiRequestLogs.responseTimeMs,
-              responseData: apiRequestLogs.responseData,
-              createdAt: apiRequestLogs.createdAt,
-              apiKeyId: apiRequestLogs.apiKeyId,
-              apiKeyName: apiKeys.name,
-              apiKeyPrefix: apiKeys.prefix,
-            })
-            .from(apiRequestLogs)
-            .leftJoin(apiKeys, eq(apiRequestLogs.apiKeyId, apiKeys.id))
-            .where(
-              and(
-                eq(apiRequestLogs.userId, session.user.id),
-                apiKeyId ? eq(apiRequestLogs.apiKeyId, apiKeyId) : undefined
-              )
+      const items = await withUserContext(databaseUrl, session.user.id, async (db) => {
+        return db
+          .select({
+            id: apiRequestLogs.id,
+            endpoint: apiRequestLogs.endpoint,
+            method: apiRequestLogs.method,
+            statusCode: apiRequestLogs.statusCode,
+            responseTimeMs: apiRequestLogs.responseTimeMs,
+            responseData: apiRequestLogs.responseData,
+            createdAt: apiRequestLogs.createdAt,
+            apiKeyId: apiRequestLogs.apiKeyId,
+            apiKeyName: apiKeys.name,
+            apiKeyPrefix: apiKeys.prefix,
+          })
+          .from(apiRequestLogs)
+          .leftJoin(apiKeys, eq(apiRequestLogs.apiKeyId, apiKeys.id))
+          .where(
+            and(
+              eq(apiRequestLogs.userId, session.user.id),
+              apiKeyId ? eq(apiRequestLogs.apiKeyId, apiKeyId) : undefined
             )
-            .orderBy(desc(apiRequestLogs.createdAt))
-            .limit(limit + 1)
-            .offset(offset);
-        }
-      );
+          )
+          .orderBy(desc(apiRequestLogs.createdAt))
+          .limit(limit + 1)
+          .offset(offset);
+      });
 
       const hasMore = items.length > limit;
       const returnItems = hasMore ? items.slice(0, limit) : items;
@@ -60,37 +56,33 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
     } else if (type === 'feedback') {
       // Fetch feedback submitted by this user with API key info (RLS-protected)
       // Fetch limit+1 to check if there are more items
-      const items = await withUserContext(
-        databaseUrl,
-        session.user.id,
-        async (db) => {
-          return db
-            .select({
-              id: modelFeedback.id,
-              modelId: modelFeedback.modelId,
-              requestId: modelFeedback.requestId,
-              isSuccess: modelFeedback.isSuccess,
-              issue: modelFeedback.issue,
-              details: modelFeedback.details,
-              source: modelFeedback.source,
-              createdAt: modelFeedback.createdAt,
-              apiKeyId: modelFeedback.apiKeyId,
-              apiKeyName: apiKeys.name,
-              apiKeyPrefix: apiKeys.prefix,
-            })
-            .from(modelFeedback)
-            .leftJoin(apiKeys, eq(modelFeedback.apiKeyId, apiKeys.id))
-            .where(
-              and(
-                eq(modelFeedback.source, session.user.id),
-                apiKeyId ? eq(modelFeedback.apiKeyId, apiKeyId) : undefined
-              )
+      const items = await withUserContext(databaseUrl, session.user.id, async (db) => {
+        return db
+          .select({
+            id: modelFeedback.id,
+            modelId: modelFeedback.modelId,
+            requestId: modelFeedback.requestId,
+            isSuccess: modelFeedback.isSuccess,
+            issue: modelFeedback.issue,
+            details: modelFeedback.details,
+            source: modelFeedback.source,
+            createdAt: modelFeedback.createdAt,
+            apiKeyId: modelFeedback.apiKeyId,
+            apiKeyName: apiKeys.name,
+            apiKeyPrefix: apiKeys.prefix,
+          })
+          .from(modelFeedback)
+          .leftJoin(apiKeys, eq(modelFeedback.apiKeyId, apiKeys.id))
+          .where(
+            and(
+              eq(modelFeedback.source, session.user.id),
+              apiKeyId ? eq(modelFeedback.apiKeyId, apiKeyId) : undefined
             )
-            .orderBy(desc(modelFeedback.createdAt))
-            .limit(limit + 1)
-            .offset(offset);
-        }
-      );
+          )
+          .orderBy(desc(modelFeedback.createdAt))
+          .limit(limit + 1)
+          .offset(offset);
+      });
 
       const hasMore = items.length > limit;
       const returnItems = hasMore ? items.slice(0, limit) : items;

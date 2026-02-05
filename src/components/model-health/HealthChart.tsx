@@ -3,12 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartTooltip,
-} from '@/components/ui/chart';
+import { type ChartConfig, ChartContainer, ChartLegend, ChartTooltip } from '@/components/ui/chart';
 import type { IssueSummary, TimelinePoint, TimeRange } from '@/services/openrouter';
 import { cn } from '@/lib/utils';
 
@@ -136,15 +131,14 @@ function SortedTooltipContent({
         {sortedPayload.map((item) => {
           const name = String(item.name ?? '');
           // Get the meta data with counts from the payload
-          const meta = item.payload?.[`${name}_meta`] as { errorRate: number; errorCount: number; totalCount: number } | undefined;
+          const meta = item.payload?.[`${name}_meta`] as
+            | { errorRate: number; errorCount: number; totalCount: number }
+            | undefined;
           const errorCount = meta?.errorCount ?? 0;
           const totalCount = meta?.totalCount ?? 0;
 
           return (
-            <div
-              key={name}
-              className="flex w-full items-center gap-2"
-            >
+            <div key={name} className="flex w-full items-center gap-2">
               <div
                 className="shrink-0 rounded-[2px] h-2.5 w-2.5"
                 style={{ backgroundColor: item.color }}
@@ -220,7 +214,10 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
   // Format timeline data for recharts - ensure all models have values (0 if missing)
   const chartData = useMemo(() => {
     return timeline.map((point) => {
-      const filledPoint: Record<string, number | string | { errorRate: number; errorCount: number; totalCount: number }> = {
+      const filledPoint: Record<
+        string,
+        number | string | { errorRate: number; errorCount: number; totalCount: number }
+      > = {
         date: point.date,
         dateLabel: formatDateLabel(point.date, range),
       };
@@ -273,7 +270,13 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
           tickMargin={8}
           minTickGap={32}
         />
-        <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} tickFormatter={(value) => `${value}%`} />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          allowDecimals={false}
+          tickFormatter={(value) => `${value}%`}
+        />
         <ChartTooltip
           cursor={false}
           content={(props) => (

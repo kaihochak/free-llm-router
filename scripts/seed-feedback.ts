@@ -66,7 +66,10 @@ async function seed() {
     return;
   }
 
-  console.log(`Found ${models.length} models:`, models.map((m) => m.id));
+  console.log(
+    `Found ${models.length} models:`,
+    models.map((m) => m.id)
+  );
 
   const feedbackRecords: (typeof modelFeedback.$inferInsert)[] = [];
   const requestRecords: (typeof apiRequestLogs.$inferInsert)[] = [];
@@ -82,7 +85,12 @@ async function seed() {
     { name: '6h', buckets: 10, intervalMs: 30 * 60 * 1000, offsetMs: 1 * 60 * 60 * 1000 }, // 1-6h ago
     { name: '24h', buckets: 12, intervalMs: 60 * 60 * 1000, offsetMs: 6 * 60 * 60 * 1000 }, // 6-24h ago
     { name: '7d', buckets: 12, intervalMs: 12 * 60 * 60 * 1000, offsetMs: 24 * 60 * 60 * 1000 }, // 1-7d ago
-    { name: '30d', buckets: 12, intervalMs: 2 * 24 * 60 * 60 * 1000, offsetMs: 7 * 24 * 60 * 60 * 1000 }, // 7-30d ago
+    {
+      name: '30d',
+      buckets: 12,
+      intervalMs: 2 * 24 * 60 * 60 * 1000,
+      offsetMs: 7 * 24 * 60 * 60 * 1000,
+    }, // 7-30d ago
   ];
 
   // If USER_ID is available, we'll also create request logs and link feedback to them
@@ -110,7 +118,14 @@ async function seed() {
         const returnedModelIds = shuffled.slice(0, numModelsReturned);
 
         // Generate random request params
-        const useCasesOptions = [['tools'], ['coding'], ['reasoning'], ['chat'], ['tools', 'coding'], null];
+        const useCasesOptions = [
+          ['tools'],
+          ['coding'],
+          ['reasoning'],
+          ['chat'],
+          ['tools', 'coding'],
+          null,
+        ];
         const sortOptions = ['capable', 'contextLength', 'maxOutput', null];
         const topNOptions = [5, 10, 20, null];
         const maxErrorRateOptions = [0.1, 0.2, 0.5, null];
@@ -250,14 +265,18 @@ async function seed() {
     }
   }
 
-  console.log(`Inserting ${feedbackRecords.length} feedback records across ${totalBuckets} time buckets...`);
+  console.log(
+    `Inserting ${feedbackRecords.length} feedback records across ${totalBuckets} time buckets...`
+  );
 
   // Insert in batches
   const batchSize = 50;
   for (let i = 0; i < feedbackRecords.length; i += batchSize) {
     const batch = feedbackRecords.slice(i, i + batchSize);
     await db.insert(modelFeedback).values(batch);
-    console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(feedbackRecords.length / batchSize)}`);
+    console.log(
+      `Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(feedbackRecords.length / batchSize)}`
+    );
   }
 
   const linkedCount = feedbackRecords.filter((f) => f.requestId).length;
@@ -318,10 +337,14 @@ async function seedAvailability(models: (typeof freeModels.$inferSelect)[]) {
     const batch = availabilityRecords.slice(i, i + batchSize);
     await db.insert(modelAvailabilitySnapshots).values(batch).onConflictDoNothing();
     inserted += batch.length;
-    console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(availabilityRecords.length / batchSize)}`);
+    console.log(
+      `Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(availabilityRecords.length / batchSize)}`
+    );
   }
 
-  console.log(`Done seeding availability! ${availabilityRecords.length} records for ${models.length} models over ${maxDays} days`);
+  console.log(
+    `Done seeding availability! ${availabilityRecords.length} records for ${models.length} models over ${maxDays} days`
+  );
 }
 
 seed().catch(console.error);
