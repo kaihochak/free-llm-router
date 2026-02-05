@@ -5,7 +5,7 @@ const prompt = 'Summarize this article in 3 bullet points: ...';
 try {
   // Get top 3 models with both chat and vision capabilities
   // SDK has built-in 15-min cache, so this won't hit the API on every call
-  const models = await getModelIds(['chat', 'vision'], 'capable', 3);
+  const { ids: models, requestId } = await getModelIds(['chat', 'vision'], 'capable', 3);
 
   // Try each model until one succeeds
   for (const id of models) {
@@ -23,16 +23,17 @@ try {
       });
       if (!res.ok) {
         // Report the right issue type - free, doesn't use quota
-        reportIssue(id, issueFromStatus(res.status), \`HTTP \${res.status}\`);
+        reportIssue(id, issueFromStatus(res.status), requestId, \`HTTP \${res.status}\`);
         continue;
       }
       const data = await res.json();
       console.log(data.choices[0].message.content);
       // Report success - helps other users know this model works!
-      reportSuccess(id);
+      reportSuccess(id, requestId);
       break; // Success - exit loop
     } catch (e) {
-      reportIssue(id, 'error', e.message); // Free - doesn't use quota
+      const status = e.status || e.response?.status;
+      reportIssue(id, issueFromStatus(status), requestId, e.message); // Free - doesn't use quota
     }
   }
 } catch {

@@ -1,12 +1,19 @@
 import type { APIRoute } from 'astro';
 import {
   getFilteredModels,
+  checkModelsFreshness,
   ensureFreshModels,
   getLastUpdated,
   getRecentFeedbackCounts,
 } from '@/services/openrouter';
-import { rateLimitHeaders, corsHeaders, logApiRequest } from '@/lib/api-auth';
+import { corsHeaders, logApiRequest } from '@/lib/api-auth';
 import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
+import {
+  apiResponseHeaders,
+  jsonResponse,
+  noContentResponse,
+  type HeaderMap,
+} from '@/lib/api-response';
 
 /**
  * Full model endpoint - returns complete model objects with all metadata
@@ -36,8 +43,13 @@ export const GET: APIRoute = async (context) => {
       // This allows unauthenticated users to see community data without error
     }
 
-    // Lazy refresh if stale
-    await ensureFreshModels(db);
+    // Check data freshness (non-blocking)
+    const freshness = await checkModelsFreshness(db);
+
+    // If critically stale (>2h), attempt fallback sync with lock (prevents thundering herd)
+    if (freshness.isCriticallyStale) {
+      await ensureFreshModels(db);
+    }
 
     // Fetch filtered and sorted models + feedback counts
     const [allModels, feedbackCounts, updatedAt] = await Promise.all([
@@ -59,24 +71,31 @@ export const GET: APIRoute = async (context) => {
       responseTimeMs: Math.round(performance.now() - startTime),
     });
 
-    return new Response(
-      JSON.stringify({
+    // Build response headers
+    const headers: HeaderMap = apiResponseHeaders({
+      cacheControl: 'private, max-age=60',
+      validation,
+    });
+
+    // Add staleness warning headers if data is stale
+    if (!freshness.isFresh) {
+      headers['X-Data-Stale'] = 'true';
+      headers['X-Data-Age-Seconds'] = String(Math.round(freshness.ageMs / 1000));
+    }
+
+    return jsonResponse(
+      {
         models,
         feedbackCounts,
         lastUpdated: updatedAt?.toISOString() ?? new Date().toISOString(),
         useCases: useCases.length > 0 ? useCases : undefined,
         sort,
         count: models.length,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'private, max-age=60',
-          ...corsHeaders,
-          ...rateLimitHeaders(validation),
-        },
-      }
+        _meta: !freshness.isFresh
+          ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) }
+          : undefined,
+      },
+      { headers }
     );
   } catch (error) {
     console.error('[API/models/full] Error:', error);
@@ -91,16 +110,13 @@ export const GET: APIRoute = async (context) => {
       responseTimeMs: Math.round(performance.now() - startTime),
     });
 
-    return new Response(JSON.stringify({ error: 'Failed to fetch models' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    return jsonResponse(
+      { error: 'Failed to fetch models' },
+      { status: 500, headers: apiResponseHeaders() }
+    );
   }
 };
 
 export const OPTIONS: APIRoute = async () => {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+  return noContentResponse({ headers: corsHeaders });
 };

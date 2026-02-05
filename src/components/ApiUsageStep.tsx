@@ -1,27 +1,14 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
 import { useModels, generateSnippet, getModelControlsProps } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
-import { ModelCountHeader } from '@/components/ModelCountHeader';
-import { ModelList } from '@/components/ModelList';
 import { useCachedSession } from '@/lib/auth-client';
 import { ModelControls } from '@/components/ModelControls';
-import { ChevronDown } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 5;
-
-interface ApiUsageStepProps {
-  showBrowseModels?: boolean;
-}
-
-export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
+export function ApiUsageStep() {
   const { data: session } = useCachedSession();
   const modelsData = useModels();
   const {
-    models,
-    loading,
-    error,
     activeUseCases,
     activeSort,
     activeTopN,
@@ -29,24 +16,11 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
     activeMaxErrorRate,
     activeTimeRange,
     activeMyReports,
-    lastUpdated,
     apiUrl,
   } = modelsData;
   const modelControlsProps = getModelControlsProps(modelsData);
 
   const snippet = generateSnippet(apiUrl);
-
-  // Apply topN to models
-  const limitedModels = activeTopN ? models.slice(0, activeTopN) : models;
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(limitedModels.length / ITEMS_PER_PAGE);
-
-  // Reset to page 1 when models change
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
 
   return (
     <div className="w-full space-y-12">
@@ -72,69 +46,11 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
         </p>
       </div>
 
-      {/* Step 2: Preview Your Model List */}
-      {showBrowseModels && (
-        <div id="models" className="scroll-mt-20 space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-              2
-            </span>
-            <h3 className="text-xl font-semibold sm:text-2xl">Preview Your Live Model List</h3>
-          </div>
-          <p className="text-muted-foreground">
-            Configure use case and sorting to preview the live, health-scored list your app will
-            fetch dynamically.
-          </p>
-
-          {/* Model Controls */}
-          <ModelControls {...modelControlsProps} />
-
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <ModelCountHeader count={limitedModels.length} lastUpdated={lastUpdated} />
-
-            {totalPages > 1 && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronDown className="h-4 w-4 rotate-90" />
-                </Button>
-                <span className="text-sm text-muted-foreground px-1">
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronDown className="h-4 w-4 -rotate-90" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Model List */}
-          <ModelList
-            models={limitedModels}
-            loading={loading}
-            error={error}
-            currentPage={currentPage}
-            itemsPerPage={ITEMS_PER_PAGE}
-          />
-        </div>
-      )}
-
-      {/* Step 3: Get Your API Key */}
+      {/* Step 2: Get Your API Key */}
       <div id="get-api-key" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            {showBrowseModels ? 3 : 2}
+            2
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
         </div>
@@ -145,7 +61,7 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
         <div className="flex justify-center py-4">
           {session?.user ? (
             <Button asChild size="xl">
-              <a href="/dashboard">Go to Dashboard</a>
+              <a href="/dashboard?tab=api">Go to Dashboard</a>
             </Button>
           ) : (
             <Button asChild size="xl">
@@ -155,11 +71,11 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
         </div>
       </div>
 
-      {/* Step 4: Copy free-llm-router.ts */}
+      {/* Step 3: Copy free-llm-router.ts */}
       <div id="copy-file" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            {showBrowseModels ? 4 : 3}
+            3
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">
             Copy{' '}
@@ -175,11 +91,11 @@ export function ApiUsageStep({ showBrowseModels = true }: ApiUsageStepProps) {
         <CodeBlock code={snippet} copyLabel="Copy" />
       </div>
 
-      {/* Step 5: Use It */}
+      {/* Step 4: Use It */}
       <div id="use-it" className="space-y-3 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            {showBrowseModels ? 5 : 4}
+            4
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>

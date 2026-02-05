@@ -12,6 +12,7 @@ import {
   validateSort,
   DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
+import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
 
 function validateRange(value: string | null): TimeRange {
   const validated = validateTimeRange(value);
@@ -39,7 +40,8 @@ export const GET: APIRoute = async (context) => {
     const db = await initializeDb(context);
     if (db instanceof Response) return db;
     const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
-    const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || import.meta.env.DATABASE_URL_STATS;
+    const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
+    const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || importMetaEnv?.DATABASE_URL_STATS;
 
     const params = context.url.searchParams;
     const range = validateRange(params.get('range'));
@@ -67,40 +69,42 @@ export const GET: APIRoute = async (context) => {
     const maxErrorRateParam = params.get('maxErrorRate');
     const maxErrorRate = maxErrorRateParam ? parseFloat(maxErrorRateParam) : undefined;
 
-    const [issues, timeline] = await Promise.all([
-      getFeedbackCountsByRange(db, {
-        range,
-        userId,
-        statsDbUrl,
-        useCases: useCases && useCases.length > 0 ? useCases : undefined,
-        sort,
-        topN: topN && topN > 0 ? topN : undefined,
-        maxErrorRate: maxErrorRate !== undefined && !isNaN(maxErrorRate) ? maxErrorRate : undefined,
-      }),
-      getFeedbackTimeline(db, range, userId, statsDbUrl),
-    ]);
+    // Get filtered issues first
+    const issues = await getFeedbackCountsByRange(db, {
+      range,
+      userId,
+      statsDbUrl,
+      useCases: useCases && useCases.length > 0 ? useCases : undefined,
+      sort,
+      topN: topN && topN > 0 ? topN : undefined,
+      maxErrorRate: maxErrorRate !== undefined && !isNaN(maxErrorRate) ? maxErrorRate : undefined,
+    });
 
-    return new Response(
-      JSON.stringify({
+    // Extract model IDs from filtered issues to filter timeline
+    const filteredModelIds = issues.map((i) => i.modelId);
+
+    // Single source: stats DB functions (fma_stats role / RLS-compliant)
+    const timeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, filteredModelIds);
+
+    // Helper: does timeline have any series data (beyond date/meta)
+    const hasSeries = (points: typeof timeline) =>
+      points.some((p) => Object.keys(p).some((k) => k !== 'date' && !k.endsWith('_meta')));
+
+    return jsonResponse(
+      {
         issues,
         timeline,
         range,
         lastUpdated: new Date().toISOString(),
         count: issues.length,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=60',
-        },
-      }
+      },
+      { headers: apiResponseHeaders({ cacheControl: 'public, max-age=60', cors: false }) }
     );
   } catch (error) {
     console.error('[API/health] Error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch health data' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(
+      { error: 'Failed to fetch health data' },
+      { status: 500, headers: apiResponseHeaders({ cors: false }) }
+    );
   }
 };

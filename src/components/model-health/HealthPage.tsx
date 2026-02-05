@@ -2,7 +2,7 @@ import { useMemo, useCallback } from 'react';
 import { useHealth, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
-import { IssuesChart } from '@/components/HealthChart';
+import { IssuesChart } from '@/components/model-health/HealthChart';
 import { QueryProvider } from '@/components/QueryProvider';
 import { ModelControls } from '@/components/ModelControls';
 import type { Model } from '@/hooks/useModels';
@@ -78,15 +78,13 @@ function IssuesPageContent() {
         activeUseCases={activeUseCases}
         activeSort={activeSort}
         activeTopN={activeTopN}
-        reliabilityFilterEnabled={reliabilityFilterEnabled}
-        activeMaxErrorRate={activeMaxErrorRate}
         activeTimeRange={range}
         activeMyReports={myReports}
+        simpleHealthControls
+        showReliabilityControls={false}
         onToggleUseCase={toggleUseCase}
         onSortChange={setActiveSort}
         onTopNChange={setActiveTopN}
-        onReliabilityFilterEnabledChange={setReliabilityFilterEnabled}
-        onMaxErrorRateChange={setActiveMaxErrorRate}
         onTimeRangeChange={handleTimeRangeChange}
         onMyReportsChange={setMyReports}
         onReset={resetToDefaults}

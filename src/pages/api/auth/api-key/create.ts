@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
-import { createAuth, type AuthEnv } from '@/lib/auth';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { eq, count } from 'drizzle-orm';
 import { apiKeys } from '@/db/schema';
+import { getAuthSessionWithAuth, isSessionWithAuthError } from '@/lib/auth-session';
+import { jsonResponse } from '@/lib/api-response';
 
 const MAX_KEYS_PER_USER = 10;
 
@@ -19,60 +20,28 @@ export const OPTIONS: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const env = runtime?.env || {};
-
-  const databaseUrl = env.DATABASE_URL || import.meta.env.DATABASE_URL;
-  const databaseUrlAdmin = env.DATABASE_URL_ADMIN || import.meta.env.DATABASE_URL_ADMIN;
-  const baseUrl = env.BETTER_AUTH_URL || import.meta.env.BETTER_AUTH_URL;
-  const secret = env.BETTER_AUTH_SECRET || import.meta.env.BETTER_AUTH_SECRET;
-  const githubClientId = env.GITHUB_CLIENT_ID || import.meta.env.GITHUB_CLIENT_ID;
-  const githubClientSecret = env.GITHUB_CLIENT_SECRET || import.meta.env.GITHUB_CLIENT_SECRET;
-
-  if (!databaseUrl || !baseUrl || !secret) {
-    return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+  const result = await getAuthSessionWithAuth(request, locals);
+  if (isSessionWithAuthError(result)) {
+    return jsonResponse({ error: result.error }, { status: result.status, headers: corsHeaders });
   }
 
-  const authEnv: AuthEnv = {
-    databaseUrl,
-    databaseUrlAdmin,
-    baseUrl,
-    secret,
-    githubClientId,
-    githubClientSecret,
-  };
-  const auth = createAuth(authEnv);
-
-  // Get session from request
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user?.id) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
+  const { session, databaseUrl, auth } = result;
 
   // Count existing keys for this user
   const sql = neon(databaseUrl);
   const db = drizzle(sql);
 
-  const [result] = await db
+  const [countResult] = await db
     .select({ count: count() })
     .from(apiKeys)
     .where(eq(apiKeys.userId, session.user.id));
 
-  if (result.count >= MAX_KEYS_PER_USER) {
-    return new Response(
-      JSON.stringify({
-        error: `Maximum ${MAX_KEYS_PER_USER} API keys allowed. Delete an existing key to create a new one.`,
-      }),
+  if (countResult.count >= MAX_KEYS_PER_USER) {
+    return jsonResponse(
       {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      }
+        error: `Maximum ${MAX_KEYS_PER_USER} API keys allowed. Delete an existing key to create a new one.`,
+      },
+      { status: 403, headers: corsHeaders }
     );
   }
 
@@ -83,8 +52,5 @@ export const POST: APIRoute = async ({ request, locals }) => {
     headers: request.headers,
   });
 
-  return new Response(JSON.stringify(response), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
-  });
+  return jsonResponse(response, { headers: corsHeaders });
 };

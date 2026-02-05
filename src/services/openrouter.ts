@@ -3,6 +3,7 @@ import {
   freeModels,
   modelFeedback,
   syncMeta,
+  modelAvailabilitySnapshots,
   type Database,
   getFeedbackCounts as getFeedbackCountsStats,
   getErrorTimeline as getErrorTimelineStats,
@@ -16,7 +17,7 @@ import {
   filterModelsByUseCase,
   sortModels,
 } from '../lib/model-types';
-import { type TimeRange, TIME_RANGE_MS } from '../lib/api-definitions';
+import { type TimeRange, TIME_RANGE_MS, DEFAULT_TIME_RANGE } from '../lib/api-definitions';
 
 // Re-export types and validation functions for backwards compatibility
 export { type UseCaseType, type SortType, validateUseCases, validateSort };
@@ -181,12 +182,52 @@ export async function syncModels(db: Database): Promise<SyncResult> {
         set: { value: new Date().toISOString(), updatedAt: new Date() },
       });
 
+    // Record daily availability snapshot for all seen models
+    await recordDailyAvailabilitySnapshot(db, seenIds);
+
     return result;
   } catch (error) {
     console.error('[OpenRouterSync] Sync failed:', error);
     result.error = error instanceof Error ? error.message : 'Unknown error';
     return result;
   }
+}
+
+/**
+ * Records a daily availability snapshot for models seen during sync.
+ * Uses composite key {modelId}_{YYYY-MM-DD} to ensure one record per model per day.
+ * Multiple syncs per day will update the same record.
+ */
+export async function recordDailyAvailabilitySnapshot(
+  db: Database,
+  seenModelIds: string[]
+): Promise<{ recorded: number }> {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+  let recorded = 0;
+
+  for (const modelId of seenModelIds) {
+    const snapshotId = `${modelId}_${dateString}`;
+
+    await db
+      .insert(modelAvailabilitySnapshots)
+      .values({
+        id: snapshotId,
+        modelId,
+        snapshotDate: today,
+        isAvailable: true,
+      })
+      .onConflictDoUpdate({
+        target: modelAvailabilitySnapshots.id,
+        set: { isAvailable: true },
+      });
+
+    recorded++;
+  }
+
+  return { recorded };
 }
 
 export async function getLastUpdated(db: Database): Promise<Date | null> {
@@ -228,7 +269,7 @@ export async function getActiveModels(db: Database) {
  */
 async function getActiveModelsWithFeedback(
   db: Database,
-  timeRange: TimeRange = '24h',
+  timeRange: TimeRange = DEFAULT_TIME_RANGE,
   userId?: string,
   statsDbUrl?: string
 ) {
@@ -258,7 +299,7 @@ export async function getFilteredModels(
   useCases: UseCaseType[],
   sort: SortType,
   maxErrorRate?: number,
-  timeRange: TimeRange = '24h',
+  timeRange: TimeRange = DEFAULT_TIME_RANGE,
   userId?: string,
   statsDbUrl?: string
 ) {
@@ -279,7 +320,11 @@ export async function getFilteredModels(
   return sorted;
 }
 
-const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+// Staleness thresholds for model data
+const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour - data considered stale, headers added
+const CRITICAL_STALE_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours - triggers fallback sync
+const SYNC_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes - lock expiration for crashed syncs
+
 const FEEDBACK_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface FeedbackCounts {
@@ -294,7 +339,7 @@ export interface FeedbackCounts {
 
 export async function getRecentFeedbackCounts(
   db: Database,
-  timeRange: TimeRange = '24h',
+  timeRange: TimeRange = DEFAULT_TIME_RANGE,
   userId?: string,
   statsDbUrl?: string
 ): Promise<FeedbackCounts> {
@@ -444,7 +489,7 @@ export async function getFeedbackCountsByRange(
       })
       .from(freeModels);
 
-    const modelMap = new Map<string, typeof modelRows[number]>();
+    const modelMap = new Map<string, (typeof modelRows)[number]>();
     for (const model of modelRows) {
       modelMap.set(model.id, model);
     }
@@ -643,11 +688,104 @@ export async function getModelsWithLazyRefresh(db: Database) {
   };
 }
 
-export async function ensureFreshModels(db: Database) {
+/**
+ * Check if models data is fresh enough.
+ * Returns staleness info but NEVER triggers sync - that's done by the admin endpoint or fallback.
+ */
+export async function checkModelsFreshness(db: Database): Promise<{
+  isFresh: boolean;
+  isCriticallyStale: boolean;
+  lastUpdated: Date | null;
+  ageMs: number;
+}> {
   const lastUpdated = await getLastUpdated(db);
 
-  if (!lastUpdated || Date.now() - lastUpdated.getTime() > STALE_THRESHOLD_MS) {
+  if (!lastUpdated) {
+    return { isFresh: false, isCriticallyStale: true, lastUpdated: null, ageMs: Infinity };
+  }
+
+  const ageMs = Date.now() - lastUpdated.getTime();
+  return {
+    isFresh: ageMs <= STALE_THRESHOLD_MS,
+    isCriticallyStale: ageMs > CRITICAL_STALE_THRESHOLD_MS,
+    lastUpdated,
+    ageMs,
+  };
+}
+
+/**
+ * Try to acquire sync lock using sync_meta table.
+ * Uses 'sync_in_progress' key with timestamp to implement distributed locking.
+ */
+async function tryAcquireSyncLock(db: Database): Promise<boolean> {
+  const now = new Date();
+
+  // Check if sync is already in progress
+  const [lockRow] = await db
+    .select()
+    .from(syncMeta)
+    .where(eq(syncMeta.key, 'sync_in_progress'))
+    .limit(1);
+
+  if (lockRow?.value === 'true' && lockRow.updatedAt) {
+    // Check if lock has expired (stale lock from crashed sync)
+    const lockAge = now.getTime() - lockRow.updatedAt.getTime();
+    if (lockAge < SYNC_LOCK_DURATION_MS) {
+      return false; // Lock is still valid
+    }
+    // Lock expired, continue to acquire
+  }
+
+  // Acquire lock
+  await db
+    .insert(syncMeta)
+    .values({
+      key: 'sync_in_progress',
+      value: 'true',
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: syncMeta.key,
+      set: { value: 'true', updatedAt: now },
+    });
+
+  return true;
+}
+
+/**
+ * Release sync lock after sync completes.
+ */
+async function releaseSyncLock(db: Database): Promise<void> {
+  await db
+    .update(syncMeta)
+    .set({ value: 'false', updatedAt: new Date() })
+    .where(eq(syncMeta.key, 'sync_in_progress'));
+}
+
+/**
+ * Sync models with distributed lock to prevent thundering herd.
+ * Returns true if sync was performed, false if skipped (lock not acquired or data fresh).
+ */
+export async function ensureFreshModels(db: Database): Promise<boolean> {
+  const freshness = await checkModelsFreshness(db);
+
+  // Only sync if critically stale (>2 hours)
+  if (!freshness.isCriticallyStale) {
+    return false;
+  }
+
+  // Try to acquire lock
+  const lockAcquired = await tryAcquireSyncLock(db);
+  if (!lockAcquired) {
+    // Another process is syncing, don't block
+    return false;
+  }
+
+  try {
     await syncModels(db);
+    return true;
+  } finally {
+    await releaseSyncLock(db);
   }
 }
 
@@ -729,12 +867,14 @@ function generateTimeBuckets(range: TimeRange): string[] {
  * Get feedback counts grouped by time bucket and model for charting.
  * Returns array of { date, modelId1: count, modelId2: count, ... }
  * Includes all time buckets even if empty.
+ * @param modelIds - Optional filter to only include specific model IDs in the timeline
  */
 export async function getFeedbackTimeline(
   db: Database,
   range: TimeRange,
   userId?: string,
-  statsDbUrl?: string
+  statsDbUrl?: string,
+  modelIds?: string[]
 ): Promise<TimelinePoint[]> {
   const windowMs = TIME_RANGE_MS[range];
   // Use hourly buckets for 24h, daily for 7d/30d
@@ -746,29 +886,64 @@ export async function getFeedbackTimeline(
         : 'day';
   const dateTrunc = sql.raw(`date_trunc('${truncUnit}', ${modelFeedback.createdAt.name})`);
 
+  const normalizeModelId = (modelId: string) => modelId.replace(/:free$/, '');
+  const modelIdMap = modelIds ? new Map(modelIds.map((id) => [normalizeModelId(id), id])) : null;
+  const normalizeBucket = (bucket: string) =>
+    bucket
+      .replace('T', ' ')
+      .replace(/([+-].*|Z)$/, '')
+      .slice(0, 19);
+
+  const bucketForRange = (bucket: string): string => {
+    const d = new Date(bucket);
+    if (range === '15m' || range === '1h') {
+      d.setUTCSeconds(0, 0);
+    } else if (range === '6h' || range === '24h') {
+      d.setUTCMinutes(0, 0, 0);
+    } else {
+      // 7d, 30d
+      d.setUTCHours(0, 0, 0, 0);
+    }
+    return d.toISOString().replace('T', ' ').slice(0, 19);
+  };
+
   if (!userId && statsDbUrl) {
     const endTs = new Date();
     const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
     const rows = await getErrorTimelineStats(statsDbUrl, startTs, endTs);
 
-    const dataMap: Record<string, Record<string, TimelineModelData>> = {};
+    const dataMap: Record<string, Record<string, { errorCount: number; totalCount: number }>> = {};
     for (const row of rows) {
-      const bucket = row.bucket.toISOString().replace('T', ' ').slice(0, 19);
+      // Skip if modelIds filter is provided and this model is not in the list
+      const normalizedId = normalizeModelId(row.modelId);
+      const targetModelId = modelIdMap?.get(normalizedId) ?? row.modelId;
+      if (modelIdMap && !modelIdMap.has(normalizedId)) continue;
+
+      const bucket = bucketForRange(row.bucket);
       if (!dataMap[bucket]) {
         dataMap[bucket] = {};
       }
-      dataMap[bucket][row.modelId] = {
-        errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
-        errorCount: row.errorCount,
-        totalCount: row.totalCount,
-      };
+      if (!dataMap[bucket][targetModelId]) {
+        dataMap[bucket][targetModelId] = { errorCount: 0, totalCount: 0 };
+      }
+      dataMap[bucket][targetModelId].errorCount += row.errorCount;
+      dataMap[bucket][targetModelId].totalCount += row.totalCount;
     }
 
-    const allBuckets = generateTimeBuckets(range);
-    return allBuckets.map((bucket) => ({
-      date: bucket,
-      ...(dataMap[bucket] || {}),
-    }));
+    // Build timeline with computed error rates per bucket/model
+    const allBuckets = Object.keys(dataMap).sort();
+    return allBuckets.map((bucket) => {
+      const point: Record<string, string | number | TimelineModelData> = { date: bucket };
+      const bucketData = dataMap[bucket];
+      for (const modelId in bucketData) {
+        const { errorCount, totalCount } = bucketData[modelId];
+        const errorRate = totalCount > 0 ? Math.round((errorCount / totalCount) * 10000) / 100 : 0;
+        const obj = { errorRate, errorCount, totalCount };
+        point[modelId] = obj;
+        point[`${modelId}_meta`] = obj;
+      }
+      return point as TimelinePoint;
+    });
   }
 
   const conditions: SQL<unknown>[] = [
@@ -788,18 +963,22 @@ export async function getFeedbackTimeline(
     .groupBy(dateTrunc, modelFeedback.modelId)
     .orderBy(dateTrunc);
 
-  // Build map of actual data - store error rate percentage and counts
-  const dataMap: Record<string, Record<string, TimelineModelData>> = {};
+  // Build map of actual data - store counts, compute rate later
+  const dataMap: Record<string, Record<string, { errorCount: number; totalCount: number }>> = {};
   for (const row of results) {
+    // Skip if modelIds filter is provided and this model is not in the list
+    const normalizedId = normalizeModelId(row.modelId);
+    const targetModelId = modelIdMap?.get(normalizedId) ?? row.modelId;
+    if (modelIdMap && !modelIdMap.has(normalizedId)) continue;
+
     if (!dataMap[row.bucket]) {
       dataMap[row.bucket] = {};
     }
-    // Store error rate and counts for breakdown display
-    dataMap[row.bucket][row.modelId] = {
-      errorRate: row.totalCount > 0 ? Math.round((row.errorCount / row.totalCount) * 10000) / 100 : 0,
-      errorCount: row.errorCount,
-      totalCount: row.totalCount,
-    };
+    if (!dataMap[row.bucket][targetModelId]) {
+      dataMap[row.bucket][targetModelId] = { errorCount: 0, totalCount: 0 };
+    }
+    dataMap[row.bucket][targetModelId].errorCount += row.errorCount;
+    dataMap[row.bucket][targetModelId].totalCount += row.totalCount;
   }
 
   // Generate all buckets and fill with data (or empty)
@@ -810,10 +989,124 @@ export async function getFeedbackTimeline(
     const point: TimelinePoint = { date: bucket };
     const bucketData = dataMap[bucket];
     if (bucketData) {
-      Object.assign(point, bucketData);
+      for (const modelId in bucketData) {
+        const { errorCount, totalCount } = bucketData[modelId];
+        const errorRate = totalCount > 0 ? Math.round((errorCount / totalCount) * 10000) / 100 : 0;
+        const obj = { errorRate, errorCount, totalCount };
+        (point as Record<string, string | number | TimelineModelData>)[modelId] = obj;
+        (point as Record<string, string | number | TimelineModelData>)[`${modelId}_meta`] = obj;
+      }
     }
     timeline.push(point);
   }
 
   return timeline;
+}
+
+// ============================================================================
+// Model Availability Functions
+// ============================================================================
+
+export interface AvailabilityData {
+  modelId: string;
+  modelName: string;
+  modality: string | null;
+  inputModalities: string[] | null;
+  outputModalities: string[] | null;
+  supportedParameters: string[] | null;
+  contextLength: number | null;
+  maxCompletionTokens: number | null;
+  availability: Record<string, boolean>; // { "2026-01-31": true, "2026-01-30": false, ... }
+}
+
+export interface AvailabilityFilterOptions {
+  days?: number; // Default 90, max 90
+  useCases?: UseCaseType[];
+  sort?: SortType;
+}
+
+/**
+ * Get model availability history over a date range.
+ * Returns models with their daily availability status and all dates in range.
+ */
+export async function getModelAvailability(
+  db: Database,
+  options: AvailabilityFilterOptions = {}
+): Promise<{ models: AvailabilityData[]; dates: string[] }> {
+  const days = Math.min(options.days ?? 90, 90);
+  const cutoffDate = new Date();
+  cutoffDate.setUTCDate(cutoffDate.getUTCDate() - days);
+  cutoffDate.setUTCHours(0, 0, 0, 0);
+
+  // Get all snapshots within range
+  const snapshots = await db
+    .select({
+      modelId: modelAvailabilitySnapshots.modelId,
+      snapshotDate: modelAvailabilitySnapshots.snapshotDate,
+      isAvailable: modelAvailabilitySnapshots.isAvailable,
+    })
+    .from(modelAvailabilitySnapshots)
+    .where(gte(modelAvailabilitySnapshots.snapshotDate, cutoffDate));
+
+  // Get model metadata (all models, not just active, to show historical data)
+  const models = await db
+    .select({
+      id: freeModels.id,
+      name: freeModels.name,
+      modality: freeModels.modality,
+      inputModalities: freeModels.inputModalities,
+      outputModalities: freeModels.outputModalities,
+      supportedParameters: freeModels.supportedParameters,
+      contextLength: freeModels.contextLength,
+      maxCompletionTokens: freeModels.maxCompletionTokens,
+    })
+    .from(freeModels);
+
+  // Build availability map: { modelId: { "2026-01-31": true, ... } }
+  const availabilityMap: Record<string, Record<string, boolean>> = {};
+
+  for (const snapshot of snapshots) {
+    const dateStr = snapshot.snapshotDate.toISOString().split('T')[0];
+
+    if (!availabilityMap[snapshot.modelId]) {
+      availabilityMap[snapshot.modelId] = {};
+    }
+    availabilityMap[snapshot.modelId][dateStr] = snapshot.isAvailable;
+  }
+
+  // Generate all dates in range (oldest first)
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+
+  // Only include models that have at least one availability record
+  const modelsWithAvailability = models.filter((model) => availabilityMap[model.id]);
+
+  // Combine model data with availability
+  let result: AvailabilityData[] = modelsWithAvailability.map((model) => ({
+    modelId: model.id,
+    modelName: model.name,
+    modality: model.modality,
+    inputModalities: model.inputModalities,
+    outputModalities: model.outputModalities,
+    supportedParameters: model.supportedParameters,
+    contextLength: model.contextLength,
+    maxCompletionTokens: model.maxCompletionTokens,
+    availability: availabilityMap[model.id] ?? {},
+  }));
+
+  // Apply use case filtering
+  if (options.useCases && options.useCases.length > 0) {
+    result = filterModelsByUseCase(result, options.useCases);
+  }
+
+  // Apply sorting
+  if (options.sort) {
+    result = sortModels(result, options.sort);
+  }
+
+  return { models: result, dates };
 }

@@ -3,12 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartTooltip,
-} from '@/components/ui/chart';
+import { type ChartConfig, ChartContainer, ChartLegend, ChartTooltip } from '@/components/ui/chart';
 import type { IssueSummary, TimelinePoint, TimeRange } from '@/services/openrouter';
 import { cn } from '@/lib/utils';
 
@@ -68,7 +63,7 @@ function InteractiveLegendContent({
   const issuesMap = new Map(issues.map((issue) => [issue.modelId, issue]));
 
   return (
-    <div className="flex items-center justify-center gap-x-4 gap-y-2 pt-3 max-h-30 overflow-x-auto custom-scrollbar px-2">
+    <div className="flex items-center justify-center gap-x-4 gap-y-2 pt-3 max-h-30 overflow-x-auto px-2">
       {payload
         .filter((item) => item.type !== 'none')
         .map((item) => {
@@ -136,15 +131,14 @@ function SortedTooltipContent({
         {sortedPayload.map((item) => {
           const name = String(item.name ?? '');
           // Get the meta data with counts from the payload
-          const meta = item.payload?.[`${name}_meta`] as { errorRate: number; errorCount: number; totalCount: number } | undefined;
+          const meta = item.payload?.[`${name}_meta`] as
+            | { errorRate: number; errorCount: number; totalCount: number }
+            | undefined;
           const errorCount = meta?.errorCount ?? 0;
           const totalCount = meta?.totalCount ?? 0;
 
           return (
-            <div
-              key={name}
-              className="flex w-full items-center gap-2"
-            >
+            <div key={name} className="flex w-full items-center gap-2">
               <div
                 className="shrink-0 rounded-[2px] h-2.5 w-2.5"
                 style={{ backgroundColor: item.color }}
@@ -220,21 +214,30 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
   // Format timeline data for recharts - ensure all models have values (0 if missing)
   const chartData = useMemo(() => {
     return timeline.map((point) => {
-      const filledPoint: Record<string, number | string | { errorRate: number; errorCount: number; totalCount: number }> = {
+      const filledPoint: Record<
+        string,
+        number | string | { errorRate: number; errorCount: number; totalCount: number }
+      > = {
         date: point.date,
         dateLabel: formatDateLabel(point.date, range),
       };
       // Fill in data for each model - use errorRate for chart, keep full data for tooltip
       modelIds.forEach((modelId) => {
         const data = point[modelId];
-        if (data && typeof data === 'object' && 'errorRate' in data) {
-          // Store errorRate as the chart value, and full data with _meta suffix for tooltip
-          filledPoint[modelId] = data.errorRate;
-          filledPoint[`${modelId}_meta`] = data;
-        } else {
-          filledPoint[modelId] = 0;
-          filledPoint[`${modelId}_meta`] = { errorRate: 0, errorCount: 0, totalCount: 0 };
+        if (typeof data === 'number') {
+          filledPoint[modelId] = data;
+          filledPoint[`${modelId}_meta`] = { errorRate: data, errorCount: 0, totalCount: 0 };
+          return;
         }
+        if (data && typeof data === 'object' && 'errorRate' in data) {
+          const typedData = data as { errorRate: number; errorCount: number; totalCount: number };
+          // Store errorRate as the chart value, and full data with _meta suffix for tooltip
+          filledPoint[modelId] = typedData.errorRate;
+          filledPoint[`${modelId}_meta`] = typedData;
+          return;
+        }
+        filledPoint[modelId] = 0;
+        filledPoint[`${modelId}_meta`] = { errorRate: 0, errorCount: 0, totalCount: 0 };
       });
       return filledPoint;
     });
@@ -267,7 +270,13 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
           tickMargin={8}
           minTickGap={32}
         />
-        <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} tickFormatter={(value) => `${value}%`} />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          allowDecimals={false}
+          tickFormatter={(value) => `${value}%`}
+        />
         <ChartTooltip
           cursor={false}
           content={(props) => (
@@ -283,7 +292,8 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
           visibleSeries.has(modelId) ? (
             <Area
               key={modelId}
-              dataKey={modelId}
+              dataKey={(data) => (data as Record<string, unknown>)[modelId]}
+              name={modelId}
               type="monotone"
               fill={`url(#fill-${index})`}
               stroke={CHART_COLORS[index % CHART_COLORS.length]}

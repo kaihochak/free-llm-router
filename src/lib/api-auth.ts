@@ -2,7 +2,14 @@ import type { APIContext } from 'astro';
 import { base64Url } from '@better-auth/utils/base64';
 import { type AuthEnv } from './auth';
 import { eq, and, sql } from 'drizzle-orm';
-import { createDb, apiKeys, users, apiRequestLogs, withKeyHashContext, withUserContext } from '@/db';
+import {
+  createDb,
+  apiKeys,
+  users,
+  apiRequestLogs,
+  withKeyHashContext,
+  withUserContext,
+} from '@/db';
 
 export interface ApiKeyValidation {
   valid: boolean;
@@ -345,18 +352,32 @@ export async function logApiRequest(
     method: string;
     statusCode: number;
     responseTimeMs?: number;
+    responseData?: {
+      ids: string[];
+      count: number;
+      params?: {
+        useCases?: string[];
+        sort?: string;
+        topN?: number;
+        maxErrorRate?: number;
+        timeRange?: string;
+        myReports?: boolean;
+      };
+    };
   }
-): Promise<void> {
+): Promise<string> {
+  const id = crypto.randomUUID();
   try {
     await withUserContext(databaseUrl, params.userId, async (db) => {
       await db.insert(apiRequestLogs).values({
-        id: crypto.randomUUID(),
+        id,
         userId: params.userId,
         apiKeyId: params.apiKeyId,
         endpoint: params.endpoint,
         method: params.method,
         statusCode: params.statusCode,
         responseTimeMs: params.responseTimeMs ?? null,
+        responseData: params.responseData ? JSON.stringify(params.responseData) : null,
         createdAt: new Date(),
       });
     });
@@ -364,6 +385,7 @@ export async function logApiRequest(
     // Log but don't fail the request if logging fails
     console.error('[API Auth] Failed to log request:', error);
   }
+  return id;
 }
 
 /**
