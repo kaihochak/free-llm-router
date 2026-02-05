@@ -1,3 +1,4 @@
+import '@/db/node-compat';
 import { betterAuth } from 'better-auth';
 import type { Auth as BetterAuthInstance } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
