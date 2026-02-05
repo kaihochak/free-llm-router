@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 export function ModelHero() {
   const { models, loading } = useModels({
-    overrideTimeRange: '1h',
+    overrideTimeRange: '7d',
     overrideMyReports: false,
     overrideReliabilityFilterEnabled: false,
   });

@@ -47,7 +47,7 @@ export function OnboardingFlow() {
     toggleUseCase,
     setActiveSort,
   } = useModels({
-    overrideTimeRange: '1h',
+    overrideTimeRange: '7d',
     overrideMyReports: false,
     overrideReliabilityFilterEnabled: false,
   });

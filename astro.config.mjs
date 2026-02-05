@@ -25,6 +25,7 @@ export default defineConfig({
 		plugins: [tailwindcss()],
 		optimizeDeps: {
 			exclude: ['shiki'],
+			force: true,
 		},
 	},
 });
