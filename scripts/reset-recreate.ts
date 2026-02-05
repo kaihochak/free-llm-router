@@ -176,7 +176,7 @@ async function main() {
   const seedResult = await neon(databaseUrl).query(
     'SELECT COUNT(*)::int AS count FROM "model_feedback" WHERE source = \'seed-script\''
   );
-  const row = Array.isArray(seedResult) ? seedResult[0] : seedResult?.rows?.[0];
+  const row = seedResult[0];
   const seededCount = Number(row?.count ?? 0);
   console.log(`Seeded feedback rows: ${seededCount}`);
   if (seededCount === 0) {

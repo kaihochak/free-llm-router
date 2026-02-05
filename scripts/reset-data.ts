@@ -67,7 +67,7 @@ async function resetTables(
   const countsBefore: Record<string, number> = {};
   for (const table of tables) {
     const result = await sql.query(`SELECT COUNT(*)::int AS count FROM "${table}"`);
-    const row = Array.isArray(result) ? result[0] : result?.rows?.[0];
+    const row = result[0];
     countsBefore[table] = Number(row?.count ?? 0);
   }
   const statement = `TRUNCATE ${tables.map((t) => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE`;
@@ -75,7 +75,7 @@ async function resetTables(
   const countsAfter: Record<string, number> = {};
   for (const table of tables) {
     const result = await sql.query(`SELECT COUNT(*)::int AS count FROM "${table}"`);
-    const row = Array.isArray(result) ? result[0] : result?.rows?.[0];
+    const row = result[0];
     countsAfter[table] = Number(row?.count ?? 0);
   }
   if (verbose) {
@@ -224,7 +224,7 @@ async function main() {
     const result = await neon(databaseUrl).query(
       'SELECT COUNT(*)::int AS count FROM "model_feedback" WHERE source = \'seed-script\''
     );
-    const row = Array.isArray(result) ? result[0] : result?.rows?.[0];
+    const row = result[0];
     const seededCount = Number(row?.count ?? 0);
     console.log(`Seeded feedback rows: ${seededCount}`);
   } else {
