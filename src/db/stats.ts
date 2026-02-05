@@ -1,3 +1,4 @@
+import './node-compat';
 import { neon } from '@neondatabase/serverless';
 
 export interface FeedbackCount {
