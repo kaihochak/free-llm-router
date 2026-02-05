@@ -23,7 +23,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,ts,tsx,astro,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,tsx,astro,json,md}\"",
-    "validate": "bun run typecheck && bun run lint"
+    "validate": "bun run typecheck && bun run lint",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
@@ -63,6 +64,18 @@
     "tailwindcss": "^4.1.18",
     "ws": "^8.19.0"
   },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.astro": [
+      "prettier --write --plugin=prettier-plugin-astro"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/pg": "^8.16.0",
@@ -70,6 +83,8 @@
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9.18.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "pg": "^8.17.1",
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
