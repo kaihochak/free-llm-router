@@ -104,10 +104,7 @@ export function ModelList({
 }: ModelListProps) {
   const totalPages = Math.max(1, Math.ceil(models.length / itemsPerPage));
   const safePage = Math.min(Math.max(currentPage, 1), totalPages);
-  const paginatedModels = models.slice(
-    (safePage - 1) * itemsPerPage,
-    safePage * itemsPerPage
-  );
+  const paginatedModels = models.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
   const displayCount = headerCount ?? models.length;
   const canPaginate = Boolean(onPageChange) && totalPages > 1;
 

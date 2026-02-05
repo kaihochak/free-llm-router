@@ -170,13 +170,7 @@ export function useHealth(options?: UseHealthOptions) {
       setReliabilityFilterEnabled(HEALTH_DEFAULT_RELIABILITY_FILTER_ENABLED);
       setDefaultsVersion(HEALTH_DEFAULTS_VERSION);
     }
-  }, [
-    defaultsVersion,
-    setRange,
-    setActiveTopN,
-    setReliabilityFilterEnabled,
-    setDefaultsVersion,
-  ]);
+  }, [defaultsVersion, setRange, setActiveTopN, setReliabilityFilterEnabled, setDefaultsVersion]);
 
   const {
     data,

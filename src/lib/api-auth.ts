@@ -2,7 +2,14 @@ import type { APIContext } from 'astro';
 import { base64Url } from '@better-auth/utils/base64';
 import { type AuthEnv } from './auth';
 import { eq, and, sql } from 'drizzle-orm';
-import { createDb, apiKeys, users, apiRequestLogs, withKeyHashContext, withUserContext } from '@/db';
+import {
+  createDb,
+  apiKeys,
+  users,
+  apiRequestLogs,
+  withKeyHashContext,
+  withUserContext,
+} from '@/db';
 
 export interface ApiKeyValidation {
   valid: boolean;

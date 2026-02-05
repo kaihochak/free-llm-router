@@ -158,22 +158,19 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
   const [configuringKey, setConfiguringKey] = useState<ApiKey | null>(null);
   const [preferences, setPreferences] = useState<ApiKeyPreferences>({});
   const [previewPage, setPreviewPage] = useState(1);
-  const [prefsMessage, setPrefsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [prefsMessage, setPrefsMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   // Query: API keys list
-  const {
-    data: apiKeys = [],
-    isLoading: isLoadingKeys,
-  } = useQuery({
+  const { data: apiKeys = [], isLoading: isLoadingKeys } = useQuery({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
   });
 
   // Query: Models for preview (only when dialog is open)
-  const {
-    data: modelsData,
-    isLoading: isLoadingModels,
-  } = useQuery({
+  const { data: modelsData, isLoading: isLoadingModels } = useQuery({
     queryKey: [
       'previewModels',
       preferences.timeRange || DEFAULT_TIME_RANGE,
@@ -416,7 +413,10 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
               disabled={createKeyMutation.isPending}
               className="flex-1"
             />
-            <Button type="submit" disabled={createKeyMutation.isPending || !keyName.trim() || !canCreateKey}>
+            <Button
+              type="submit"
+              disabled={createKeyMutation.isPending || !keyName.trim() || !canCreateKey}
+            >
               {createKeyMutation.isPending
                 ? 'Creating...'
                 : canCreateKey
@@ -479,7 +479,9 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
                             variant="ghost"
                             size="sm"
                             onClick={() => setKeyToDelete(key.id)}
-                            disabled={deleteKeyMutation.isPending && deleteKeyMutation.variables === key.id}
+                            disabled={
+                              deleteKeyMutation.isPending && deleteKeyMutation.variables === key.id
+                            }
                             className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                             title="Delete API key"
                           >
@@ -524,8 +526,8 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
           <DialogHeader>
             <DialogTitle>Configure API Key</DialogTitle>
             <DialogDescription>
-              Set default preferences for <strong>{configuringKey?.name}</strong>. These will be used
-              when you call the API without query parameters.
+              Set default preferences for <strong>{configuringKey?.name}</strong>. These will be
+              used when you call the API without query parameters.
             </DialogDescription>
           </DialogHeader>
 
@@ -540,12 +542,27 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
               activeMyReports={preferences.myReports || DEFAULT_MY_REPORTS}
               showReliabilityControls={true}
               onToggleUseCase={toggleUseCase}
-              onSortChange={(sort) => { updatePref('sort', sort); setPreviewPage(1); }}
-              onTopNChange={(topN) => { updatePref('topN', topN); setPreviewPage(1); }}
+              onSortChange={(sort) => {
+                updatePref('sort', sort);
+                setPreviewPage(1);
+              }}
+              onTopNChange={(topN) => {
+                updatePref('topN', topN);
+                setPreviewPage(1);
+              }}
               onReliabilityFilterEnabledChange={handleReliabilityFilterEnabledChange}
-              onMaxErrorRateChange={(rate) => { updatePref('maxErrorRate', rate); setPreviewPage(1); }}
-              onTimeRangeChange={(range) => { updatePref('timeRange', range as TimeRange); setPreviewPage(1); }}
-              onMyReportsChange={(val) => { updatePref('myReports', val); setPreviewPage(1); }}
+              onMaxErrorRateChange={(rate) => {
+                updatePref('maxErrorRate', rate);
+                setPreviewPage(1);
+              }}
+              onTimeRangeChange={(range) => {
+                updatePref('timeRange', range as TimeRange);
+                setPreviewPage(1);
+              }}
+              onMyReportsChange={(val) => {
+                updatePref('myReports', val);
+                setPreviewPage(1);
+              }}
               onReset={handleResetPrefs}
               size="sm"
             />
@@ -583,7 +600,10 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
 
           <DialogFooter>
             <div className="flex items-center gap-3 w-full">
-              <Button onClick={() => savePreferencesMutation.mutate()} disabled={savePreferencesMutation.isPending}>
+              <Button
+                onClick={() => savePreferencesMutation.mutate()}
+                disabled={savePreferencesMutation.isPending}
+              >
                 {savePreferencesMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (

@@ -44,7 +44,6 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
     });
   }
 
-
   const ip = getClientIp(request);
   const { limited } = rateLimiter.check(ip);
   if (limited) {

@@ -63,9 +63,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const db = dbFactory(databaseUrl);
 
     // Calculate cutoff dates
-    const feedbackCutoff = new Date(now.getTime() - MODEL_FEEDBACK_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const feedbackCutoff = new Date(
+      now.getTime() - MODEL_FEEDBACK_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    );
     const logsCutoff = new Date(now.getTime() - API_LOGS_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-    const availabilityCutoff = new Date(now.getTime() - AVAILABILITY_SNAPSHOTS_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const availabilityCutoff = new Date(
+      now.getTime() - AVAILABILITY_SNAPSHOTS_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    );
 
     // Delete old model feedback
     const feedbackResult = await db
@@ -100,6 +104,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   } catch (error) {
     console.error('[API/admin/cleanup] Error:', error);
-    return jsonResponse({ error: 'Cleanup failed' }, { status: 500, headers: apiResponseHeaders({ cors: false }) });
+    return jsonResponse(
+      { error: 'Cleanup failed' },
+      { status: 500, headers: apiResponseHeaders({ cors: false }) }
+    );
   }
 };

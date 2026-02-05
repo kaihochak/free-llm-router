@@ -290,11 +290,17 @@ export function validatePreferences(input: unknown): ApiKeyPreferences {
 
   // Validate maxErrorRate
   if (typeof pref.maxErrorRate === 'number') {
-    result.maxErrorRate = Math.min(Math.max(MAX_ERROR_RATE_MIN, pref.maxErrorRate), MAX_ERROR_RATE_MAX);
+    result.maxErrorRate = Math.min(
+      Math.max(MAX_ERROR_RATE_MIN, pref.maxErrorRate),
+      MAX_ERROR_RATE_MAX
+    );
   }
 
   // Validate timeRange
-  if (typeof pref.timeRange === 'string' && VALID_TIME_RANGES.includes(pref.timeRange as TimeRange)) {
+  if (
+    typeof pref.timeRange === 'string' &&
+    VALID_TIME_RANGES.includes(pref.timeRange as TimeRange)
+  ) {
     result.timeRange = pref.timeRange as TimeRange;
   }
 

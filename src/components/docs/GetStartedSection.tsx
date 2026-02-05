@@ -7,13 +7,7 @@ import { ModelList } from '@/components/ModelList';
 
 export function GetStartedSection() {
   const modelsData = useModels();
-  const {
-    models,
-    loading,
-    error,
-    activeTopN,
-    lastUpdated,
-  } = modelsData;
+  const { models, loading, error, activeTopN, lastUpdated } = modelsData;
   const modelControlsProps = getModelControlsProps(modelsData);
 
   const previewModels = activeTopN ? models.slice(0, activeTopN) : models;

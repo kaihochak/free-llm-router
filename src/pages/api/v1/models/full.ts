@@ -8,7 +8,12 @@ import {
 } from '@/services/openrouter';
 import { corsHeaders, logApiRequest } from '@/lib/api-auth';
 import { initializeRequest, getUserIdIfMyReports } from '@/lib/api-params';
-import { apiResponseHeaders, jsonResponse, noContentResponse, type HeaderMap } from '@/lib/api-response';
+import {
+  apiResponseHeaders,
+  jsonResponse,
+  noContentResponse,
+  type HeaderMap,
+} from '@/lib/api-response';
 
 /**
  * Full model endpoint - returns complete model objects with all metadata
@@ -86,7 +91,9 @@ export const GET: APIRoute = async (context) => {
         useCases: useCases.length > 0 ? useCases : undefined,
         sort,
         count: models.length,
-        _meta: !freshness.isFresh ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) } : undefined,
+        _meta: !freshness.isFresh
+          ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) }
+          : undefined,
       },
       { headers }
     );
@@ -103,7 +110,10 @@ export const GET: APIRoute = async (context) => {
       responseTimeMs: Math.round(performance.now() - startTime),
     });
 
-    return jsonResponse({ error: 'Failed to fetch models' }, { status: 500, headers: apiResponseHeaders() });
+    return jsonResponse(
+      { error: 'Failed to fetch models' },
+      { status: 500, headers: apiResponseHeaders() }
+    );
   }
 };
 

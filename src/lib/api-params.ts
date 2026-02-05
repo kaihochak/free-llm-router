@@ -54,11 +54,10 @@ export function parseModelParams(
 
   // Query param provided? Use it. Otherwise use saved preference or default.
   const useCaseParam = searchParams.get('useCase');
-  const useCases =
-    useCaseParam !== null ? validateUseCases(useCaseParam) : (prefs.useCases || []);
+  const useCases = useCaseParam !== null ? validateUseCases(useCaseParam) : prefs.useCases || [];
 
   const sortParam = searchParams.get('sort');
-  const sort = sortParam !== null ? validateSort(sortParam) : (prefs.sort || DEFAULT_SORT);
+  const sort = sortParam !== null ? validateSort(sortParam) : prefs.sort || DEFAULT_SORT;
 
   const topNParam = searchParams.get('topN');
   const topN = topNParam !== null ? validateTopN(topNParam) : prefs.topN;
@@ -69,11 +68,12 @@ export function parseModelParams(
 
   const timeRangeParam = searchParams.get('timeRange');
   const timeRange =
-    timeRangeParam !== null ? validateTimeRange(timeRangeParam) : (prefs.timeRange || DEFAULT_TIME_RANGE);
+    timeRangeParam !== null
+      ? validateTimeRange(timeRangeParam)
+      : prefs.timeRange || DEFAULT_TIME_RANGE;
 
   const myReportsParam = searchParams.get('myReports');
-  const myReports =
-    myReportsParam !== null ? myReportsParam === 'true' : (prefs.myReports || false);
+  const myReports = myReportsParam !== null ? myReportsParam === 'true' : prefs.myReports || false;
 
   return { useCases, sort, topN, maxErrorRate, timeRange, myReports };
 }
@@ -81,10 +81,7 @@ export function parseModelParams(
 /**
  * Load saved preferences from an API key's metadata field
  */
-async function loadApiKeyPreferences(
-  db: Database,
-  keyId: string
-): Promise<ApiKeyPreferences> {
+async function loadApiKeyPreferences(db: Database, keyId: string): Promise<ApiKeyPreferences> {
   try {
     const [key] = await db
       .select({ metadata: apiKeys.metadata })

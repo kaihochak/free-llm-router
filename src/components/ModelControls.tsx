@@ -108,9 +108,7 @@ export function ModelControls({
     reliabilityFilterEnabled && onMaxErrorRateChange && onTimeRangeChange && onMyReportsChange;
 
   return (
-    <div
-      className={`flex items-start mb-3 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}
-    >
+    <div className={`flex items-start mb-3 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}>
       <div
         className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}
       >
@@ -250,7 +248,8 @@ export function ModelControls({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className={`text-muted-foreground ${labelClass} cursor-help`}>
-                    Health Filter {`${reliabilityFilterEnabled && activeMaxErrorRate ? `(error less than ${activeMaxErrorRate}% within the past ${activeTimeRange})` : ''}`}
+                    Health Filter{' '}
+                    {`${reliabilityFilterEnabled && activeMaxErrorRate ? `(error less than ${activeMaxErrorRate}% within the past ${activeTimeRange})` : ''}`}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>{TOOLTIP_RELIABILITY_FILTER}</TooltipContent>
@@ -316,7 +315,6 @@ export function ModelControls({
           )
         )}
       </div>
-
 
       {/* Reset button */}
       {onReset && (

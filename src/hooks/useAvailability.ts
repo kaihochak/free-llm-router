@@ -55,7 +55,10 @@ async function fetchAvailability(options: FetchAvailabilityOptions): Promise<Ava
 const AVAILABILITY_DEFAULT_DAYS = 90;
 
 export function useAvailability() {
-  const [days, setDays] = useLocalStorage<number>('freeModels:availability:days', AVAILABILITY_DEFAULT_DAYS);
+  const [days, setDays] = useLocalStorage<number>(
+    'freeModels:availability:days',
+    AVAILABILITY_DEFAULT_DAYS
+  );
   const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>(
     'freeModels:availability:useCases',
     DEFAULT_USE_CASE

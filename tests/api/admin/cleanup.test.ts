@@ -107,8 +107,12 @@ describe('/api/admin/cleanup', () => {
 
     let deleteCall = 0;
     const fixedNow = new Date('2025-01-15T12:00:00.000Z');
-    const expectedFeedbackCutoff = new Date(fixedNow.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
-    const expectedLogsCutoff = new Date(fixedNow.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const expectedFeedbackCutoff = new Date(
+      fixedNow.getTime() - 90 * 24 * 60 * 60 * 1000
+    ).toISOString();
+    const expectedLogsCutoff = new Date(
+      fixedNow.getTime() - 30 * 24 * 60 * 60 * 1000
+    ).toISOString();
 
     const context = createMockContext({
       url: 'http://localhost:4321/api/admin/cleanup',
@@ -142,15 +146,24 @@ describe('/api/admin/cleanup', () => {
     assert.strictEqual(response.status, 200);
     const body = await parseJsonResponse<{
       success: boolean;
-      deleted: { modelFeedback: number; apiRequestLogs: number };
-      cutoffs: { modelFeedback: string; apiRequestLogs: string };
+      deleted: {
+        modelFeedback: number;
+        apiRequestLogs: number;
+        availabilitySnapshots: number;
+      };
+      cutoffs: {
+        modelFeedback: string;
+        apiRequestLogs: string;
+        availabilitySnapshots: string;
+      };
     }>(response);
     assert.strictEqual(body.success, true);
-    assert.deepStrictEqual(body.deleted, { modelFeedback: 3, apiRequestLogs: 7 });
-    assert.deepStrictEqual(body.cutoffs, {
-      modelFeedback: expectedFeedbackCutoff,
-      apiRequestLogs: expectedLogsCutoff,
-    });
+    assert.strictEqual(body.deleted.modelFeedback, 3);
+    assert.strictEqual(body.deleted.apiRequestLogs, 7);
+    assert.ok(body.deleted.availabilitySnapshots !== undefined);
+    assert.strictEqual(body.cutoffs.modelFeedback, expectedFeedbackCutoff);
+    assert.strictEqual(body.cutoffs.apiRequestLogs, expectedLogsCutoff);
+    assert.ok(body.cutoffs.availabilitySnapshots !== undefined);
   });
 
   it('returns 500 when cleanup fails', async () => {

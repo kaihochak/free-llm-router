@@ -117,7 +117,10 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     );
   } catch (error) {
     console.error('[API/admin/sync-models] Error:', error);
-    return jsonResponse({ error: 'Sync failed' }, { status: 500, headers: apiResponseHeaders({ cors: false }) });
+    return jsonResponse(
+      { error: 'Sync failed' },
+      { status: 500, headers: apiResponseHeaders({ cors: false }) }
+    );
   }
 };
 

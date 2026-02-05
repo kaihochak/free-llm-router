@@ -139,21 +139,14 @@ export function useHistory<T extends ApiRequestLog | FeedbackItem | UnifiedHisto
   limit = 20,
   options?: UseHistoryOptions
 ): UseHistoryResult<T> {
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    refetch,
-  } = useInfiniteQuery({
-    queryKey: ['history', type, limit, options?.apiKeyId],
-    queryFn: ({ pageParam }) => fetchHistory<T>(type, pageParam, limit, options?.apiKeyId),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
-    enabled: options?.enabled ?? true,
-  });
+  const { data, isLoading, isFetchingNextPage, error, fetchNextPage, hasNextPage, refetch } =
+    useInfiniteQuery({
+      queryKey: ['history', type, limit, options?.apiKeyId],
+      queryFn: ({ pageParam }) => fetchHistory<T>(type, pageParam, limit, options?.apiKeyId),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+      enabled: options?.enabled ?? true,
+    });
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
