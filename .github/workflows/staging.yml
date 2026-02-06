@@ -66,3 +66,33 @@ jobs:
         run: RESET_CONFIRM=staging bun run db:reset:staging:data-only
         env:
           DATABASE_URL_OWNER: ${{ secrets.DATABASE_URL_OWNER }}
+
+  deploy-sync-worker:
+    name: Deploy Sync Worker (Staging)
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install worker dependencies
+        working-directory: workers/sync-models
+        run: bun install
+
+      - name: Deploy to Cloudflare Workers (Staging)
+        working-directory: workers/sync-models
+        run: bun run deploy:staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Set DATABASE_URL_ADMIN secret
+        working-directory: workers/sync-models
+        run: echo "${{ secrets.DATABASE_URL_ADMIN }}" | bunx wrangler secret put DATABASE_URL_ADMIN --env staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
