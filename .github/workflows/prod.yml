@@ -72,3 +72,34 @@ jobs:
           projectName: free-llm-router
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-sync-worker:
+    name: Deploy Sync Worker (Production)
+    needs: [production-checks]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install worker dependencies
+        working-directory: workers/sync-models
+        run: bun install
+
+      - name: Deploy to Cloudflare Workers (Production)
+        working-directory: workers/sync-models
+        run: bun run deploy:production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Set DATABASE_URL_ADMIN secret
+        working-directory: workers/sync-models
+        run: echo "${{ secrets.DATABASE_URL_ADMIN }}" | bunx wrangler secret put DATABASE_URL_ADMIN --env production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
