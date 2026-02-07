@@ -97,9 +97,5 @@ jobs:
         run: bun run deploy:production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-
-      - name: Set DATABASE_URL_ADMIN secret
-        working-directory: workers/sync-models
-        run: echo "${{ secrets.DATABASE_URL_ADMIN }}" | bunx wrangler secret put DATABASE_URL_ADMIN --env production
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        # Note: DATABASE_URL_ADMIN secret is set manually via:
+        # cd workers/sync-models && bunx wrangler secret put DATABASE_URL_ADMIN --env production
