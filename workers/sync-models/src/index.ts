@@ -8,13 +8,11 @@
  * - DATABASE_URL_ADMIN: Neon database URL with admin permissions
  */
 
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
 
 interface Env {
   DATABASE_URL_ADMIN: string;
 }
-
-type Sql = NeonQueryFunction<false, false>;
 
 interface OpenRouterApiModel {
   id: string;
@@ -52,7 +50,19 @@ function isFreeModel(model: OpenRouterApiModel): boolean {
   return promptCost === 0 && completionCost === 0;
 }
 
-async function syncModels(sql: Sql): Promise<SyncResult> {
+/** Escape a value for safe SQL insertion */
+function escapeValue(v: unknown): string {
+  if (v === null || v === undefined) return 'NULL';
+  if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+  if (typeof v === 'number') return String(v);
+  if (Array.isArray(v)) {
+    if (v.length === 0) return 'NULL';
+    return `ARRAY[${v.map((x) => `'${String(x).replace(/'/g, "''")}'`).join(',')}]::text[]`;
+  }
+  return `'${String(v).replace(/'/g, "''")}'`;
+}
+
+async function syncModels(databaseUrl: string): Promise<SyncResult> {
   const result: SyncResult = {
     totalApiModels: 0,
     freeModelsFound: 0,
@@ -79,95 +89,98 @@ async function syncModels(sql: Sql): Promise<SyncResult> {
     const freeModelsList = allModels.filter(isFreeModel);
     result.freeModelsFound = freeModelsList.length;
 
-    // Get existing model IDs
+    if (freeModelsList.length === 0) {
+      return result;
+    }
+
+    const sql = neon(databaseUrl);
+    const now = new Date().toISOString();
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const dateString = today.toISOString().split('T')[0];
+    const todayIso = today.toISOString();
+
+    // Get existing model IDs in one query
     const existingModels = (await sql`SELECT id FROM free_models`) as { id: string }[];
     const existingIds = new Set(existingModels.map((m) => m.id));
 
+    // Build VALUES for bulk upsert
     const seenIds: string[] = [];
-    const now = new Date();
+    const modelValues: string[] = [];
 
-    // Upsert each model
     for (const model of freeModelsList) {
       seenIds.push(model.id);
-      const isNew = !existingIds.has(model.id);
-
-      await sql`
-        INSERT INTO free_models (
-          id, name, context_length, max_completion_tokens, description,
-          modality, input_modalities, output_modalities, supported_parameters,
-          is_moderated, is_active, last_seen_at, created_at
-        ) VALUES (
-          ${model.id},
-          ${model.name},
-          ${model.context_length ?? null},
-          ${model.top_provider?.max_completion_tokens ?? null},
-          ${model.description ?? null},
-          ${model.architecture?.modality ?? null},
-          ${model.architecture?.input_modalities ?? null},
-          ${model.architecture?.output_modalities ?? null},
-          ${model.supported_parameters ?? null},
-          ${model.top_provider?.is_moderated ?? null},
-          true,
-          ${now.toISOString()},
-          ${now.toISOString()}
-        )
-        ON CONFLICT (id) DO UPDATE SET
-          name = EXCLUDED.name,
-          context_length = EXCLUDED.context_length,
-          max_completion_tokens = EXCLUDED.max_completion_tokens,
-          description = EXCLUDED.description,
-          modality = EXCLUDED.modality,
-          input_modalities = EXCLUDED.input_modalities,
-          output_modalities = EXCLUDED.output_modalities,
-          supported_parameters = EXCLUDED.supported_parameters,
-          is_moderated = EXCLUDED.is_moderated,
-          is_active = true,
-          last_seen_at = EXCLUDED.last_seen_at
-      `;
-
-      if (isNew) {
+      if (!existingIds.has(model.id)) {
         result.inserted++;
       } else {
         result.updated++;
       }
+
+      modelValues.push(`(
+        ${escapeValue(model.id)},
+        ${escapeValue(model.name)},
+        ${escapeValue(model.context_length ?? null)},
+        ${escapeValue(model.top_provider?.max_completion_tokens ?? null)},
+        ${escapeValue(model.description ?? null)},
+        ${escapeValue(model.architecture?.modality ?? null)},
+        ${escapeValue(model.architecture?.input_modalities ?? null)},
+        ${escapeValue(model.architecture?.output_modalities ?? null)},
+        ${escapeValue(model.supported_parameters ?? null)},
+        ${escapeValue(model.top_provider?.is_moderated ?? null)},
+        TRUE,
+        ${escapeValue(now)},
+        ${escapeValue(now)}
+      )`);
     }
 
-    // Mark missing models as inactive (safety: only if we got >50% of known models)
-    const activeCount = existingIds.size;
-    if (seenIds.length >= activeCount * 0.5 || activeCount === 0) {
-      if (seenIds.length > 0) {
-        const updateResult = (await sql`
-          UPDATE free_models
-          SET is_active = false
-          WHERE is_active = true
-          AND id != ALL(${seenIds})
-        `) as unknown[];
-        result.markedInactive = updateResult.length;
-      }
-    }
+    // Build snapshot VALUES
+    const snapshotValues: string[] = seenIds.map((modelId) => {
+      const snapshotId = `${modelId}_${dateString}`;
+      return `(${escapeValue(snapshotId)}, ${escapeValue(modelId)}, ${escapeValue(todayIso)}, TRUE)`;
+    });
 
-    // Update sync metadata
-    await sql`
+    // Build the seenIds list for the NOT IN clause
+    const seenIdsList = seenIds.map((id) => escapeValue(id)).join(',');
+
+    // Execute all operations in a single multi-statement query
+    // This minimizes subrequests to stay under Cloudflare's limit
+    const bulkQuery = `
+      INSERT INTO free_models (
+        id, name, context_length, max_completion_tokens, description,
+        modality, input_modalities, output_modalities, supported_parameters,
+        is_moderated, is_active, last_seen_at, created_at
+      ) VALUES ${modelValues.join(',\n')}
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        context_length = EXCLUDED.context_length,
+        max_completion_tokens = EXCLUDED.max_completion_tokens,
+        description = EXCLUDED.description,
+        modality = EXCLUDED.modality,
+        input_modalities = EXCLUDED.input_modalities,
+        output_modalities = EXCLUDED.output_modalities,
+        supported_parameters = EXCLUDED.supported_parameters,
+        is_moderated = EXCLUDED.is_moderated,
+        is_active = TRUE,
+        last_seen_at = EXCLUDED.last_seen_at;
+
+      UPDATE free_models
+      SET is_active = FALSE
+      WHERE is_active = TRUE
+      AND id NOT IN (${seenIdsList});
+
       INSERT INTO sync_meta (key, value, updated_at)
-      VALUES ('models_last_updated', ${now.toISOString()}, ${now.toISOString()})
+      VALUES ('models_last_updated', ${escapeValue(now)}, ${escapeValue(now)})
       ON CONFLICT (key) DO UPDATE SET
         value = EXCLUDED.value,
-        updated_at = EXCLUDED.updated_at
+        updated_at = EXCLUDED.updated_at;
+
+      INSERT INTO model_availability_snapshots (id, model_id, snapshot_date, is_available)
+      VALUES ${snapshotValues.join(',\n')}
+      ON CONFLICT (id) DO UPDATE SET is_available = TRUE;
     `;
 
-    // Record daily availability snapshot
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const dateString = today.toISOString().split('T')[0];
-
-    for (const modelId of seenIds) {
-      const snapshotId = `${modelId}_${dateString}`;
-      await sql`
-        INSERT INTO model_availability_snapshots (id, model_id, snapshot_date, is_available)
-        VALUES (${snapshotId}, ${modelId}, ${today.toISOString()}, true)
-        ON CONFLICT (id) DO UPDATE SET is_available = true
-      `;
-    }
+    // Use tagged template with raw SQL - wrap in array to satisfy TemplateStringsArray
+    await sql([bulkQuery] as unknown as TemplateStringsArray);
 
     return result;
   } catch (error) {
@@ -187,8 +200,7 @@ export default {
       });
     }
 
-    const sql = neon(env.DATABASE_URL_ADMIN);
-    const result = await syncModels(sql);
+    const result = await syncModels(env.DATABASE_URL_ADMIN);
 
     return new Response(JSON.stringify(result, null, 2), {
       status: result.error ? 500 : 200,
@@ -205,8 +217,7 @@ export default {
 
     console.log(`[SyncWorker] Cron triggered at ${new Date(event.scheduledTime).toISOString()}`);
 
-    const sql = neon(env.DATABASE_URL_ADMIN);
-    const result = await syncModels(sql);
+    const result = await syncModels(env.DATABASE_URL_ADMIN);
 
     console.log('[SyncWorker] Sync result:', JSON.stringify(result));
   },
