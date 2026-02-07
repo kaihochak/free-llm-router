@@ -142,9 +142,9 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
     // Build the seenIds list for the NOT IN clause
     const seenIdsList = seenIds.map((id) => escapeValue(id)).join(',');
 
-    // Execute all operations in a single multi-statement query
-    // This minimizes subrequests to stay under Cloudflare's limit
-    const bulkQuery = `
+    // Execute 4 separate queries (instead of 65+) to stay under Cloudflare's subrequest limit
+    // Query 1: Bulk upsert all models
+    await sql.query(`
       INSERT INTO free_models (
         id, name, context_length, max_completion_tokens, description,
         modality, input_modalities, output_modalities, supported_parameters,
@@ -161,26 +161,32 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
         supported_parameters = EXCLUDED.supported_parameters,
         is_moderated = EXCLUDED.is_moderated,
         is_active = TRUE,
-        last_seen_at = EXCLUDED.last_seen_at;
+        last_seen_at = EXCLUDED.last_seen_at
+    `);
 
+    // Query 2: Mark missing models as inactive
+    await sql.query(`
       UPDATE free_models
       SET is_active = FALSE
       WHERE is_active = TRUE
-      AND id NOT IN (${seenIdsList});
+      AND id NOT IN (${seenIdsList})
+    `);
 
+    // Query 3: Update sync metadata
+    await sql.query(`
       INSERT INTO sync_meta (key, value, updated_at)
       VALUES ('models_last_updated', ${escapeValue(now)}, ${escapeValue(now)})
       ON CONFLICT (key) DO UPDATE SET
         value = EXCLUDED.value,
-        updated_at = EXCLUDED.updated_at;
+        updated_at = EXCLUDED.updated_at
+    `);
 
+    // Query 4: Bulk insert availability snapshots
+    await sql.query(`
       INSERT INTO model_availability_snapshots (id, model_id, snapshot_date, is_available)
       VALUES ${snapshotValues.join(',\n')}
-      ON CONFLICT (id) DO UPDATE SET is_available = TRUE;
-    `;
-
-    // Use sql.query() for raw SQL strings (tagged template doesn't support this)
-    await sql.query(bulkQuery);
+      ON CONFLICT (id) DO UPDATE SET is_available = TRUE
+    `);
 
     return result;
   } catch (error) {
