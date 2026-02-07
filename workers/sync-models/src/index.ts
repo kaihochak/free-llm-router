@@ -179,8 +179,8 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
       ON CONFLICT (id) DO UPDATE SET is_available = TRUE;
     `;
 
-    // Use tagged template with raw SQL - wrap in array to satisfy TemplateStringsArray
-    await sql([bulkQuery] as unknown as TemplateStringsArray);
+    // Use sql.query() for raw SQL strings (tagged template doesn't support this)
+    await sql.query(bulkQuery);
 
     return result;
   } catch (error) {
