@@ -1,0 +1,17 @@
+name = "free-llm-router-sync"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# Cron trigger - runs every hour at minute 0
+[triggers]
+crons = ["0 * * * *"]
+
+# Staging environment
+[env.staging]
+name = "free-llm-router-sync-staging"
+# Secret: DATABASE_URL_ADMIN (set via wrangler secret put DATABASE_URL_ADMIN --env staging)
+
+# Production environment
+[env.production]
+name = "free-llm-router-sync-production"
+# Secret: DATABASE_URL_ADMIN (set via wrangler secret put DATABASE_URL_ADMIN --env production)
