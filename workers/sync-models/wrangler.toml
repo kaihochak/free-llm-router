@@ -9,9 +9,16 @@ crons = ["0 * * * *"]
 # Observability - enable real-time logs
 [observability]
 enabled = true
+head_sampling_rate = 1
 
 [observability.logs]
+enabled = true
+head_sampling_rate = 1
 invocation_logs = true
+
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
 
 # Staging environment
 [env.staging]
