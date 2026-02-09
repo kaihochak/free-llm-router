@@ -245,6 +245,7 @@ export function useModels(options?: UseModelsOptions) {
 
   return {
     models,
+    totalModelCount: modelsResponse.models.length,
     loading,
     error: error instanceof Error ? error.message : error ? String(error) : null,
     activeUseCases,
