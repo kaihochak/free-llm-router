@@ -105,7 +105,6 @@ function InteractiveLegendContent({
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SortedTooltipContent({
   active,
   payload,
@@ -122,7 +121,19 @@ function SortedTooltipContent({
   }
 
   // Sort by value descending (highest error rate first)
-  const sortedPayload = [...payload].sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+  const sortedPayload = payload
+    .filter((item) => {
+      const name = String(item.name ?? '');
+      const meta = item.payload?.[`${name}_meta`] as
+        | { errorRate: number; errorCount: number; totalCount: number }
+        | undefined;
+      return (meta?.totalCount ?? 0) > 0;
+    })
+    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+
+  if (sortedPayload.length === 0) {
+    return null;
+  }
 
   return (
     <div className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
@@ -211,7 +222,8 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
     [chartConfig, modelIds]
   );
 
-  // Format timeline data for recharts - ensure all models have values (0 if missing)
+  // Format timeline data for recharts.
+  // Keep missing/no-report points at 0 so the chart line stays visible.
   const chartData = useMemo(() => {
     return timeline.map((point) => {
       const filledPoint: Record<
@@ -231,7 +243,6 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
         }
         if (data && typeof data === 'object' && 'errorRate' in data) {
           const typedData = data as { errorRate: number; errorCount: number; totalCount: number };
-          // Store errorRate as the chart value, and full data with _meta suffix for tooltip
           filledPoint[modelId] = typedData.errorRate;
           filledPoint[`${modelId}_meta`] = typedData;
           return;
