@@ -22,6 +22,8 @@ export const basicUsage = (
   });
 };
 
+export const basicUsageDefault = () => basicUsageSnippet({});
+
 export const getModelIdsCall = (
   useCases: string[],
   sort: string,

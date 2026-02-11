@@ -37,6 +37,9 @@ const navItems: NavItem[] = [
       { title: '3. Configure Parameters', href: '#configure-params' },
       { title: '4. Copy Helper File', href: '#copy-file' },
       { title: '5. Use It', href: '#use-it' },
+      { title: 'Parameter Configuration', href: '#parameter-configuration' },
+      { title: 'Key Defaults', href: '#key-defaults' },
+      { title: 'Request Overrides', href: '#request-overrides' },
     ],
   },
   {
@@ -67,6 +70,7 @@ const navItems: NavItem[] = [
     href: '#code-examples',
     icon: Code,
     items: [
+      { title: 'Basic Fallback Loop', href: '#example-basic-fallback' },
       { title: 'One-off API Call', href: '#example-one-off' },
       { title: 'Chatbot', href: '#example-chatbot' },
       { title: 'Tool Calling', href: '#example-tool-calling' },

@@ -72,7 +72,7 @@ export function ModelControls({
   onTimeRangeChange,
   onMyReportsChange,
   onReset,
-  size = 'lg',
+  size = 'sm',
 }: ModelControlsProps) {
   const isSmall = size === 'sm';
 
@@ -306,7 +306,7 @@ export function ModelControls({
                       className={buttonClass}
                       onClick={() => onMyReportsChange(!activeMyReports)}
                     >
-                      {activeMyReports ? 'All Community Reports' : 'My Reports Only'}
+                      {activeMyReports ? 'My Reports Only' : 'All Community Reports'}
                     </Button>
                   </>
                 )}

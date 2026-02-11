@@ -31,8 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ModelControls } from '@/components/ModelControls';
-import { ModelList } from '@/components/ModelList';
+import { ApiPreferencesConfigurator } from '@/components/ApiPreferencesConfigurator';
 import { Copy, Check, Trash2, Key, Settings, Save, Loader2 } from 'lucide-react';
 import type { UseCaseType, TimeRange, ApiKeyPreferences } from '@/lib/api-definitions';
 import {
@@ -82,6 +81,11 @@ interface ModelsApiResponse {
   models: Model[];
   feedbackCounts: FeedbackCounts;
   lastUpdated?: string;
+}
+
+interface PreferenceSummaryItem {
+  label: string;
+  value: string;
 }
 
 // Fetch functions
@@ -144,6 +148,29 @@ async function fetchModelsForPreview(
 
 const MAX_KEYS = 10;
 
+function summarizePreferences(preferences: ApiKeyPreferences): PreferenceSummaryItem[] {
+  const useCases =
+    preferences.useCases && preferences.useCases.length > 0
+      ? preferences.useCases.join(', ')
+      : 'All';
+
+  const health =
+    preferences.maxErrorRate !== undefined
+      ? `On (${preferences.maxErrorRate}% / ${preferences.timeRange || DEFAULT_TIME_RANGE})`
+      : 'Off';
+
+  return [
+    { label: 'Use case', value: useCases },
+    { label: 'Sort', value: preferences.sort || DEFAULT_SORT },
+    { label: 'Top N', value: preferences.topN !== undefined ? String(preferences.topN) : 'Off' },
+    { label: 'Health filter', value: health },
+    {
+      label: 'Reports',
+      value: preferences.myReports ? 'My Reports Only' : 'All Community Reports',
+    },
+  ];
+}
+
 export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProps) {
   const queryClient = useQueryClient();
 
@@ -185,6 +212,26 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
       ),
     enabled: !!configuringKey,
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Query: Preference summaries for each API key (shown inline in table)
+  const { data: preferenceByKeyId = {}, isLoading: isLoadingPreferenceSummaries } = useQuery({
+    queryKey: ['apiKeyPreferenceSummaries', apiKeys.map((key) => key.id).join(',')],
+    enabled: apiKeys.length > 0,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        apiKeys.map(async (key) => {
+          try {
+            const preferences = await fetchPreferences(key.id);
+            return [key.id, preferences] as const;
+          } catch {
+            return [key.id, {}] as const;
+          }
+        })
+      );
+      return Object.fromEntries(entries) as Record<string, ApiKeyPreferences>;
+    },
+    staleTime: 60 * 1000,
   });
 
   // Mutation: Create API key
@@ -442,39 +489,33 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
                     <TableHead>Requests</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-25">Actions</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {apiKeys.map((key) => (
-                    <TableRow key={key.id}>
-                      <TableCell className="font-medium">{key.name}</TableCell>
-                      <TableCell>
-                        <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
-                          {key.prefix || key.start || 'fma_'}...
-                        </code>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {key.requestCount ?? 0}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(key.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={key.enabled ? 'default' : 'secondary'}>
-                          {key.enabled ? 'Active' : 'Disabled'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleConfigureKey(key)}
-                            title="Configure default preferences"
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
+                  {apiKeys.map((key) => {
+                    const preferenceSummary = summarizePreferences(preferenceByKeyId[key.id] || {});
+
+                    return [
+                      <TableRow key={key.id}>
+                        <TableCell className="font-medium">{key.name}</TableCell>
+                        <TableCell>
+                          <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
+                            {key.prefix || key.start || 'fma_'}...
+                          </code>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {key.requestCount ?? 0}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(key.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={key.enabled ? 'default' : 'secondary'}>
+                            {key.enabled ? 'Active' : 'Disabled'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -487,10 +528,48 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>,
+                      <TableRow
+                        key={`${key.id}-prefs`}
+                        className="hover:bg-transparent cursor-pointer"
+                        onClick={() => handleConfigureKey(key)}
+                      >
+                        <TableCell colSpan={6}>
+                          {isLoadingPreferenceSummaries ? (
+                            <span className="text-xs text-muted-foreground">
+                              Loading parameters...
+                            </span>
+                          ) : (
+                            <div className="flex items-center justify-between gap-3 rounded-md p-1">
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {preferenceSummary.map((item) => (
+                                  <Badge key={`${key.id}-${item.label}`} variant="secondary">
+                                    <span className="mr-1 text-muted-foreground">
+                                      {item.label}:
+                                    </span>
+                                    {item.value}
+                                  </Badge>
+                                ))}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConfigureKey(key);
+                                }}
+                              >
+                                <Settings className="mr-1 h-4 w-4" />
+                                Configure
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>,
+                    ];
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -532,84 +611,72 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
           </DialogHeader>
 
           <div className="py-4 space-y-6">
-            <ModelControls
-              activeUseCases={preferences.useCases || []}
-              activeSort={preferences.sort || DEFAULT_SORT}
-              activeTopN={preferences.topN}
-              reliabilityFilterEnabled={preferences.maxErrorRate !== undefined}
-              activeMaxErrorRate={preferences.maxErrorRate}
-              activeTimeRange={preferences.timeRange || DEFAULT_TIME_RANGE}
-              activeMyReports={preferences.myReports || DEFAULT_MY_REPORTS}
-              showReliabilityControls={true}
-              onToggleUseCase={toggleUseCase}
-              onSortChange={(sort) => {
-                updatePref('sort', sort);
-                setPreviewPage(1);
+            <ApiPreferencesConfigurator
+              modelControlsProps={{
+                activeUseCases: preferences.useCases || [],
+                activeSort: preferences.sort || DEFAULT_SORT,
+                activeTopN: preferences.topN,
+                reliabilityFilterEnabled: preferences.maxErrorRate !== undefined,
+                activeMaxErrorRate: preferences.maxErrorRate,
+                activeTimeRange: preferences.timeRange || DEFAULT_TIME_RANGE,
+                activeMyReports: preferences.myReports || DEFAULT_MY_REPORTS,
+                showReliabilityControls: true,
+                onToggleUseCase: toggleUseCase,
+                onSortChange: (sort) => {
+                  updatePref('sort', sort);
+                  setPreviewPage(1);
+                },
+                onTopNChange: (topN) => {
+                  updatePref('topN', topN);
+                  setPreviewPage(1);
+                },
+                onReliabilityFilterEnabledChange: handleReliabilityFilterEnabledChange,
+                onMaxErrorRateChange: (rate) => {
+                  updatePref('maxErrorRate', rate);
+                  setPreviewPage(1);
+                },
+                onTimeRangeChange: (range) => {
+                  updatePref('timeRange', range as TimeRange);
+                  setPreviewPage(1);
+                },
+                onMyReportsChange: (val) => {
+                  updatePref('myReports', val);
+                  setPreviewPage(1);
+                },
+                onReset: handleResetPrefs,
+                size: 'sm',
               }}
-              onTopNChange={(topN) => {
-                updatePref('topN', topN);
-                setPreviewPage(1);
+              modelListProps={{
+                models: previewModels,
+                loading: isLoadingModels,
+                currentPage: previewPage,
+                onPageChange: setPreviewPage,
+                itemsPerPage: 5,
+                lastUpdated: modelsData?.lastUpdated || null,
+                headerLabel: 'Preview',
               }}
-              onReliabilityFilterEnabledChange={handleReliabilityFilterEnabledChange}
-              onMaxErrorRateChange={(rate) => {
-                updatePref('maxErrorRate', rate);
-                setPreviewPage(1);
-              }}
-              onTimeRangeChange={(range) => {
-                updatePref('timeRange', range as TimeRange);
-                setPreviewPage(1);
-              }}
-              onMyReportsChange={(val) => {
-                updatePref('myReports', val);
-                setPreviewPage(1);
-              }}
-              onReset={handleResetPrefs}
-              size="sm"
+              helper={
+                <>
+                  Tune filters and preview the output list. For full parameter details, see{' '}
+                  <a href="/docs#key-params-override" className="text-primary hover:underline">
+                    docs
+                  </a>
+                  .
+                </>
+              }
             />
-
-            {/* Live model preview */}
-            <ModelList
-              models={previewModels}
-              loading={isLoadingModels}
-              currentPage={previewPage}
-              onPageChange={setPreviewPage}
-              itemsPerPage={5}
-              lastUpdated={modelsData?.lastUpdated || null}
-              headerLabel="Preview"
-            />
-
-            {/* How it works explanation */}
-            <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-              <CardContent className="pt-4 text-sm text-blue-700 dark:text-blue-300 space-y-2">
-                <p className="font-medium">How it works:</p>
-                <p>
-                  <strong>Without query params:</strong> Your saved preferences are applied.
-                </p>
-                <code className="block bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-xs">
-                  GET /api/v1/models/ids
-                </code>
-                <p>
-                  <strong>With query params:</strong> They override saved preferences.
-                </p>
-                <code className="block bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-xs">
-                  GET /api/v1/models/ids?topN=10
-                </code>
-              </CardContent>
-            </Card>
           </div>
 
           <DialogFooter>
-            <div className="flex items-center gap-3 w-full">
+            <div className="flex justify-end items-center gap-3 w-full">
               <Button
                 onClick={() => savePreferencesMutation.mutate()}
                 disabled={savePreferencesMutation.isPending}
               >
-                {savePreferencesMutation.isPending ? (
+                {savePreferencesMutation.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
                 )}
-                Save Preferences
+                Save
               </Button>
               {prefsMessage && (
                 <span
