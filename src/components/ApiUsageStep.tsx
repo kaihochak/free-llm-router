@@ -1,12 +1,9 @@
-import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
 import { useModels, generateSnippet, getModelControlsProps } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
-import { useCachedSession } from '@/lib/auth-client';
 import { ModelControls } from '@/components/ModelControls';
 
 export function ApiUsageStep() {
-  const { data: session } = useCachedSession();
   const modelsData = useModels();
   const {
     activeUseCases,
@@ -21,6 +18,7 @@ export function ApiUsageStep() {
   const modelControlsProps = getModelControlsProps(modelsData);
 
   const snippet = generateSnippet(apiUrl);
+  const defaultCallSnippet = codeExamples.getModelIdsDefaultCall();
 
   return (
     <div className="w-full space-y-12">
@@ -55,20 +53,12 @@ export function ApiUsageStep() {
           <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
         </div>
         <p className="text-muted-foreground">
-          Sign in with GitHub to create your API key. All keys share a per-user limit of 200
-          requests per 24 hours (with SDK caching, this is plenty).
+          <a href="/login" className="text-primary font-medium hover:underline hover:opacity-90">
+            Sign in with GitHub
+          </a>{' '}
+          to create your API key. All keys share a per-user limit of 200 requests per 24 hours (with
+          SDK caching, this is plenty).
         </p>
-        <div className="flex justify-center py-4">
-          {session?.user ? (
-            <Button asChild size="xl">
-              <a href="/dashboard?tab=api">Go to Dashboard</a>
-            </Button>
-          ) : (
-            <Button asChild size="xl">
-              <a href="/login">Sign in with GitHub</a>
-            </Button>
-          )}
-        </div>
       </div>
 
       {/* Step 3: Copy free-llm-router.ts */}
@@ -86,7 +76,7 @@ export function ApiUsageStep() {
         </div>
         <p className="text-muted-foreground">
           This helper fetches free model IDs from our API, reports both successes and issues back,
-          and handles caching automatically. It's a single file with no dependencies.
+          and handles caching automatically.
         </p>
         <CodeBlock code={snippet} copyLabel="Copy" />
       </div>
@@ -100,8 +90,10 @@ export function ApiUsageStep() {
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
         <p className="text-muted-foreground">
-          This is the exact `getModelIds` call for your current use case, sort, and top N.
+          Two ways to call the helper: use saved defaults from Dashboard, or override per request.
         </p>
+        <CodeBlock code={defaultCallSnippet} language="typescript" className="text-sm" />
+        <p className="text-muted-foreground">Override mode (uses your current controls):</p>
         <ModelControls {...modelControlsProps} />
         <CodeBlock
           code={codeExamples.getModelIdsCall(
