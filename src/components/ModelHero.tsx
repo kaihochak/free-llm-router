@@ -6,12 +6,12 @@ import { QueryProvider } from '@/components/QueryProvider';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 export function ModelHero() {
-  const { models, loading } = useModels({
+  const { totalModelCount, loading } = useModels({
     overrideTimeRange: '7d',
     overrideMyReports: false,
     overrideReliabilityFilterEnabled: false,
   });
-  const modelCount = loading ? '' : models?.length || null;
+  const modelCount = loading ? '' : totalModelCount || null;
 
   return (
     <div className="space-y-12">

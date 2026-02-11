@@ -280,7 +280,8 @@ async function getActiveModelsWithFeedback(
   return models.map((model) => {
     const feedback = feedbackCounts[model.id];
     const issueCount = feedback ? feedback.rateLimited + feedback.unavailable + feedback.error : 0;
-    return { ...model, issueCount };
+    const errorRate = feedback ? feedback.errorRate : 0;
+    return { ...model, issueCount, errorRate };
   });
 }
 

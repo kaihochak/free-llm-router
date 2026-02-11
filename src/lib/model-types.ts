@@ -63,7 +63,7 @@ export const SORT_CRITERIA = {
   contextLength: { field: 'contextLength', direction: 'desc' },
   maxOutput: { field: 'maxCompletionTokens', direction: 'desc' },
   capable: { field: 'supportedParameters', aggregation: 'length', direction: 'desc' },
-  leastIssues: { field: 'issueCount', direction: 'asc' },
+  leastIssues: { field: 'errorRate', direction: 'asc' },
   newest: { field: 'createdAt', direction: 'desc' },
 } as const;
 
@@ -77,6 +77,7 @@ export interface FilterableModel {
   maxCompletionTokens: number | null;
   createdAt?: string | Date | null;
   issueCount?: number;
+  errorRate?: number;
 }
 
 /**
@@ -129,7 +130,7 @@ export function getSortValue<T extends FilterableModel>(model: T, sort: SortType
     case 'capable':
       return model.supportedParameters?.length ?? 0;
     case 'leastIssues':
-      return model.issueCount ?? 0;
+      return model.errorRate ?? 0;
     case 'newest':
       return model.createdAt ? new Date(model.createdAt).getTime() : 0;
     default:
