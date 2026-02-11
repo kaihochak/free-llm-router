@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/base.astro';
 import { GetStartedSectionWithProvider } from '../components/docs/GetStartedSection';
+import { ParameterConfigurationSectionWithProvider } from '../components/docs/ParameterConfigurationSection';
 import { QueryParamsSection } from '../components/docs/QueryParamsSection';
 import { ApiReferenceSection } from '../components/docs/ApiReferenceSection';
 import { CodeExamplesSection } from '../components/docs/CodeExamplesSection';
@@ -18,6 +19,7 @@ import { DocsSidebar } from '../components/DocsSidebar';
   <DocsSidebar client:load>
     <div class="container mx-auto max-w-5xl px-4 pt-14 pb-12 space-y-20">
       <GetStartedSectionWithProvider client:load />
+      <ParameterConfigurationSectionWithProvider client:load />
       <QueryParamsSection client:load />
       <ApiReferenceSection client:load />
       <CodeExamplesSection client:load />
