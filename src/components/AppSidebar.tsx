@@ -1,4 +1,4 @@
-import { Rocket, Book, Code, ChevronRight, Settings } from 'lucide-react';
+import { Rocket, Book, Code, ChevronRight, Settings, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
   Sidebar,
@@ -37,7 +37,14 @@ const navItems: NavItem[] = [
       { title: '3. Configure Parameters', href: '#configure-params' },
       { title: '4. Copy Helper File', href: '#copy-file' },
       { title: '5. Use It', href: '#use-it' },
-      { title: 'Parameter Configuration', href: '#parameter-configuration' },
+    ],
+  },
+  {
+    title: 'Parameter Configuration',
+    href: '#parameter-configuration',
+    icon: SlidersHorizontal,
+    items: [
+      { title: 'Overview', href: '#parameter-configuration' },
       { title: 'Key Defaults', href: '#key-defaults' },
       { title: 'Request Overrides', href: '#request-overrides' },
     ],

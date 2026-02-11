@@ -72,7 +72,7 @@ export function ModelControls({
   onTimeRangeChange,
   onMyReportsChange,
   onReset,
-  size = 'sm',
+  size = 'lg',
 }: ModelControlsProps) {
   const isSmall = size === 'sm';
 
@@ -100,7 +100,7 @@ export function ModelControls({
 
   const labelClass = isSmall ? 'text-xs leading-4' : 'text-xs md:text-sm font-medium leading-5';
   const gapClass = isSmall ? 'gap-1' : 'gap-2';
-  const buttonClass = isSmall ? 'h-9! md:h-10! min-w-[20px]' : 'h-9! md:h-12! min-w-[20px]';
+  const buttonClass = isSmall ? 'h-5! md:h-8! min-w-[16px]' : 'h-8! md:h-10! min-w-[20px]';
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
 
   // Check if reliability filter controls should be shown
@@ -108,7 +108,9 @@ export function ModelControls({
     reliabilityFilterEnabled && onMaxErrorRateChange && onTimeRangeChange && onMyReportsChange;
 
   return (
-    <div className={`flex items-start mb-3 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}>
+    <div
+      className={`flex items-start bg-card/80 rounded-lg ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3 p-3 md:p-4 my-4 md:my-6 '}`}
+    >
       <div
         className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}
       >
