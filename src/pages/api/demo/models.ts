@@ -69,6 +69,11 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
 
   try {
     const params = new URLSearchParams(url.searchParams);
+    // Neutralize demo key-level saved preferences so site behavior is deterministic.
+    // Empty query values are treated as explicit "no filter"/undefined by validators.
+    params.set('useCase', '');
+    params.set('topN', '');
+    params.set('maxErrorRate', '');
     // Force myReports=false for demo - shows community data, not demo user's reports
     params.set('myReports', 'false');
     const fullUrl = `${baseUrl}/api/v1/models/full${params.toString() ? '?' + params.toString() : ''}`;

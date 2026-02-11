@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
 import { useModels, generateSnippet, getModelControlsProps } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
-import { ModelControls } from '@/components/ModelControls';
-import { ModelList } from '@/components/ModelList';
+import { ApiPreferencesConfigurator } from '@/components/ApiPreferencesConfigurator';
 import { useCachedSession, authClient } from '@/lib/auth-client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -86,7 +86,7 @@ export function ApiUsageStep() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
 
   const snippet = generateSnippet(apiUrl);
-  const defaultCallSnippet = codeExamples.getModelIdsDefaultCall();
+  const [useItMode, setUseItMode] = useState<'default' | 'override'>('default');
   const previewModels = activeTopN ? models.slice(0, activeTopN) : models;
   const [previewPage, setPreviewPage] = useState(1);
   const previewItemsPerPage = 5;
@@ -124,7 +124,7 @@ export function ApiUsageStep() {
 
     setActiveUseCases(selectedPreferences.useCases ?? DEFAULT_USE_CASE);
     setActiveSort(selectedPreferences.sort ?? DEFAULT_SORT);
-    setActiveTopN(selectedPreferences.topN ?? DEFAULT_TOP_N);
+    setActiveTopN(selectedPreferences.topN);
     setReliabilityFilterEnabled(selectedPreferences.maxErrorRate !== undefined);
     setActiveMaxErrorRate(selectedPreferences.maxErrorRate ?? DEFAULT_MAX_ERROR_RATE);
     setActiveTimeRange(selectedPreferences.timeRange ?? DEFAULT_TIME_RANGE);
@@ -183,7 +183,7 @@ export function ApiUsageStep() {
     const baseline: ApiKeyPreferences = {
       useCases: selectedPreferences.useCases ?? DEFAULT_USE_CASE,
       sort: selectedPreferences.sort ?? DEFAULT_SORT,
-      topN: selectedPreferences.topN ?? DEFAULT_TOP_N,
+      topN: selectedPreferences.topN,
       maxErrorRate: selectedPreferences.maxErrorRate,
       timeRange: selectedPreferences.timeRange ?? DEFAULT_TIME_RANGE,
       myReports: selectedPreferences.myReports ?? DEFAULT_MY_REPORTS,
@@ -197,6 +197,16 @@ export function ApiUsageStep() {
     setSaveStatus('idle');
     savePreferencesForKey({ keyId: selectedApiKeyId, preferences: currentPreferences });
   };
+
+  const defaultBasicSnippet = codeExamples.basicUsageDefault();
+  const overrideBasicSnippet = codeExamples.basicUsage(
+    activeUseCases,
+    activeSort,
+    activeTopN,
+    reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
+    reliabilityFilterEnabled ? activeTimeRange : undefined,
+    reliabilityFilterEnabled ? activeMyReports : undefined
+  );
 
   return (
     <div className="w-full space-y-12">
@@ -247,64 +257,72 @@ export function ApiUsageStep() {
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Configure Parameters</h3>
         </div>
-        {session?.user && apiKeys.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Create an API key first to save these settings per key.
-          </p>
-        )}
-        <ModelControls {...modelControlsProps} />
-        <div className="mt-3">
-          <ModelList
-            models={previewModels}
-            loading={loading}
-            error={error}
-            currentPage={previewPage}
-            onPageChange={setPreviewPage}
-            itemsPerPage={previewItemsPerPage}
-            lastUpdated={lastUpdated}
-          />
-        </div>
-        {session?.user && selectedApiKeyId && (
-          <div className="flex items-center justify-between gap-3">
-            <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
-              <SelectTrigger className="w-full sm:w-56 md:w-auto h-9 md:h-12!" size="default">
-                <SelectValue placeholder="Select API key" />
-              </SelectTrigger>
-              <SelectContent>
-                {apiKeys.map((key) => (
-                  <SelectItem key={key.id} value={key.id}>
-                    {key.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-3">
-              <p className="text-xs text-muted-foreground">
-                {saveStatus === 'saved'
-                  ? 'Preferences saved.'
-                  : saveStatus === 'error'
-                    ? 'Save failed. Try again.'
-                    : isDirty
-                      ? 'Unsaved changes.'
-                      : ''}
-              </p>
-              <Button
-                size="lg"
-                onClick={handleSavePreferences}
-                disabled={isSavingPreferences || !isDirty}
-              >
-                {isSavingPreferences ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        )}
-        <p className="text-sm text-muted-foreground">
-          Tune filters and preview the output list. For full parameter details, see{' '}
-          <a href="#query-params" className="text-primary hover:underline">
-            Query Parameters
-          </a>
-          .
-        </p>
+        <ApiPreferencesConfigurator
+          modelControlsProps={modelControlsProps}
+          modelListProps={{
+            models: previewModels,
+            loading,
+            error,
+            currentPage: previewPage,
+            onPageChange: setPreviewPage,
+            itemsPerPage: previewItemsPerPage,
+            lastUpdated,
+          }}
+          bottomRow={
+            <>
+              {session?.user && apiKeys.length === 0 && (
+                <div className="flex items-center justify-between gap-3">
+                  <Button asChild size="lg">
+                    <a href="/dashboard?tab=api">Create API Key</a>
+                  </Button>
+                </div>
+              )}
+              {session?.user && selectedApiKeyId && (
+                <div className="flex items-center justify-between gap-3">
+                  <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
+                    <SelectTrigger className="w-full sm:w-56 md:w-auto h-9 md:h-12!" size="default">
+                      <SelectValue placeholder="Select API key" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {apiKeys.map((key) => (
+                        <SelectItem key={key.id} value={key.id}>
+                          {key.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {saveStatus === 'saved'
+                        ? 'Preferences saved.'
+                        : saveStatus === 'error'
+                          ? 'Save failed. Try again.'
+                          : isDirty
+                            ? 'Unsaved changes.'
+                            : ''}
+                    </p>
+                    <Button
+                      size="lg"
+                      onClick={handleSavePreferences}
+                      disabled={isSavingPreferences || !isDirty}
+                    >
+                      {isSavingPreferences ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          }
+          helper={
+            <>
+              Tune filters and preview the output list. For full parameter details, see{' '}
+              <a href="#query-params" className="text-primary hover:underline">
+                Query Parameters
+              </a>
+              .
+            </>
+          }
+        />
       </div>
 
       {/* Step 4: Copy free-llm-router.ts */}
@@ -335,42 +353,53 @@ export function ApiUsageStep() {
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
-        <p className="text-muted-foreground">
-          Two ways to call the helper: use saved defaults from Dashboard, or override per request.
+        <p className="text-sm text-muted-foreground">
+          Use saved key defaults, or override for a single request.
         </p>
-        <CodeBlock code={defaultCallSnippet} language="typescript" className="text-sm" />
-        <p className="text-muted-foreground">Override mode (uses the parameters you configured):</p>
-        <CodeBlock
-          code={codeExamples.getModelIdsCall(
-            activeUseCases,
-            activeSort,
-            activeTopN,
-            reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
-            reliabilityFilterEnabled ? activeTimeRange : undefined,
-            reliabilityFilterEnabled ? activeMyReports : undefined
+        <div className="flex items-center justify-between gap-3">
+          <Tabs
+            value={useItMode}
+            onValueChange={(value) => setUseItMode(value as 'default' | 'override')}
+          >
+            <TabsList className="h-8">
+              <TabsTrigger value="default" className="text-xs">
+                Default
+              </TabsTrigger>
+              <TabsTrigger value="override" className="text-xs">
+                Override
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {useItMode === 'override' && session?.user && apiKeys.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">API key</span>
+              <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
+                <SelectTrigger className="w-full sm:w-56 h-9" size="default">
+                  <SelectValue placeholder="Select API key" />
+                </SelectTrigger>
+                <SelectContent>
+                  {apiKeys.map((key) => (
+                    <SelectItem key={key.id} value={key.id}>
+                      {key.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
+        </div>
+        <CodeBlock
+          code={useItMode === 'default' ? defaultBasicSnippet : overrideBasicSnippet}
           language="typescript"
           className="text-sm"
         />
-        <p className="text-muted-foreground">
-          Loop through models until one succeeds. Free models may be rate-limited, so we try
-          multiple and optionally fall back to stable models you trust. See{' '}
+        <p className="text-sm text-muted-foreground">
+          More patterns are available in{' '}
           <a href="#code-examples" className="text-primary hover:underline">
             Code Examples
           </a>{' '}
-          for more patterns.
+          .
         </p>
-        <CodeBlock
-          code={codeExamples.basicUsage(
-            activeUseCases,
-            activeSort,
-            activeTopN,
-            reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
-            reliabilityFilterEnabled ? activeTimeRange : undefined,
-            reliabilityFilterEnabled ? activeMyReports : undefined
-          )}
-          copyLabel="Copy"
-        />
       </div>
     </div>
   );

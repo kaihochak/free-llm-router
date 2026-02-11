@@ -9,6 +9,15 @@ export function CodeExamplesSection() {
         Ready-to-use patterns for common use cases.
       </p>
       <div className="space-y-12">
+        {/* Basic Fallback Loop */}
+        <div id="example-basic-fallback" className="space-y-3 scroll-mt-20">
+          <h3 className="text-2xl font-semibold">Basic Fallback Loop</h3>
+          <p className="text-muted-foreground">
+            Fetch ranked models, then try each until one succeeds.
+          </p>
+          <CodeBlock code={codeExamples.basicUsage(['chat'], 'capable', 5)} copyLabel="Copy" />
+        </div>
+
         {/* One-off API Call */}
         <div id="example-one-off" className="space-y-3 scroll-mt-20">
           <h3 className="text-2xl font-semibold">One-off API Call</h3>
