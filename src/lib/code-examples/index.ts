@@ -6,7 +6,7 @@ import { oneOffCall } from './one-off-call';
 import { chatbot } from './chatbot';
 import { toolCalling } from './tool-calling';
 import { getModelsResponse, getModelsFullResponse, feedbackResponse } from './api-responses';
-import { basicUsage, getModelIdsCall } from './generators';
+import { basicUsage, getModelIdsCall, getModelIdsDefaultCall } from './generators';
 
 export { FREE_MODELS_SDK };
 
@@ -24,4 +24,5 @@ export const codeExamples = {
   // Dynamic generators
   basicUsage,
   getModelIdsCall,
+  getModelIdsDefaultCall,
 };
