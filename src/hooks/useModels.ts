@@ -264,6 +264,7 @@ export function useModels(options?: UseModelsOptions) {
     activeMyReports,
     lastUpdated: modelsResponse.lastUpdated,
     apiUrl,
+    setActiveUseCases,
     setActiveSort,
     setActiveTopN,
     setReliabilityFilterEnabled,

@@ -98,9 +98,9 @@ export function ModelControls({
 
   const sortLabel = SORT_DEFINITIONS.find((s) => s.key === activeSort)?.label || activeSort;
 
-  const labelClass = isSmall ? 'text-xs leading-4' : 'text-sm font-medium leading-5';
+  const labelClass = isSmall ? 'text-xs leading-4' : 'text-xs md:text-sm font-medium leading-5';
   const gapClass = isSmall ? 'gap-1' : 'gap-2';
-  const buttonClass = isSmall ? 'h-10! min-w-[20px]' : 'h-12! min-w-[20px]';
+  const buttonClass = isSmall ? 'h-9! md:h-10! min-w-[20px]' : 'h-9! md:h-12! min-w-[20px]';
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
 
   // Check if reliability filter controls should be shown
