@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
 import { useModels, generateSnippet, getModelControlsProps } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
-import { ApiPreferencesConfigurator } from '@/components/ApiPreferencesConfigurator';
 import { useCachedSession, authClient } from '@/lib/auth-client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -18,8 +17,6 @@ import {
   type ApiKeyPreferences,
   DEFAULT_USE_CASE,
   DEFAULT_SORT,
-  DEFAULT_TOP_N,
-  DEFAULT_MAX_ERROR_RATE,
   DEFAULT_TIME_RANGE,
   DEFAULT_MY_REPORTS,
 } from '@/lib/api-definitions';
@@ -29,6 +26,8 @@ interface ApiKeyOption {
   name: string;
   enabled: boolean;
 }
+
+const NO_API_KEY_VALUE = '__no_api_key__';
 
 async function fetchApiKeys(): Promise<ApiKeyOption[]> {
   const response = await authClient.apiKey.list();
@@ -42,19 +41,6 @@ async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
   if (!response.ok) return {};
   const data = await response.json();
   return data.preferences || {};
-}
-
-async function savePreferences(apiKeyId: string, preferences: ApiKeyPreferences): Promise<void> {
-  const response = await fetch('/api/auth/preferences', {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKeyId, preferences }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to save preferences');
-  }
 }
 
 export function ApiUsageStep() {
@@ -82,19 +68,10 @@ export function ApiUsageStep() {
     setActiveMyReports,
   } = modelsData;
   const modelControlsProps = getModelControlsProps(modelsData);
-  const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>('');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
-
+  const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>(NO_API_KEY_VALUE);
+  const [localSnapshot, setLocalSnapshot] = useState<ApiKeyPreferences | null>(null);
   const snippet = generateSnippet(apiUrl);
   const [useItMode, setUseItMode] = useState<'default' | 'override'>('default');
-  const previewModels = activeTopN ? models.slice(0, activeTopN) : models;
-  const [previewPage, setPreviewPage] = useState(1);
-  const previewItemsPerPage = 5;
-  const totalPages = Math.ceil(previewModels.length / previewItemsPerPage);
-
-  if (previewPage > totalPages && totalPages > 0) {
-    setPreviewPage(1);
-  }
 
   const { data: apiKeys = [] } = useQuery({
     queryKey: ['stepApiKeys'],
@@ -104,33 +81,36 @@ export function ApiUsageStep() {
 
   useEffect(() => {
     if (!session?.user) return;
-    if (!apiKeys.length) {
-      setSelectedApiKeyId('');
-      return;
-    }
-    if (!selectedApiKeyId || !apiKeys.some((key) => key.id === selectedApiKeyId)) {
-      setSelectedApiKeyId(apiKeys[0].id);
+    if (
+      selectedApiKeyId !== NO_API_KEY_VALUE &&
+      !apiKeys.some((key) => key.id === selectedApiKeyId)
+    ) {
+      setSelectedApiKeyId(NO_API_KEY_VALUE);
     }
   }, [session?.user, apiKeys, selectedApiKeyId]);
 
-  const { data: selectedPreferences, refetch: refetchSelectedPreferences } = useQuery({
+  const { data: selectedPreferences } = useQuery({
     queryKey: ['stepApiKeyPreferences', selectedApiKeyId],
     queryFn: () => fetchPreferences(selectedApiKeyId),
-    enabled: !!session?.user && !!selectedApiKeyId,
+    enabled: !!session?.user && selectedApiKeyId !== NO_API_KEY_VALUE,
   });
 
   useEffect(() => {
-    if (!session?.user || !selectedApiKeyId || selectedPreferences === undefined) return;
+    if (
+      !session?.user ||
+      selectedApiKeyId === NO_API_KEY_VALUE ||
+      selectedPreferences === undefined
+    ) {
+      return;
+    }
 
     setActiveUseCases(selectedPreferences.useCases ?? DEFAULT_USE_CASE);
     setActiveSort(selectedPreferences.sort ?? DEFAULT_SORT);
     setActiveTopN(selectedPreferences.topN);
     setReliabilityFilterEnabled(selectedPreferences.maxErrorRate !== undefined);
-    setActiveMaxErrorRate(selectedPreferences.maxErrorRate ?? DEFAULT_MAX_ERROR_RATE);
+    setActiveMaxErrorRate(selectedPreferences.maxErrorRate);
     setActiveTimeRange(selectedPreferences.timeRange ?? DEFAULT_TIME_RANGE);
     setActiveMyReports(selectedPreferences.myReports ?? DEFAULT_MY_REPORTS);
-    setPreviewPage(1);
-    setSaveStatus('idle');
   }, [
     session?.user,
     selectedApiKeyId,
@@ -144,19 +124,6 @@ export function ApiUsageStep() {
     setActiveMyReports,
   ]);
 
-  const savePrefsMutation = useMutation({
-    mutationFn: ({ keyId, preferences }: { keyId: string; preferences: ApiKeyPreferences }) =>
-      savePreferences(keyId, preferences),
-    onSuccess: () => {
-      setSaveStatus('saved');
-      void refetchSelectedPreferences();
-    },
-    onError: () => {
-      setSaveStatus('error');
-    },
-  });
-  const { mutate: savePreferencesForKey, isPending: isSavingPreferences } = savePrefsMutation;
-
   const currentPreferences = useMemo<ApiKeyPreferences>(
     () => ({
       useCases: activeUseCases,
@@ -165,6 +132,7 @@ export function ApiUsageStep() {
       maxErrorRate: reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
       timeRange: activeTimeRange as ApiKeyPreferences['timeRange'],
       myReports: activeMyReports,
+      excludeModelIds: [],
     }),
     [
       activeUseCases,
@@ -177,25 +145,25 @@ export function ApiUsageStep() {
     ]
   );
 
-  const isDirty = useMemo(() => {
-    if (!session?.user || !selectedApiKeyId || selectedPreferences === undefined) return false;
+  const handleApiKeyChange = (value: string) => {
+    if (value === NO_API_KEY_VALUE) {
+      if (localSnapshot) {
+        setActiveUseCases(localSnapshot.useCases ?? DEFAULT_USE_CASE);
+        setActiveSort(localSnapshot.sort ?? DEFAULT_SORT);
+        setActiveTopN(localSnapshot.topN);
+        setReliabilityFilterEnabled(localSnapshot.maxErrorRate !== undefined);
+        setActiveMaxErrorRate(localSnapshot.maxErrorRate);
+        setActiveTimeRange(localSnapshot.timeRange ?? DEFAULT_TIME_RANGE);
+        setActiveMyReports(localSnapshot.myReports ?? DEFAULT_MY_REPORTS);
+      }
+      setSelectedApiKeyId(NO_API_KEY_VALUE);
+      return;
+    }
 
-    const baseline: ApiKeyPreferences = {
-      useCases: selectedPreferences.useCases ?? DEFAULT_USE_CASE,
-      sort: selectedPreferences.sort ?? DEFAULT_SORT,
-      topN: selectedPreferences.topN,
-      maxErrorRate: selectedPreferences.maxErrorRate,
-      timeRange: selectedPreferences.timeRange ?? DEFAULT_TIME_RANGE,
-      myReports: selectedPreferences.myReports ?? DEFAULT_MY_REPORTS,
-    };
-
-    return JSON.stringify(currentPreferences) !== JSON.stringify(baseline);
-  }, [session?.user, selectedApiKeyId, selectedPreferences, currentPreferences]);
-
-  const handleSavePreferences = () => {
-    if (!selectedApiKeyId) return;
-    setSaveStatus('idle');
-    savePreferencesForKey({ keyId: selectedApiKeyId, preferences: currentPreferences });
+    if (selectedApiKeyId === NO_API_KEY_VALUE) {
+      setLocalSnapshot(currentPreferences);
+    }
+    setSelectedApiKeyId(value);
   };
 
   const defaultBasicSnippet = codeExamples.basicUsageDefault();
@@ -211,7 +179,7 @@ export function ApiUsageStep() {
   return (
     <div className="w-full space-y-12">
       {/* Step 1: Set Up OpenRouter */}
-      <div id="setup-openrouter" className="space-y-3 scroll-mt-20">
+      <div id="setup-openrouter" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
             1
@@ -233,7 +201,7 @@ export function ApiUsageStep() {
       </div>
 
       {/* Step 2: Get Your API Key */}
-      <div id="get-api-key" className="space-y-3 scroll-mt-20">
+      <div id="get-api-key" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
             2
@@ -249,87 +217,11 @@ export function ApiUsageStep() {
         </p>
       </div>
 
-      {/* Step 3: Configure Parameters */}
-      <div id="configure-params" className="space-y-3 scroll-mt-20">
+      {/* Step 3: Copy free-llm-router.ts */}
+      <div id="copy-file" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
             3
-          </span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Configure Parameters</h3>
-        </div>
-        <ApiPreferencesConfigurator
-          modelControlsProps={modelControlsProps}
-          modelListProps={{
-            models: previewModels,
-            loading,
-            error,
-            currentPage: previewPage,
-            onPageChange: setPreviewPage,
-            itemsPerPage: previewItemsPerPage,
-            lastUpdated,
-          }}
-          bottomRow={
-            <>
-              {session?.user && apiKeys.length === 0 && (
-                <div className="flex items-center justify-between gap-3">
-                  <Button asChild size="lg">
-                    <a href="/dashboard?tab=api">Create API Key</a>
-                  </Button>
-                </div>
-              )}
-              {session?.user && selectedApiKeyId && (
-                <div className="flex items-center justify-between gap-3">
-                  <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
-                    <SelectTrigger className="w-full sm:w-56 md:w-auto h-9 md:h-12!" size="default">
-                      <SelectValue placeholder="Select API key" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {apiKeys.map((key) => (
-                        <SelectItem key={key.id} value={key.id}>
-                          {key.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-muted-foreground">
-                      {saveStatus === 'saved'
-                        ? 'Preferences saved.'
-                        : saveStatus === 'error'
-                          ? 'Save failed. Try again.'
-                          : isDirty
-                            ? 'Unsaved changes.'
-                            : ''}
-                    </p>
-                    <Button
-                      size="lg"
-                      onClick={handleSavePreferences}
-                      disabled={isSavingPreferences || !isDirty}
-                    >
-                      {isSavingPreferences ? 'Saving...' : 'Save'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          }
-          helper={
-            <>
-              Tune filters and preview the output list. For full parameter details, see{' '}
-              <a href="#query-params" className="text-primary hover:underline">
-                Query Parameters
-              </a>
-              .
-            </>
-          }
-        />
-      </div>
-
-      {/* Step 4: Copy free-llm-router.ts */}
-      <div id="copy-file" className="space-y-3 scroll-mt-20">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            4
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">
             Copy{' '}
@@ -345,15 +237,32 @@ export function ApiUsageStep() {
         <CodeBlock code={snippet} copyLabel="Copy" className="[&>div:first-child]:max-h-[26vh]" />
       </div>
 
+      {/* Step 4: Further Configure Parameters */}
+      <div id="further-configure-params" className="space-y-3 md:space-y-4 scroll-mt-20">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            4
+          </span>
+          <h3 className="text-xl font-semibold sm:text-2xl">Further Configure Parameters</h3>
+        </div>
+        <p className="text-muted-foreground">
+          Need to tune use case, sorting, limits, reliability filters, and exclusions? Open{' '}
+          <a href="/dashboard?tab=configure" className="text-primary hover:underline">
+            Parameter Configuration
+          </a>{' '}
+          in dashboard.
+        </p>
+      </div>
+
       {/* Step 5: Use It */}
-      <div id="use-it" className="space-y-3 scroll-mt-20">
+      <div id="use-it" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
             5
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground">
           Use saved key defaults, or override for a single request.
         </p>
         <div className="flex items-center justify-between gap-3">

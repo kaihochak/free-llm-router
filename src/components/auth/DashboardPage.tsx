@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserInfo } from './UserInfoCard';
 import { ApiKeysTab } from './ApiKeysTab';
+import { ApiKeyConfigurationTab } from './ApiKeyConfigurationTab';
 import { HistoryTab } from './HistoryTab';
 
 export function DashboardPage() {
@@ -18,7 +19,8 @@ export function DashboardPage() {
 function getInitialTab(): string {
   if (typeof window === 'undefined') return 'history';
   const params = new URLSearchParams(window.location.search);
-  return params.get('tab') || 'history';
+  const tab = params.get('tab') || 'history';
+  return ['history', 'api', 'configure'].includes(tab) ? tab : 'history';
 }
 
 function DashboardPageContent() {
@@ -105,6 +107,7 @@ function DashboardPageContent() {
         <TabsList>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="api">API Keys</TabsTrigger>
+          <TabsTrigger value="configure">Configure Parameters</TabsTrigger>
         </TabsList>
 
         <TabsContent value="history" className="mt-6">
@@ -113,6 +116,10 @@ function DashboardPageContent() {
 
         <TabsContent value="api" className="mt-6">
           <ApiKeysTab userRateLimit={userRateLimit} onRefreshRateLimit={fetchUserRateLimit} />
+        </TabsContent>
+
+        <TabsContent value="configure" className="mt-6">
+          <ApiKeyConfigurationTab />
         </TabsContent>
       </Tabs>
     </div>

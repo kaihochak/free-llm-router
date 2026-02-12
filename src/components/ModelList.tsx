@@ -1,10 +1,20 @@
 import { useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Model } from '@/hooks/useModels';
-import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ChevronLeft, ChevronRight, CircleMinus } from 'lucide-react';
 
 interface ModelListProps {
   models: Model[];
@@ -17,6 +27,8 @@ interface ModelListProps {
   headerLabel?: string;
   headerCount?: number;
   lastUpdated?: string | null;
+  excludedModelIds?: string[];
+  onToggleExcludeModel?: (modelId: string) => void;
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
@@ -101,7 +113,10 @@ export function ModelList({
   headerLabel,
   headerCount,
   lastUpdated,
+  excludedModelIds = [],
+  onToggleExcludeModel,
 }: ModelListProps) {
+  const [pendingExclude, setPendingExclude] = useState<{ id: string; name: string } | null>(null);
   const totalPages = Math.max(1, Math.ceil(models.length / itemsPerPage));
   const safePage = Math.min(Math.max(currentPage, 1), totalPages);
   const paginatedModels = models.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
@@ -120,6 +135,7 @@ export function ModelList({
           const badges = getCapabilityBadges(model);
           const provider = getProvider(model.id);
           const isNew = isNewModel(model.createdAt);
+          const isExcluded = excludedModelIds.includes(model.id);
 
           return (
             <a
@@ -214,6 +230,37 @@ export function ModelList({
                   </TooltipProvider>
                 ) : null}
 
+                {onToggleExcludeModel && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={isExcluded ? 'secondary' : 'ghost'}
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (isExcluded) {
+                              onToggleExcludeModel(model.id);
+                              return;
+                            }
+                            setPendingExclude({ id: model.id, name: model.name || model.id });
+                          }}
+                          title={isExcluded ? 'Remove exclusion' : 'Exclude model'}
+                        >
+                          <CircleMinus
+                            className={`h-3.5 w-3.5 ${isExcluded ? 'text-primary' : 'text-muted-foreground'}`}
+                          />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isExcluded ? 'Remove exclusion' : 'Exclude model'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
                 <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
             </a>
@@ -256,6 +303,32 @@ export function ModelList({
         </div>
       )}
       {content}
+      <AlertDialog
+        open={!!pendingExclude}
+        onOpenChange={(open) => !open && setPendingExclude(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hide this model?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will exclude <strong>{pendingExclude?.name}</strong> from the current list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingExclude) {
+                  onToggleExcludeModel?.(pendingExclude.id);
+                }
+                setPendingExclude(null);
+              }}
+            >
+              Hide Model
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

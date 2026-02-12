@@ -197,6 +197,7 @@ export const DEFAULT_MAX_ERROR_RATE: number | undefined = 10;
 export const DEFAULT_TIME_RANGE: TimeRange = '7d';
 export const DEFAULT_MY_REPORTS: boolean = false;
 export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = false;
+export const MAX_EXCLUDED_MODELS = 50;
 
 // ==================== UI TOOLTIP CONTENT ====================
 
@@ -262,6 +263,7 @@ export interface ApiKeyPreferences {
   maxErrorRate?: number;
   timeRange?: TimeRange;
   myReports?: boolean;
+  excludeModelIds?: string[];
 }
 
 /** Validate and sanitize preferences object from untrusted input */
@@ -307,6 +309,20 @@ export function validatePreferences(input: unknown): ApiKeyPreferences {
   // Validate myReports
   if (typeof pref.myReports === 'boolean') {
     result.myReports = pref.myReports;
+  }
+
+  // Validate excludeModelIds
+  if (Array.isArray(pref.excludeModelIds)) {
+    const excluded = Array.from(
+      new Set(
+        pref.excludeModelIds
+          .filter((id): id is string => typeof id === 'string')
+          .map((id) => id.trim())
+          .filter((id) => id.length > 0)
+      )
+    ).slice(0, MAX_EXCLUDED_MODELS);
+
+    result.excludeModelIds = excluded;
   }
 
   return result;
