@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   type TimeRange,
@@ -198,10 +198,13 @@ export function useHealth(options?: UseHealthOptions) {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const setMyReports = (value: boolean) => {
-    // Only allow setting myReports to true if authenticated
-    setMyReportsState(session ? value : false);
-  };
+  const setMyReports = useCallback(
+    (value: boolean) => {
+      // Only allow setting myReports to true if authenticated
+      setMyReportsState(session ? value : false);
+    },
+    [session, setMyReportsState]
+  );
 
   const toggleUseCase = (useCase: UseCaseType | 'all') => {
     if (useCase === 'all') {
@@ -251,6 +254,7 @@ export function useHealth(options?: UseHealthOptions) {
     reliabilityFilterEnabled,
     activeMaxErrorRate,
     toggleUseCase,
+    setActiveUseCases,
     setActiveSort,
     setActiveTopN,
     setReliabilityFilterEnabled,

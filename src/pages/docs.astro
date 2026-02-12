@@ -2,9 +2,9 @@
 import Layout from '../layouts/base.astro';
 import { GetStartedSectionWithProvider } from '../components/docs/GetStartedSection';
 import { ParameterConfigurationSectionWithProvider } from '../components/docs/ParameterConfigurationSection';
-import { QueryParamsSection } from '../components/docs/QueryParamsSection';
-import { ApiReferenceSection } from '../components/docs/ApiReferenceSection';
 import { CodeExamplesSection } from '../components/docs/CodeExamplesSection';
+import { ApiReferenceSection } from '../components/docs/ApiReferenceSection';
+import { QueryParamsSection } from '../components/docs/QueryParamsSection';
 import { generateAPISchema } from '../lib/seo';
 import { DocsSidebar } from '../components/DocsSidebar';
 ---
@@ -20,9 +20,9 @@ import { DocsSidebar } from '../components/DocsSidebar';
     <div class="container mx-auto max-w-5xl px-4 pt-14 pb-12 space-y-20">
       <GetStartedSectionWithProvider client:load />
       <ParameterConfigurationSectionWithProvider client:load />
-      <QueryParamsSection client:load />
-      <ApiReferenceSection client:load />
       <CodeExamplesSection client:load />
+      <ApiReferenceSection client:load />
+      <QueryParamsSection client:load />
 
       <!-- Footer -->
       <footer class="border-t pt-12 text-center text-sm text-muted-foreground">

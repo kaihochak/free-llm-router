@@ -195,20 +195,36 @@ export function getModelIdsCallSnippet(options: GetModelIdsSnippetOptions): stri
 
 export function basicUsageSnippet(options: GetModelIdsSnippetOptions): string {
   const getModelsCall = getModelIdsCallSnippet(options);
+  const getModelsCallIndented = getModelsCall
+    .replace('const { ids, requestId } =', 'const { ids: freeModels, requestId } =')
+    .split('\n')
+    .map((line) => `  ${line}`)
+    .join('\n');
+  const isDefaultCall =
+    options.useCases === undefined &&
+    options.sort === undefined &&
+    options.topN === undefined &&
+    options.maxErrorRate === undefined &&
+    options.timeRange === undefined &&
+    options.myReports !== true;
+  const defaultCallComment = isDefaultCall
+    ? '// getModelIds() with no params applies your saved configured params automatically\n'
+    : '';
 
-  return `try {
-  ${getModelsCall.replace('const { ids, requestId } =', 'const { ids: freeModels, requestId } =')}
+  return `import { getModelIds, reportSuccess, reportIssue, issueFromStatus } from './free-llm-router';
 
-  const stableFallback = ['anthropic/claude-3.5-sonnet'];
-  const models = [...freeModels, ...stableFallback];
+try {
+${defaultCallComment}${getModelsCallIndented}
 
-  for (const id of models) {
+  for (const id of freeModels) {
     try {
       const res = await client.chat.completions.create({ model: id, messages });
+      // submit success feedback
       reportSuccess(id, requestId);
       return res;
     } catch (e) {
       const status = e.status || e.response?.status;
+      // submit issue feedback
       reportIssue(id, issueFromStatus(status), requestId, e.message);
     }
   }

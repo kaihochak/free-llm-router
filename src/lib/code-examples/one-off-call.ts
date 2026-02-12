@@ -3,6 +3,7 @@ export const oneOffCall = `import { getModelIds, reportSuccess, reportIssue, iss
 const prompt = 'Summarize this article in 3 bullet points: ...';
 
 try {
+  // fetch ranked model IDs + requestId
   // Get top 3 models with both chat and vision capabilities
   // SDK has built-in 15-min cache, so this won't hit the API on every call
   const { ids: models, requestId } = await getModelIds(['chat', 'vision'], 'capable', 3);
@@ -28,11 +29,13 @@ try {
       }
       const data = await res.json();
       console.log(data.choices[0].message.content);
+      // submit success feedback
       // Report success - helps other users know this model works!
       reportSuccess(id, requestId);
       break; // Success - exit loop
     } catch (e) {
       const status = e.status || e.response?.status;
+      // submit issue feedback
       reportIssue(id, issueFromStatus(status), requestId, e.message); // Free - doesn't use quota
     }
   }

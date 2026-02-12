@@ -25,7 +25,9 @@ describe('/api/demo/models', () => {
 
     // Mock fetch globally before the test
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = async () => {
+    let calledUrl = '';
+    globalThis.fetch = async (input) => {
+      calledUrl = String(input);
       return new Response(JSON.stringify({ models: [] }), { status: 200 });
     };
 
@@ -48,6 +50,7 @@ describe('/api/demo/models', () => {
       const response = await GET(context as Parameters<typeof GET>[0]);
 
       assert.strictEqual(response.status, 200);
+      assert.ok(calledUrl.includes('_clearExcludedModels=true'));
     } finally {
       globalThis.fetch = originalFetch;
     }

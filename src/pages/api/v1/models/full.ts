@@ -29,7 +29,7 @@ export const GET: APIRoute = async (context) => {
 
   try {
     const { db, databaseUrl, params, validation } = req;
-    const { useCases, sort, topN, maxErrorRate, timeRange, myReports } = params;
+    const { useCases, sort, topN, maxErrorRate, timeRange, myReports, excludeModelIds } = params;
     const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
     const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || import.meta.env.DATABASE_URL_STATS;
 
@@ -58,8 +58,10 @@ export const GET: APIRoute = async (context) => {
       getLastUpdated(db),
     ]);
 
-    // Apply topN if specified
-    const models = topN ? allModels.slice(0, topN) : allModels;
+    // Apply exclusions first, then topN for deterministic behavior.
+    const excludedSet = new Set(excludeModelIds);
+    const withoutExcluded = allModels.filter((model) => !excludedSet.has(model.id));
+    const models = topN ? withoutExcluded.slice(0, topN) : withoutExcluded;
 
     // Log request
     logApiRequest(databaseUrl, {
@@ -69,6 +71,10 @@ export const GET: APIRoute = async (context) => {
       method: 'GET',
       statusCode: 200,
       responseTimeMs: Math.round(performance.now() - startTime),
+      responseData: {
+        count: models.length,
+        params: { useCases, sort, topN, maxErrorRate, timeRange, myReports, excludeModelIds },
+      },
     });
 
     // Build response headers
@@ -90,6 +96,7 @@ export const GET: APIRoute = async (context) => {
         lastUpdated: updatedAt?.toISOString() ?? new Date().toISOString(),
         useCases: useCases.length > 0 ? useCases : undefined,
         sort,
+        excludeModelIds,
         count: models.length,
         _meta: !freshness.isFresh
           ? { stale: true, ageSeconds: Math.round(freshness.ageMs / 1000) }
