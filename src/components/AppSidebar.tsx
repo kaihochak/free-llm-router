@@ -1,4 +1,4 @@
-import { Rocket, Book, Code, ChevronRight, Settings } from 'lucide-react';
+import { Rocket, Book, Code, ChevronRight, Settings, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
   Sidebar,
@@ -32,24 +32,33 @@ const navItems: NavItem[] = [
     icon: Rocket,
     items: [
       { title: 'Overview', href: '#get-started' },
-      { title: 'Live Model Preview', href: '#live-preview' },
       { title: '1. Set Up OpenRouter', href: '#setup-openrouter' },
       { title: '2. Get API Key', href: '#get-api-key' },
       { title: '3. Copy Helper File', href: '#copy-file' },
-      { title: '4. Use It', href: '#use-it' },
+      { title: '4. Further Configure Parameters', href: '#further-configure-params' },
+      { title: '5. Use It', href: '#use-it' },
     ],
   },
   {
-    title: 'Query Parameters',
-    href: '#query-params',
-    icon: Settings,
+    title: 'Parameter Configuration',
+    href: '#parameter-configuration',
+    icon: SlidersHorizontal,
     items: [
-      { title: 'useCase', href: '#param-useCase' },
-      { title: 'sort', href: '#param-sort' },
-      { title: 'topN', href: '#param-topN' },
-      { title: 'maxErrorRate', href: '#param-maxErrorRate' },
-      { title: 'timeRange', href: '#param-timeRange' },
-      { title: 'myReports', href: '#param-myReports' },
+      { title: 'Overview', href: '#parameter-configuration-overview' },
+      { title: 'Configure Parameters', href: '#configure-params-live' },
+      { title: 'Key Defaults', href: '#key-defaults' },
+      { title: 'Request Overrides', href: '#request-overrides' },
+    ],
+  },
+  {
+    title: 'Code Examples',
+    href: '#code-examples',
+    icon: Code,
+    items: [
+      { title: 'Basic Usage', href: '#example-basic-fallback' },
+      { title: 'One-off API Call', href: '#example-one-off' },
+      { title: 'Chatbot', href: '#example-chatbot' },
+      { title: 'Tool Calling', href: '#example-tool-calling' },
     ],
   },
   {
@@ -63,13 +72,16 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Code Examples',
-    href: '#code-examples',
-    icon: Code,
+    title: 'Query Parameters',
+    href: '#query-params',
+    icon: Settings,
     items: [
-      { title: 'One-off API Call', href: '#example-one-off' },
-      { title: 'Chatbot', href: '#example-chatbot' },
-      { title: 'Tool Calling', href: '#example-tool-calling' },
+      { title: 'useCase', href: '#param-useCase' },
+      { title: 'sort', href: '#param-sort' },
+      { title: 'topN', href: '#param-topN' },
+      { title: 'maxErrorRate', href: '#param-maxErrorRate' },
+      { title: 'timeRange', href: '#param-timeRange' },
+      { title: 'myReports', href: '#param-myReports' },
     ],
   },
 ];

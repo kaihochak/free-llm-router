@@ -23,7 +23,7 @@ export const GET: APIRoute = async (context) => {
 
   try {
     const { db, databaseUrl, params, validation } = req;
-    const { useCases, sort, topN, maxErrorRate, timeRange, myReports } = params;
+    const { useCases, sort, topN, maxErrorRate, timeRange, myReports, excludeModelIds } = params;
     const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
     const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || import.meta.env.DATABASE_URL_STATS;
 
@@ -56,8 +56,10 @@ export const GET: APIRoute = async (context) => {
       statsDbUrl
     );
 
-    // Apply topN and extract IDs only
-    const models = topN ? allModels.slice(0, topN) : allModels;
+    // Apply exclusions first, then topN for deterministic behavior.
+    const excludedSet = new Set(excludeModelIds);
+    const withoutExcluded = allModels.filter((model) => !excludedSet.has(model.id));
+    const models = topN ? withoutExcluded.slice(0, topN) : withoutExcluded;
     const ids = models.map((m) => m.id);
 
     // Log request and get requestId
@@ -71,7 +73,7 @@ export const GET: APIRoute = async (context) => {
       responseData: {
         ids,
         count: ids.length,
-        params: { useCases, sort, topN, maxErrorRate, timeRange, myReports },
+        params: { useCases, sort, topN, maxErrorRate, timeRange, myReports, excludeModelIds },
       },
     });
 

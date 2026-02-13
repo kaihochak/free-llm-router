@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { modelFeedback } from '@/db';
 import { initializeAuthOnly } from '@/lib/api-params';
-import { corsHeaders, logApiRequest } from '@/lib/api-auth';
+import { corsHeaders } from '@/lib/api-auth';
 import { apiResponseHeaders, jsonResponse, noContentResponse } from '@/lib/api-response';
 
 const VALID_ISSUES = ['rate_limited', 'unavailable', 'error'] as const;
@@ -12,12 +12,11 @@ const VALID_ISSUES = ['rate_limited', 'unavailable', 'error'] as const;
  * Can report either success (success: true) or an issue (issue: 'rate_limited' | 'unavailable' | 'error')
  */
 export const POST: APIRoute = async (context) => {
-  const startTime = performance.now();
   const authCtx = await initializeAuthOnly(context);
   if (authCtx instanceof Response) return authCtx;
 
   try {
-    const { db, databaseUrl, userId, keyId } = authCtx;
+    const { db, userId, keyId } = authCtx;
 
     const body = await context.request.json();
     const { modelId, success, issue, details, dryRun, requestId } = body;
@@ -65,33 +64,9 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    // Log request
-    if (userId && keyId) {
-      logApiRequest(databaseUrl, {
-        userId,
-        apiKeyId: keyId,
-        endpoint: '/api/v1/models/feedback',
-        method: 'POST',
-        statusCode: 200,
-        responseTimeMs: Math.round(performance.now() - startTime),
-      });
-    }
-
     return jsonResponse({ received: true }, { headers: apiResponseHeaders() });
   } catch (error) {
     console.error('[API/feedback] Error:', error);
-
-    // Log error request
-    if (authCtx.userId && authCtx.keyId) {
-      logApiRequest(authCtx.databaseUrl, {
-        userId: authCtx.userId,
-        apiKeyId: authCtx.keyId,
-        endpoint: '/api/v1/models/feedback',
-        method: 'POST',
-        statusCode: 500,
-        responseTimeMs: Math.round(performance.now() - startTime),
-      });
-    }
 
     return jsonResponse(
       { error: 'Failed to submit feedback' },

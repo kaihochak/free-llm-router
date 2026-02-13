@@ -129,8 +129,15 @@ async function fetchAllModels(options: FetchOptions): Promise<ModelsResponse> {
 // This ensures users always get the latest SDK with caching built-in
 export { FREE_MODELS_FILE };
 
+function getSdkRuntimeFile(source: string): string {
+  const marker = '// DOCS_SNIPPETS_START';
+  const markerIndex = source.indexOf(marker);
+  if (markerIndex === -1) return source;
+  return `${source.slice(0, markerIndex).trimEnd()}\n`;
+}
+
 export function generateSnippet(_apiUrl?: string): string {
-  return FREE_MODELS_FILE;
+  return getSdkRuntimeFile(FREE_MODELS_FILE);
 }
 
 /** Extract props for ModelControls from useModels() return value */
@@ -257,6 +264,7 @@ export function useModels(options?: UseModelsOptions) {
     activeMyReports,
     lastUpdated: modelsResponse.lastUpdated,
     apiUrl,
+    setActiveUseCases,
     setActiveSort,
     setActiveTopN,
     setReliabilityFilterEnabled,

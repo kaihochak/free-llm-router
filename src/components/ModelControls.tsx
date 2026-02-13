@@ -17,6 +17,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxCollection,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+} from '@/components/ui/combobox';
 import type { UseCaseType, SortType } from '@/lib/api-definitions';
 import {
   USE_CASE_DEFINITIONS,
@@ -50,6 +61,10 @@ interface ModelControlsProps {
   onMaxErrorRateChange?: (value: number | undefined) => void;
   onTimeRangeChange?: (value: string) => void;
   onMyReportsChange?: (value: boolean) => void;
+  excludeControlLabel?: string;
+  excludeModels?: Array<{ id: string; name?: string | null }>;
+  excludedModelIds?: string[];
+  onExcludedModelIdsChange?: (ids: string[]) => void;
   onReset?: () => void;
   size?: 'sm' | 'lg';
 }
@@ -71,6 +86,10 @@ export function ModelControls({
   onMaxErrorRateChange,
   onTimeRangeChange,
   onMyReportsChange,
+  excludeControlLabel = 'Exclude Models',
+  excludeModels = [],
+  excludedModelIds = [],
+  onExcludedModelIdsChange,
   onReset,
   size = 'lg',
 }: ModelControlsProps) {
@@ -98,17 +117,23 @@ export function ModelControls({
 
   const sortLabel = SORT_DEFINITIONS.find((s) => s.key === activeSort)?.label || activeSort;
 
-  const labelClass = isSmall ? 'text-xs leading-4' : 'text-sm font-medium leading-5';
+  const labelClass = isSmall ? 'text-xs leading-4' : 'text-xs md:text-sm font-medium leading-5';
   const gapClass = isSmall ? 'gap-1' : 'gap-2';
-  const buttonClass = isSmall ? 'h-10! min-w-[20px]' : 'h-12! min-w-[20px]';
+  const buttonClass = isSmall ? 'h-5! md:h-8! min-w-[16px]' : 'h-8! md:h-10! min-w-[20px]';
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
+  const excludeIds = excludeModels.map((model) => model.id);
+  const excludeLabelById = new Map(
+    excludeModels.map((model) => [model.id, model.name || model.id])
+  );
 
   // Check if reliability filter controls should be shown
   const showReliabilitySubControls =
     reliabilityFilterEnabled && onMaxErrorRateChange && onTimeRangeChange && onMyReportsChange;
 
   return (
-    <div className={`flex items-start mb-3 ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'}`}>
+    <div
+      className={`flex items-start bg-card/50 rounded-lg ${isSmall ? 'gap-x-4 gap-y-2 p-3 ' : 'gap-x-6 gap-y-3 p-3 md:p-4 my-3 md:my-4 '}`}
+    >
       <div
         className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}
       >
@@ -306,13 +331,57 @@ export function ModelControls({
                       className={buttonClass}
                       onClick={() => onMyReportsChange(!activeMyReports)}
                     >
-                      {activeMyReports ? 'All Community Reports' : 'My Reports Only'}
+                      {activeMyReports ? 'My Reports Only' : 'All Community Reports'}
                     </Button>
                   </>
                 )}
               </ButtonGroup>
             </div>
           )
+        )}
+
+        {/* Exclude Models control */}
+        {onExcludedModelIdsChange && (
+          <div className={`flex flex-col ${gapClass} min-w-[200px]`}>
+            <span className={`text-muted-foreground ${labelClass}`}>
+              {excludeControlLabel}{' '}
+              {excludedModelIds.length > 0 ? `(${excludedModelIds.length})` : ''}
+            </span>
+            <Combobox
+              multiple
+              items={excludeIds}
+              value={excludedModelIds}
+              onValueChange={(value) => onExcludedModelIdsChange?.((value as string[]) || [])}
+            >
+              <ComboboxChips className={`${buttonClass} min-w-[160px] sm:min-w-[220px]`}>
+                {excludedModelIds.length > 1 ? (
+                  <ComboboxChip showRemove={false}>{excludedModelIds.length} models</ComboboxChip>
+                ) : (
+                  excludedModelIds.map((id) => (
+                    <ComboboxChip key={id}>{excludeLabelById.get(id) || id}</ComboboxChip>
+                  ))
+                )}
+                <ComboboxChipsInput placeholder="Type model" />
+              </ComboboxChips>
+              <ComboboxContent>
+                <ComboboxEmpty>No models found.</ComboboxEmpty>
+                <ComboboxList>
+                  <ComboboxCollection>
+                    {(id: string) => (
+                      <ComboboxItem key={id} value={id}>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {excludeLabelById.get(id) || id}
+                          </span>
+                          <span className="block truncate text-muted-foreground text-xs">{id}</span>
+                        </span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxCollection>
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
         )}
       </div>
 

@@ -29,6 +29,7 @@ export interface ParsedModelParams {
   maxErrorRate?: number;
   timeRange: TimeRange;
   myReports: boolean;
+  excludeModelIds: string[];
 }
 
 export interface RequestContext {
@@ -75,7 +76,11 @@ export function parseModelParams(
   const myReportsParam = searchParams.get('myReports');
   const myReports = myReportsParam !== null ? myReportsParam === 'true' : prefs.myReports || false;
 
-  return { useCases, sort, topN, maxErrorRate, timeRange, myReports };
+  // Internal-only escape hatch used by /api/demo/models to neutralize demo-key exclusions.
+  const clearExcludedModels = searchParams.get('_clearExcludedModels') === 'true';
+  const excludeModelIds = clearExcludedModels ? [] : prefs.excludeModelIds || [];
+
+  return { useCases, sort, topN, maxErrorRate, timeRange, myReports, excludeModelIds };
 }
 
 /**

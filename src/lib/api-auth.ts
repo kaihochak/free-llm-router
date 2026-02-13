@@ -353,7 +353,7 @@ export async function logApiRequest(
     statusCode: number;
     responseTimeMs?: number;
     responseData?: {
-      ids: string[];
+      ids?: string[];
       count: number;
       params?: {
         useCases?: string[];
@@ -362,6 +362,7 @@ export async function logApiRequest(
         maxErrorRate?: number;
         timeRange?: string;
         myReports?: boolean;
+        excludeModelIds?: string[];
       };
     };
   }

@@ -21,6 +21,7 @@ const tools = {
 async function askWithTools(prompt: string) {
   try {
     // Filter for models that support tool calling
+    // fetch ranked model IDs + requestId
     // SDK has built-in 15-min cache, so this won't hit the API on every call
     const { ids: models, requestId } = await getModelIds(['tools'], 'capable', 3);
 
@@ -31,9 +32,11 @@ async function askWithTools(prompt: string) {
           prompt,
           tools,
         });
+        // submit success feedback
         reportSuccess(id, requestId); // Helps improve health metrics
         return { text, toolCalls };
       } catch (e) {
+        // submit issue feedback
         // Report with correct issue type - free, doesn't use quota
         reportIssue(id, issueFromStatus(e.status), requestId, e.message);
       }

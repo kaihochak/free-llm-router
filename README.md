@@ -12,7 +12,7 @@ Open-source API and web app for discovering free LLM models with community relia
 
 ```bash
 bun install
-cp .env.sample .env
+cp .env.example .env
 bun run db:push
 bun run dev
 ```

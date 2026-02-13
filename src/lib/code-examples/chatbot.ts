@@ -14,6 +14,7 @@ async function chat(userMessage: string) {
   messages.push({ role: 'user', content: userMessage });
 
   try {
+    // fetch ranked model IDs + requestId
     // SDK has built-in 15-min cache, so this won't hit the API on every call
     const { ids: models, requestId } = await getModelIds(['chat'], 'capable', 5);
 
@@ -25,10 +26,12 @@ async function chat(userMessage: string) {
         });
         const reply = res.choices[0].message.content;
         messages.push({ role: 'assistant', content: reply });
+        // submit success feedback
         // Report success - helps other users know this model works!
         reportSuccess(id, requestId);
         return reply;
       } catch (e) {
+        // submit issue feedback
         // Report with correct issue type - free, doesn't use quota
         reportIssue(id, issueFromStatus(e.status), requestId, e.message);
       }
