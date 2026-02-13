@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authClient, createApiKeyWithLimit } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
@@ -23,27 +23,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { ModelControls } from '@/components/ModelControls';
-import { ModelList } from '@/components/ModelList';
-import { Copy, Check, Trash2, Key, Settings, Save, Loader2 } from 'lucide-react';
-import type { UseCaseType, TimeRange, ApiKeyPreferences } from '@/lib/api-definitions';
-import {
-  DEFAULT_SORT,
-  DEFAULT_TIME_RANGE,
-  DEFAULT_MY_REPORTS,
-  DEFAULT_TOP_N,
-  DEFAULT_USE_CASE,
-} from '@/lib/api-definitions';
-import { filterModelsByUseCase, sortModels } from '@/lib/model-types';
-import type { Model } from '@/hooks/useModels';
+import { Copy, Check, Trash2, Key, Settings } from 'lucide-react';
+import type { ApiKeyPreferences } from '@/lib/api-definitions';
+import { DEFAULT_SORT, DEFAULT_TIME_RANGE } from '@/lib/api-definitions';
 
 interface ApiKey {
   id: string;
@@ -51,11 +33,7 @@ interface ApiKey {
   start: string | null;
   prefix: string | null;
   createdAt: Date;
-  expiresAt: Date | null;
-  rateLimitMax: number | null;
-  remaining: number | null;
   requestCount?: number | null;
-  lastRequest: Date | null;
   enabled: boolean;
 }
 
@@ -68,23 +46,11 @@ interface ApiKeysTabProps {
   onRefreshRateLimit: () => void;
 }
 
-interface FeedbackCounts {
-  [modelId: string]: {
-    rateLimited: number;
-    unavailable: number;
-    error: number;
-    successCount: number;
-    errorRate: number;
-  };
+interface PreferenceSummaryItem {
+  label: string;
+  value: string;
 }
 
-interface ModelsApiResponse {
-  models: Model[];
-  feedbackCounts: FeedbackCounts;
-  lastUpdated?: string;
-}
-
-// Fetch functions
 async function fetchApiKeys(): Promise<ApiKey[]> {
   const response = await authClient.apiKey.list();
   return (response.data as ApiKey[]) || [];
@@ -99,95 +65,71 @@ async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
   return data.preferences || {};
 }
 
-async function savePreferences(apiKeyId: string, preferences: ApiKeyPreferences): Promise<void> {
-  const response = await fetch('/api/auth/preferences', {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKeyId, preferences }),
-  });
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || 'Failed to save preferences');
-  }
-}
-
-async function fetchModelsForPreview(
-  timeRange: string,
-  maxErrorRate?: number,
-  myReports?: boolean
-): Promise<{ models: Model[]; lastUpdated: string | null }> {
-  const params = new URLSearchParams();
-  params.append('timeRange', timeRange);
-  if (maxErrorRate !== undefined) {
-    params.append('maxErrorRate', maxErrorRate.toString());
-  }
-  if (myReports !== undefined) {
-    params.append('myReports', myReports.toString());
-  }
-  const response = await fetch(`/api/demo/models?${params.toString()}`);
-  if (!response.ok) throw new Error('Failed to fetch models');
-
-  const data: ModelsApiResponse = await response.json();
-  const models = data.models.map((model) => {
-    const feedback = data.feedbackCounts?.[model.id];
-    const issueCount = feedback ? feedback.rateLimited + feedback.unavailable + feedback.error : 0;
-    const errorRate = feedback ? feedback.errorRate : 0;
-    const successCount = feedback ? feedback.successCount : 0;
-    const rateLimited = feedback ? feedback.rateLimited : 0;
-    const unavailable = feedback ? feedback.unavailable : 0;
-    const errorCount = feedback ? feedback.error : 0;
-    return { ...model, issueCount, errorRate, successCount, rateLimited, unavailable, errorCount };
-  });
-  return { models, lastUpdated: data.lastUpdated || null };
-}
-
 const MAX_KEYS = 10;
 
-export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProps) {
+function summarizePreferences(preferences: ApiKeyPreferences): PreferenceSummaryItem[] {
+  const useCases =
+    preferences.useCases && preferences.useCases.length > 0
+      ? preferences.useCases.join(', ')
+      : 'All';
+
+  const health =
+    preferences.maxErrorRate !== undefined
+      ? `On (${preferences.maxErrorRate}% / ${preferences.timeRange || DEFAULT_TIME_RANGE})`
+      : 'Off';
+
+  return [
+    { label: 'Use case', value: useCases },
+    { label: 'Sort', value: preferences.sort || DEFAULT_SORT },
+    { label: 'Top N', value: preferences.topN !== undefined ? String(preferences.topN) : 'Off' },
+    { label: 'Health filter', value: health },
+    {
+      label: 'Reports',
+      value: preferences.myReports ? 'My Reports Only' : 'All Community Reports',
+    },
+    {
+      label: 'Excluded',
+      value:
+        preferences.excludeModelIds && preferences.excludeModelIds.length > 0
+          ? `${preferences.excludeModelIds.length} models`
+          : 'Off',
+    },
+  ];
+}
+
+export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
   const queryClient = useQueryClient();
 
-  // UI-only state
   const [keyName, setKeyName] = useState('');
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Preferences dialog state
-  const [configuringKey, setConfiguringKey] = useState<ApiKey | null>(null);
-  const [preferences, setPreferences] = useState<ApiKeyPreferences>({});
-  const [previewPage, setPreviewPage] = useState(1);
-  const [prefsMessage, setPrefsMessage] = useState<{
-    type: 'success' | 'error';
-    text: string;
-  } | null>(null);
-
-  // Query: API keys list
   const { data: apiKeys = [], isLoading: isLoadingKeys } = useQuery({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
   });
 
-  // Query: Models for preview (only when dialog is open)
-  const { data: modelsData, isLoading: isLoadingModels } = useQuery({
-    queryKey: [
-      'previewModels',
-      preferences.timeRange || DEFAULT_TIME_RANGE,
-      preferences.maxErrorRate,
-      preferences.myReports,
-    ],
-    queryFn: () =>
-      fetchModelsForPreview(
-        preferences.timeRange || DEFAULT_TIME_RANGE,
-        preferences.maxErrorRate,
-        preferences.myReports
-      ),
-    enabled: !!configuringKey,
-    staleTime: 5 * 60 * 1000,
+  const { data: preferenceByKeyId = {}, isLoading: isLoadingPreferenceSummaries } = useQuery({
+    queryKey: ['apiKeyPreferenceSummaries', apiKeys.map((key) => key.id).join(',')],
+    enabled: apiKeys.length > 0,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        apiKeys.map(async (key) => {
+          try {
+            const preferences = await fetchPreferences(key.id);
+            return [key.id, preferences] as const;
+          } catch {
+            return [key.id, {}] as const;
+          }
+        })
+      );
+      return Object.fromEntries(entries) as Record<string, ApiKeyPreferences>;
+    },
+    staleTime: 60 * 1000,
   });
 
-  // Mutation: Create API key
   const createKeyMutation = useMutation({
     mutationFn: (name: string) => createApiKeyWithLimit(name),
     onSuccess: (response) => {
@@ -204,26 +146,11 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
     },
   });
 
-  // Mutation: Delete API key
   const deleteKeyMutation = useMutation({
     mutationFn: (keyId: string) => authClient.apiKey.delete({ keyId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
       setKeyToDelete(null);
-    },
-  });
-
-  // Mutation: Save preferences
-  const savePreferencesMutation = useMutation({
-    mutationFn: () => {
-      if (!configuringKey) throw new Error('No key selected');
-      return savePreferences(configuringKey.id, preferences);
-    },
-    onSuccess: () => {
-      setPrefsMessage({ type: 'success', text: 'Preferences saved' });
-    },
-    onError: (err: Error) => {
-      setPrefsMessage({ type: 'error', text: err.message || 'Failed to save preferences' });
     },
   });
 
@@ -250,83 +177,8 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
     }
   };
 
-  const handleConfigureKey = async (key: ApiKey) => {
-    setConfiguringKey(key);
-    setPrefsMessage(null);
-    setPreviewPage(1);
-
-    // Fetch preferences for this key
-    try {
-      const prefs = await fetchPreferences(key.id);
-      setPreferences(prefs);
-    } catch {
-      setPreferences({});
-    }
-  };
-
-  const handleCloseDialog = () => {
-    setConfiguringKey(null);
-    setPreferences({});
-    setPrefsMessage(null);
-  };
-
-  // Update a single preference field
-  const updatePref = <K extends keyof ApiKeyPreferences>(key: K, value: ApiKeyPreferences[K]) => {
-    setPreferences((prev) => ({ ...prev, [key]: value }));
-    setPrefsMessage(null);
-  };
-
-  // Toggle use case in the array
-  const toggleUseCase = (useCase: UseCaseType | 'all') => {
-    if (useCase === 'all') {
-      updatePref('useCases', []);
-    } else {
-      const current = preferences.useCases || [];
-      const updated = current.includes(useCase)
-        ? current.filter((uc) => uc !== useCase)
-        : [...current, useCase];
-      updatePref('useCases', updated);
-    }
-    setPreviewPage(1);
-  };
-
-  // Filter and sort models based on current preferences
-  const previewModels = useMemo(() => {
-    const allModels = modelsData?.models || [];
-    const useCases = preferences.useCases || [];
-    const sort = preferences.sort || DEFAULT_SORT;
-    const filtered = filterModelsByUseCase(allModels, useCases);
-    const sorted = sortModels(filtered, sort);
-    const topN = preferences.topN;
-    return topN ? sorted.slice(0, topN) : sorted;
-  }, [modelsData?.models, preferences.useCases, preferences.sort, preferences.topN]);
-
-  const handleReliabilityFilterEnabledChange = (enabled: boolean) => {
-    if (!enabled) {
-      updatePref('maxErrorRate', undefined);
-    } else {
-      updatePref('maxErrorRate', 10);
-    }
-    setPreviewPage(1);
-  };
-
-  // Reset preferences to defaults
-  const handleResetPrefs = () => {
-    setPreferences({
-      useCases: DEFAULT_USE_CASE,
-      sort: DEFAULT_SORT,
-      topN: DEFAULT_TOP_N,
-      maxErrorRate: undefined,
-      timeRange: DEFAULT_TIME_RANGE,
-      myReports: DEFAULT_MY_REPORTS,
-    });
-    setPreviewPage(1);
-    setPrefsMessage(null);
-  };
-
   return (
     <div className="space-y-6">
-      {/* API Usage Card */}
       <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
@@ -363,7 +215,6 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
         </CardContent>
       </Card>
 
-      {/* New Key Alert */}
       {newKey && (
         <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
           <CardHeader className="pb-2">
@@ -395,7 +246,6 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
         </Card>
       )}
 
-      {/* API Keys */}
       <Card>
         <CardHeader>
           <CardTitle>API Keys</CardTitle>
@@ -442,39 +292,33 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
                     <TableHead>Requests</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-25">Actions</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {apiKeys.map((key) => (
-                    <TableRow key={key.id}>
-                      <TableCell className="font-medium">{key.name}</TableCell>
-                      <TableCell>
-                        <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
-                          {key.prefix || key.start || 'fma_'}...
-                        </code>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {key.requestCount ?? 0}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(key.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={key.enabled ? 'default' : 'secondary'}>
-                          {key.enabled ? 'Active' : 'Disabled'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleConfigureKey(key)}
-                            title="Configure default preferences"
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
+                  {apiKeys.map((key) => {
+                    const preferenceSummary = summarizePreferences(preferenceByKeyId[key.id] || {});
+
+                    return [
+                      <TableRow key={key.id}>
+                        <TableCell className="font-medium">{key.name}</TableCell>
+                        <TableCell>
+                          <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
+                            {key.prefix || key.start || 'fma_'}...
+                          </code>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {key.requestCount ?? 0}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(key.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={key.enabled ? 'default' : 'secondary'}>
+                            {key.enabled ? 'Active' : 'Disabled'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -487,10 +331,38 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>,
+                      <TableRow key={`${key.id}-prefs`} className="hover:bg-transparent">
+                        <TableCell colSpan={6}>
+                          {isLoadingPreferenceSummaries ? (
+                            <span className="text-xs text-muted-foreground">
+                              Loading parameters...
+                            </span>
+                          ) : (
+                            <div className="flex items-center justify-between gap-3 rounded-md p-1">
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {preferenceSummary.map((item) => (
+                                  <Badge key={`${key.id}-${item.label}`} variant="secondary">
+                                    <span className="mr-1 text-muted-foreground">
+                                      {item.label}:
+                                    </span>
+                                    {item.value}
+                                  </Badge>
+                                ))}
+                              </div>
+                              <Button asChild variant="ghost" size="sm" className="h-8 shrink-0">
+                                <a href="/dashboard?tab=configure">
+                                  <Settings className="mr-1 h-4 w-4" />
+                                  Configure
+                                </a>
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>,
+                    ];
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -498,7 +370,6 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!keyToDelete} onOpenChange={(open) => !open && setKeyToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -519,109 +390,6 @@ export function ApiKeysTab({ userRateLimit, onRefreshRateLimit }: ApiKeysTabProp
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Configure Preferences Dialog */}
-      <Dialog open={!!configuringKey} onOpenChange={(open) => !open && handleCloseDialog()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Configure API Key</DialogTitle>
-            <DialogDescription>
-              Set default preferences for <strong>{configuringKey?.name}</strong>. These will be
-              used when you call the API without query parameters.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4 space-y-6">
-            <ModelControls
-              activeUseCases={preferences.useCases || []}
-              activeSort={preferences.sort || DEFAULT_SORT}
-              activeTopN={preferences.topN}
-              reliabilityFilterEnabled={preferences.maxErrorRate !== undefined}
-              activeMaxErrorRate={preferences.maxErrorRate}
-              activeTimeRange={preferences.timeRange || DEFAULT_TIME_RANGE}
-              activeMyReports={preferences.myReports || DEFAULT_MY_REPORTS}
-              showReliabilityControls={true}
-              onToggleUseCase={toggleUseCase}
-              onSortChange={(sort) => {
-                updatePref('sort', sort);
-                setPreviewPage(1);
-              }}
-              onTopNChange={(topN) => {
-                updatePref('topN', topN);
-                setPreviewPage(1);
-              }}
-              onReliabilityFilterEnabledChange={handleReliabilityFilterEnabledChange}
-              onMaxErrorRateChange={(rate) => {
-                updatePref('maxErrorRate', rate);
-                setPreviewPage(1);
-              }}
-              onTimeRangeChange={(range) => {
-                updatePref('timeRange', range as TimeRange);
-                setPreviewPage(1);
-              }}
-              onMyReportsChange={(val) => {
-                updatePref('myReports', val);
-                setPreviewPage(1);
-              }}
-              onReset={handleResetPrefs}
-              size="sm"
-            />
-
-            {/* Live model preview */}
-            <ModelList
-              models={previewModels}
-              loading={isLoadingModels}
-              currentPage={previewPage}
-              onPageChange={setPreviewPage}
-              itemsPerPage={5}
-              lastUpdated={modelsData?.lastUpdated || null}
-              headerLabel="Preview"
-            />
-
-            {/* How it works explanation */}
-            <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-              <CardContent className="pt-4 text-sm text-blue-700 dark:text-blue-300 space-y-2">
-                <p className="font-medium">How it works:</p>
-                <p>
-                  <strong>Without query params:</strong> Your saved preferences are applied.
-                </p>
-                <code className="block bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-xs">
-                  GET /api/v1/models/ids
-                </code>
-                <p>
-                  <strong>With query params:</strong> They override saved preferences.
-                </p>
-                <code className="block bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-xs">
-                  GET /api/v1/models/ids?topN=10
-                </code>
-              </CardContent>
-            </Card>
-          </div>
-
-          <DialogFooter>
-            <div className="flex items-center gap-3 w-full">
-              <Button
-                onClick={() => savePreferencesMutation.mutate()}
-                disabled={savePreferencesMutation.isPending}
-              >
-                {savePreferencesMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Save Preferences
-              </Button>
-              {prefsMessage && (
-                <span
-                  className={`text-sm ${prefsMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}
-                >
-                  {prefsMessage.text}
-                </span>
-              )}
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

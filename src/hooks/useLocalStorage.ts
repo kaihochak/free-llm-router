@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Hook for persisting state to localStorage
@@ -30,22 +30,25 @@ export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T)
   }, [key]);
 
   // Persist to localStorage when value changes
-  const setStoredValue = (newValue: T) => {
-    try {
-      if (typeof window !== 'undefined') {
-        // Handle undefined by storing null, then parse it back as undefined
-        if (newValue === undefined) {
-          window.localStorage.setItem(key, 'null');
-        } else {
-          window.localStorage.setItem(key, JSON.stringify(newValue));
+  const setStoredValue = useCallback(
+    (newValue: T) => {
+      try {
+        if (typeof window !== 'undefined') {
+          // Handle undefined by storing null, then parse it back as undefined
+          if (newValue === undefined) {
+            window.localStorage.setItem(key, 'null');
+          } else {
+            window.localStorage.setItem(key, JSON.stringify(newValue));
+          }
         }
+      } catch (error) {
+        // Handle quota exceeded or other localStorage errors
+        console.warn(`Failed to write to localStorage key "${key}":`, error);
       }
-    } catch (error) {
-      // Handle quota exceeded or other localStorage errors
-      console.warn(`Failed to write to localStorage key "${key}":`, error);
-    }
-    setValue(newValue);
-  };
+      setValue(newValue);
+    },
+    [key]
+  );
 
   // Don't return hydrated value until mount to avoid SSR hydration mismatch
   return isMounted ? [value, setStoredValue] : [defaultValue, setStoredValue];
