@@ -23,7 +23,7 @@ jobs:
           chmod +x gitleaks
 
       - name: Run Gitleaks
-        run: ./gitleaks detect --source . --redact --verbose --report-format json --report-path gitleaks-report.json --exit-code 1
+        run: ./gitleaks detect --source . --no-git --redact --verbose --report-format json --report-path gitleaks-report.json --exit-code 1
 
       - name: Show Gitleaks report on failure
         if: failure()
@@ -94,7 +94,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
           BETTER_AUTH_URL: https://example.com
-          BETTER_AUTH_SECRET: dummy-secret-key-32-characters-long
+          BETTER_AUTH_SECRET: placeholder
 
   all-checks:
     name: All Checks Passed
