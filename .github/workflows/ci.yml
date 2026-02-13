@@ -23,7 +23,11 @@ jobs:
           chmod +x gitleaks
 
       - name: Run Gitleaks
-        run: ./gitleaks detect --source . --redact --exit-code 1
+        run: ./gitleaks detect --source . --redact --verbose --report-format json --report-path gitleaks-report.json --exit-code 1
+
+      - name: Show Gitleaks report on failure
+        if: failure()
+        run: cat gitleaks-report.json
 
   typecheck:
     name: Typecheck
