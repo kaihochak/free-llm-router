@@ -468,6 +468,7 @@ export function HealthTabContent() {
             : `model${visibleModels.length === 1 ? '' : 's'} shown (${allModelsData?.length ?? 0} total active)`
         }
         excludedModelIds={excludedModelIds}
+        excludeActionMode={isUsingApiKey ? 'exclude' : 'hide'}
         onToggleExcludeModel={(modelId) => {
           setExcludedModelIds((prev) =>
             prev.includes(modelId) ? prev.filter((id) => id !== modelId) : [...prev, modelId]
