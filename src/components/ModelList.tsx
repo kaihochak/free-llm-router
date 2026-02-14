@@ -29,6 +29,7 @@ interface ModelListProps {
   lastUpdated?: string | null;
   excludedModelIds?: string[];
   onToggleExcludeModel?: (modelId: string) => void;
+  excludeActionMode?: 'hide' | 'exclude';
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
@@ -115,6 +116,7 @@ export function ModelList({
   lastUpdated,
   excludedModelIds = [],
   onToggleExcludeModel,
+  excludeActionMode = 'exclude',
 }: ModelListProps) {
   const [pendingExclude, setPendingExclude] = useState<{ id: string; name: string } | null>(null);
   const totalPages = Math.max(1, Math.ceil(models.length / itemsPerPage));
@@ -122,6 +124,8 @@ export function ModelList({
   const paginatedModels = models.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
   const displayCount = headerCount ?? models.length;
   const canPaginate = Boolean(onPageChange) && totalPages > 1;
+  const dialogActionVerb = excludeActionMode === 'hide' ? 'hide' : 'exclude';
+  const dialogActionLabel = excludeActionMode === 'hide' ? 'Hide' : 'Exclude';
 
   let content: ReactNode;
   if (loading && models.length === 0) {
@@ -309,9 +313,10 @@ export function ModelList({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hide this model?</AlertDialogTitle>
+            <AlertDialogTitle>{dialogActionLabel} this model?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will exclude <strong>{pendingExclude?.name}</strong> from the current list.
+              This will {dialogActionVerb} <strong>{pendingExclude?.name}</strong> from the current
+              list.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -324,7 +329,7 @@ export function ModelList({
                 setPendingExclude(null);
               }}
             >
-              Hide Model
+              {dialogActionLabel} Model
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

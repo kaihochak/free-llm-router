@@ -300,6 +300,7 @@ export function ApiKeyConfigurationTab() {
           lastUpdated: modelsData?.lastUpdated || null,
           headerLabel: 'Preview',
           excludedModelIds: preferences.excludeModelIds || [],
+          excludeActionMode: 'exclude',
           onToggleExcludeModel: toggleExcludedModel,
         }}
         helper={

@@ -290,6 +290,7 @@ export function ParameterConfigurationSection() {
             itemsPerPage: 5,
             lastUpdated,
             excludedModelIds,
+            excludeActionMode: selectedApiKeyId === NO_API_KEY_VALUE ? 'hide' : 'exclude',
             onToggleExcludeModel: toggleExcludedModel,
           }}
           bottomRow={
