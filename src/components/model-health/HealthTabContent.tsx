@@ -5,6 +5,7 @@ import { ModelList } from '@/components/ModelList';
 import { IssuesChart } from '@/components/model-health/HealthChart';
 import { ModelControls } from '@/components/ModelControls';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import {
   Select,
   SelectContent,
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { authClient, useCachedSession } from '@/lib/auth-client';
 import type { ApiKeyPreferences } from '@/lib/api-definitions';
+import { filterModelsByUseCase, sortModels } from '@/lib/model-types';
 import {
   DEFAULT_MY_REPORTS,
   DEFAULT_SORT,
@@ -30,6 +32,14 @@ interface ApiKeyOption {
 }
 
 const NO_API_KEY_VALUE = '__no_api_key__';
+
+interface FeedbackEntry {
+  rateLimited: number;
+  unavailable: number;
+  error: number;
+  successCount: number;
+  errorRate: number;
+}
 
 async function fetchApiKeys(): Promise<ApiKeyOption[]> {
   const response = await authClient.apiKey.list();
@@ -85,6 +95,7 @@ export function HealthTabContent() {
   } = useHealth();
   const [currentPage, setCurrentPage] = useState(1);
   const [excludedModelIds, setExcludedModelIds] = useState<string[]>([]);
+  const [modelListView, setModelListView] = useState<'reported' | 'all'>('reported');
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>(NO_API_KEY_VALUE);
   const [localSnapshot, setLocalSnapshot] = useState<ApiKeyPreferences | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
@@ -218,6 +229,37 @@ export function HealthTabContent() {
     setSaveStatus('idle');
   };
 
+  // Fetch all models for the "All" view (lazy - only when selected)
+  const { data: allModelsData, isLoading: allModelsLoading } = useQuery({
+    queryKey: ['healthAllModels', range],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('timeRange', range);
+      const response = await fetch(`/api/demo/models?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch models');
+      const data: {
+        models: Omit<Model, 'issueCount'>[];
+        feedbackCounts: Record<string, FeedbackEntry>;
+      } = await response.json();
+      return data.models.map((model) => {
+        const feedback = data.feedbackCounts[model.id];
+        return {
+          ...model,
+          issueCount: feedback
+            ? feedback.rateLimited + feedback.unavailable + feedback.error
+            : undefined,
+          errorRate: feedback ? feedback.errorRate : undefined,
+          successCount: feedback ? feedback.successCount : undefined,
+          rateLimited: feedback ? feedback.rateLimited : undefined,
+          unavailable: feedback ? feedback.unavailable : undefined,
+          errorCount: feedback ? feedback.error : undefined,
+        } as Model;
+      });
+    },
+    enabled: modelListView === 'all',
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Wrapper to cast string to TimeRange for ModelControls compatibility
   const handleTimeRangeChange = useCallback(
     (value: string) => {
@@ -249,10 +291,23 @@ export function HealthTabContent() {
     }));
   }, [issues]);
 
+  // All models filtered/sorted client-side for the "All" view
+  const allModelsFiltered: Model[] = useMemo(() => {
+    if (!allModelsData) return [];
+    const filtered = filterModelsByUseCase(allModelsData, activeUseCases);
+    const sorted = sortModels(filtered, activeSort);
+    if (activeTopN !== undefined && activeTopN > 0) {
+      return sorted.slice(0, activeTopN);
+    }
+    return sorted;
+  }, [allModelsData, activeUseCases, activeSort, activeTopN]);
+
+  const activeModels = modelListView === 'reported' ? models : allModelsFiltered;
+
   const visibleModels = useMemo(() => {
     const excluded = new Set(excludedModelIds);
-    return models.filter((model) => !excluded.has(model.id));
-  }, [models, excludedModelIds]);
+    return activeModels.filter((model) => !excluded.has(model.id));
+  }, [activeModels, excludedModelIds]);
 
   const visibleIssues = useMemo(() => {
     const excluded = new Set(excludedModelIds);
@@ -341,7 +396,7 @@ export function HealthTabContent() {
           setSaveStatus('idle');
         }}
         excludeControlLabel={isUsingApiKey ? 'Exclude Models' : 'Hide Models'}
-        excludeModels={models.map((model) => ({ id: model.id, name: model.name }))}
+        excludeModels={activeModels.map((model) => ({ id: model.id, name: model.name }))}
         excludedModelIds={excludedModelIds}
         onExcludedModelIdsChange={(ids) => {
           setExcludedModelIds(ids);
@@ -374,17 +429,46 @@ export function HealthTabContent() {
         <span className="text-sm text-emerald-600 dark:text-emerald-400">
           &#8595; Lower is better
         </span>
+        <div className="ml-auto">
+          <ButtonGroup>
+            <Button
+              variant={modelListView === 'reported' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                setModelListView('reported');
+                setCurrentPage(1);
+              }}
+            >
+              Reported Usage
+            </Button>
+            <Button
+              variant={modelListView === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                setModelListView('all');
+                setCurrentPage(1);
+              }}
+            >
+              All
+            </Button>
+          </ButtonGroup>
+        </div>
       </div>
       <ModelList
         models={visibleModels}
-        loading={loading}
+        loading={modelListView === 'reported' ? loading : allModelsLoading}
         error={error}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         lastUpdated={lastUpdated}
         headerCount={visibleModels.length}
-        headerLabel={`model${visibleModels.length === 1 ? '' : 's'} shown (${count} total with reported usage)`}
+        headerLabel={
+          modelListView === 'reported'
+            ? `model${visibleModels.length === 1 ? '' : 's'} shown (${count} total with reported usage)`
+            : `model${visibleModels.length === 1 ? '' : 's'} shown (${allModelsData?.length ?? 0} total active)`
+        }
         excludedModelIds={excludedModelIds}
+        excludeActionMode={isUsingApiKey ? 'exclude' : 'hide'}
         onToggleExcludeModel={(modelId) => {
           setExcludedModelIds((prev) =>
             prev.includes(modelId) ? prev.filter((id) => id !== modelId) : [...prev, modelId]
