@@ -72,6 +72,7 @@ export const GET: APIRoute = async (context) => {
       statusCode: 200,
       responseTimeMs: Math.round(performance.now() - startTime),
       responseData: {
+        ids: models.map((model) => model.id),
         count: models.length,
         params: { useCases, sort, topN, maxErrorRate, timeRange, myReports, excludeModelIds },
       },
