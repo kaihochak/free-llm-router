@@ -4,6 +4,7 @@ import { SiteHeader } from '../components/SiteHeader';
 import { Toaster } from '../components/ui/sonner';
 import SEO from '../components/SEO.astro';
 import PostHog from '../components/posthog.astro';
+import GoogleAnalytics from '../components/google-analytics.astro';
 import type { SEOProps } from '../lib/seo';
 
 interface Props extends SEOProps {
@@ -28,6 +29,7 @@ const { showHeader = true, ...seoProps } = Astro.props;
     />
     <SEO {...seoProps} />
     <PostHog />
+    <GoogleAnalytics />
     {
       import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
         <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
