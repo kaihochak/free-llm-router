@@ -67,6 +67,8 @@ interface ModelControlsProps {
   onExcludedModelIdsChange?: (ids: string[]) => void;
   onReset?: () => void;
   size?: 'sm' | 'lg';
+  disabled?: boolean;
+  surface?: boolean;
 }
 
 export function ModelControls({
@@ -92,6 +94,8 @@ export function ModelControls({
   onExcludedModelIdsChange,
   onReset,
   size = 'lg',
+  disabled = false,
+  surface = true,
 }: ModelControlsProps) {
   const isSmall = size === 'sm';
 
@@ -132,7 +136,8 @@ export function ModelControls({
 
   return (
     <div
-      className={`flex items-start bg-card/50 rounded-lg ${isSmall ? 'gap-x-4 gap-y-2 p-3 ' : 'gap-x-6 gap-y-3 p-3 md:p-4 my-3 md:my-4 '}`}
+      aria-disabled={disabled}
+      className={`flex items-start ${surface ? 'bg-card/50 rounded-lg' : ''} ${isSmall ? 'gap-x-4 gap-y-2 p-3 ' : 'gap-x-6 gap-y-3 p-3 md:p-4 my-3 md:my-4 '} ${disabled ? 'pointer-events-none opacity-70 select-none' : ''}`}
     >
       <div
         className={`flex flex-wrap ${isSmall ? 'gap-x-4 gap-y-2' : 'gap-x-6 gap-y-3'} ${onReset ? 'flex-1' : ''}`}

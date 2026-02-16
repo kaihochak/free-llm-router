@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 import {
   type ApiKeyPreferences,
   DEFAULT_USE_CASE,
@@ -195,9 +197,34 @@ export function ApiUsageStep() {
           >
             OpenRouter
           </a>{' '}
-          provides a unified API for accessing many LLM providers. Sign up for free and create an
-          API key.
+          provides a unified API for accessing many LLM providers. Sign up for free and{' '}
+          <a
+            href="https://openrouter.ai/keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            create a dedicated API key
+          </a>{' '}
+          specifically for free model usage.
         </p>
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Protect yourself from accidental charges.</strong> Create a{' '}
+            <strong>separate API key</strong> just for free models and set a{' '}
+            <a
+              href="https://openrouter.ai/settings/limits"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-medium"
+            >
+              credit limit
+            </a>{' '}
+            (e.g. $1) on your account. If a non-free model is accidentally used, you could be
+            charged. We are not responsible for any charges incurred on OpenRouter.
+          </AlertDescription>
+        </Alert>
       </div>
 
       {/* Step 2: Get Your API Key */}
