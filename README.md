@@ -6,7 +6,6 @@ Open-source API and web app for discovering free LLM models with community relia
 
 - Homepage and hosted docs: https://freellmrouter.com
 - Product and API overview: https://freellmrouter.com/docs
-- Project requirements: `docs/PRD.md`
 
 ## Quick start (local)
 
