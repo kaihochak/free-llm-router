@@ -6,7 +6,7 @@ Thank you for your interest in contributing! This project is driven by community
 
 ### 1. Report Issues
 
-- Found a bug? [Open an issue](../../issues) with details about the problem
+- Found a bug? [Open an issue](https://github.com/kaihochak/free-models-api/issues) with details about the problem
 - Suggest improvements to model filtering, health metrics, or documentation
 
 ### 2. Improve Health Data
@@ -40,8 +40,8 @@ Thank you for your interest in contributing! This project is driven by community
 # Install dependencies
 bun install
 
-# Create .env.local with database URL
-echo "DATABASE_URL=postgresql://..." > .env.local
+# Create your env file from the template
+cp .env.example .env
 
 # Run database migrations
 bun run db:push
@@ -93,7 +93,7 @@ If contributing health data insights:
 
 ## Questions?
 
-- Check [GitHub Discussions](../../discussions) for help
+- Check [GitHub Discussions](https://github.com/kaihochak/free-models-api/discussions) for help
 - Review the [API documentation](README.md)
 
 Thank you for contributing!
