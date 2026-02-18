@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing! This project is driven by community contributions to improve LLM model health data.
 
+## Code of Conduct
+
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold these standards.
+
 ## Ways to Contribute
 
 ### 1. Report Issues
