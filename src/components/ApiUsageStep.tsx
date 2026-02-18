@@ -45,7 +45,12 @@ async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
   return data.preferences || {};
 }
 
-export function ApiUsageStep() {
+interface ApiUsageStepProps {
+  variant?: 'full' | 'compact';
+}
+
+export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
+  const isCompact = variant === 'compact';
   const { data: session } = useCachedSession();
   const modelsData = useModels();
   const {
@@ -180,75 +185,92 @@ export function ApiUsageStep() {
 
   return (
     <div className="w-full space-y-12">
-      {/* Step 1: Set Up OpenRouter */}
-      <div id="setup-openrouter" className="space-y-3 md:space-y-4 scroll-mt-20">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            1
-          </span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Set Up OpenRouter</h3>
-        </div>
-        <p className="text-muted-foreground">
-          <a
-            href="https://openrouter.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            OpenRouter
-          </a>{' '}
-          provides a unified API for accessing many LLM providers. Sign up for free and{' '}
-          <a
-            href="https://openrouter.ai/keys"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            create a dedicated API key
-          </a>{' '}
-          specifically for free model usage.
+      {isCompact && (
+        <p className="text-sm text-muted-foreground">
+          Need full setup and configuration?{' '}
+          <a href="/docs" className="text-primary hover:underline">
+            See the docs
+          </a>
+          .
         </p>
-        <Alert variant="warning">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Protect yourself from accidental charges.</strong> Create a{' '}
-            <strong>separate API key</strong> just for free models and set a{' '}
-            <a
-              href="https://openrouter.ai/settings/limits"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-medium"
-            >
-              credit limit
-            </a>{' '}
-            (e.g. $1) on your account. If a non-free model is accidentally used, you could be
-            charged. We are not responsible for any charges incurred on OpenRouter.
-          </AlertDescription>
-        </Alert>
-      </div>
+      )}
 
-      {/* Step 2: Get Your API Key */}
-      <div id="get-api-key" className="space-y-3 md:space-y-4 scroll-mt-20">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            2
-          </span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
-        </div>
-        <p className="text-muted-foreground">
-          <a href="/login" className="text-primary font-medium hover:underline hover:opacity-90">
-            Sign in with GitHub
-          </a>{' '}
-          to create your API key. All keys share a per-user limit of 200 requests per 24 hours (with
-          SDK caching, this is plenty).
-        </p>
-      </div>
+      {!isCompact && (
+        <>
+          {/* Step 1: Set Up OpenRouter */}
+          <div id="setup-openrouter" className="space-y-3 md:space-y-4 scroll-mt-20">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                1
+              </span>
+              <h3 className="text-xl font-semibold sm:text-2xl">Set Up OpenRouter</h3>
+            </div>
+            <p className="text-muted-foreground">
+              <a
+                href="https://openrouter.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                OpenRouter
+              </a>{' '}
+              provides a unified API for accessing many LLM providers. Sign up for free and{' '}
+              <a
+                href="https://openrouter.ai/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                create a dedicated API key
+              </a>{' '}
+              specifically for free model usage.
+            </p>
+            <Alert variant="warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Protect yourself from accidental charges.</strong> Create a{' '}
+                <strong>separate API key</strong> just for free models and set a{' '}
+                <a
+                  href="https://openrouter.ai/settings/limits"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-medium"
+                >
+                  credit limit
+                </a>{' '}
+                (e.g. $1) on your account. If a non-free model is accidentally used, you could be
+                charged. We are not responsible for any charges incurred on OpenRouter.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          {/* Step 2: Get Your API Key */}
+          <div id="get-api-key" className="space-y-3 md:space-y-4 scroll-mt-20">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                2
+              </span>
+              <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
+            </div>
+            <p className="text-muted-foreground">
+              <a
+                href="/login"
+                className="text-primary font-medium hover:underline hover:opacity-90"
+              >
+                Sign in with GitHub
+              </a>{' '}
+              to create your API key. All keys share a per-user limit of 200 requests per 24 hours
+              (with SDK caching, this is plenty).
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Step 3: Copy free-llm-router.ts */}
       <div id="copy-file" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            3
+            {isCompact ? 1 : 3}
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">
             Copy{' '}
@@ -264,76 +286,82 @@ export function ApiUsageStep() {
         <CodeBlock code={snippet} copyLabel="Copy" className="[&>div:first-child]:max-h-[26vh]" />
       </div>
 
-      {/* Step 4: Further Configure Parameters */}
-      <div id="further-configure-params" className="space-y-3 md:space-y-4 scroll-mt-20">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            4
-          </span>
-          <h3 className="text-xl font-semibold sm:text-2xl">Further Configure Parameters</h3>
-        </div>
-        <p className="text-muted-foreground">
-          Need to tune use case, sorting, limits, reliability filters, and exclusions? Open{' '}
-          <a href="/dashboard?tab=configure" className="text-primary hover:underline">
-            Parameter Configuration
-          </a>{' '}
-          in dashboard.
-        </p>
-      </div>
-
       {/* Step 5: Use It */}
       <div id="use-it" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            5
+            {isCompact ? 2 : 4}
           </span>
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
         <p className="text-muted-foreground">
           Use saved key defaults, or override for a single request.
         </p>
-        <div className="flex items-center justify-between gap-3">
-          <Tabs
-            value={useItMode}
-            onValueChange={(value) => setUseItMode(value as 'default' | 'override')}
-          >
-            <TabsList className="h-8">
-              <TabsTrigger value="default" className="text-xs">
-                Default
-              </TabsTrigger>
-              <TabsTrigger value="override" className="text-xs">
-                Override
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {useItMode === 'override' && session?.user && apiKeys.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">API key</span>
-              <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
-                <SelectTrigger className="w-full sm:w-56 h-9" size="default">
-                  <SelectValue placeholder="Select API key" />
-                </SelectTrigger>
-                <SelectContent>
-                  {apiKeys.map((key) => (
-                    <SelectItem key={key.id} value={key.id}>
-                      {key.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
+        {!isCompact && (
+          <div className="flex items-center justify-between gap-3">
+            <Tabs
+              value={useItMode}
+              onValueChange={(value) => setUseItMode(value as 'default' | 'override')}
+            >
+              <TabsList className="h-8">
+                <TabsTrigger value="default" className="text-xs">
+                  Default
+                </TabsTrigger>
+                <TabsTrigger value="override" className="text-xs">
+                  Override
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {useItMode === 'override' && session?.user && apiKeys.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">API key</span>
+                <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
+                  <SelectTrigger className="w-full sm:w-56 h-9" size="default">
+                    <SelectValue placeholder="Select API key" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {apiKeys.map((key) => (
+                      <SelectItem key={key.id} value={key.id}>
+                        {key.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        )}
         <CodeBlock
-          code={useItMode === 'default' ? defaultBasicSnippet : overrideBasicSnippet}
+          code={isCompact || useItMode === 'default' ? defaultBasicSnippet : overrideBasicSnippet}
           language="typescript"
           className="text-sm"
         />
-        <p className="text-sm text-muted-foreground">
-          More patterns are available in{' '}
-          <a href="#code-examples" className="text-primary hover:underline">
-            Code Examples
-          </a>{' '}
+        {!isCompact && (
+          <p className="text-sm text-muted-foreground">
+            More patterns are available in{' '}
+            <a href="#code-examples" className="text-primary hover:underline">
+              Code Examples
+            </a>{' '}
+            .
+          </p>
+        )}
+      </div>
+
+      <div id="further-configure-params" className="space-y-3 md:space-y-4 scroll-mt-20">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            {isCompact ? 3 : 5}
+          </span>
+          <h3 className="text-xl font-semibold sm:text-2xl">Further Configure Parameters</h3>
+        </div>
+        <p className="text-muted-foreground">
+          Need to tune use case, sorting, limits, reliability filters, and exclusions? Open{' '}
+          <a
+            href={isCompact ? '/docs#parameter-configuration' : '#parameter-configuration'}
+            className="text-primary hover:underline"
+          >
+            Parameter Configuration
+          </a>
           .
         </p>
       </div>

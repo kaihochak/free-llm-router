@@ -43,7 +43,7 @@ function ModelsPageContent() {
     <section className="scroll-mt-16 sm:mt-4">
       <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Models</h2>
       <p className="mb-8 text-base text-muted-foreground sm:text-lg">
-        Monitor model health from community feedback and availability from OpenRouter.
+        We are not OpenRouter. Model data is based on community reports.
       </p>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
