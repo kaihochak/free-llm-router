@@ -35,8 +35,8 @@ const navItems: NavItem[] = [
       { title: '1. Set Up OpenRouter', href: '#setup-openrouter' },
       { title: '2. Get API Key', href: '#get-api-key' },
       { title: '3. Copy Helper File', href: '#copy-file' },
-      { title: '4. Further Configure Parameters', href: '#further-configure-params' },
-      { title: '5. Use It', href: '#use-it' },
+      { title: '4. Use It', href: '#use-it' },
+      { title: '5. Further Configure Parameters', href: '#further-configure-params' },
     ],
   },
   {

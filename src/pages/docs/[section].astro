@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/base.astro';
+import { generateAPISchema } from '../../lib/seo';
+import DocsPageContent from '../../components/docs/DocsPageContent.astro';
+
+const section = Astro.params.section ?? '';
+---
+
+<Layout
+  title="Documentation"
+  description="API documentation for Free LLM Router - access healthy free LLM models from OpenRouter."
+  jsonLd={generateAPISchema()}
+  url="/docs"
+  showHeader={false}
+>
+  <DocsPageContent initialSection={section} />
+</Layout>

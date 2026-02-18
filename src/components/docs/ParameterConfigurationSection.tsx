@@ -249,7 +249,7 @@ export function ParameterConfigurationSection() {
     <section id="parameter-configuration" className="mt-20 scroll-mt-20 space-y-6">
       <h2 className="mb-4 text-5xl font-bold">Parameter Configuration</h2>
 
-      <section id="parameter-configuration-overview" className="space-y-3">
+      <section id="parameter-configuration-overview" className="space-y-3 scroll-mt-20">
         <h3 className="text-xl font-semibold sm:text-2xl">Overview</h3>
         <p className="text-muted-foreground">
           Configure model selection once in the app, then call <code>getModelIds()</code> without
@@ -260,7 +260,7 @@ export function ParameterConfigurationSection() {
         </p>
       </section>
 
-      <section id="configure-params-live" className="space-y-3">
+      <section id="configure-params-live" className="space-y-3 scroll-mt-20">
         <h3 className="text-xl font-semibold sm:text-2xl">Configure Parameters</h3>
         <ApiPreferencesConfigurator
           modelControlsProps={{
@@ -358,7 +358,7 @@ export function ParameterConfigurationSection() {
         />
       </section>
 
-      <section id="key-defaults" className="space-y-3">
+      <section id="key-defaults" className="space-y-3 scroll-mt-20">
         <h3 className="text-xl font-semibold sm:text-2xl">Key Defaults</h3>
         <p className="text-muted-foreground">
           Parameters are saved per API key. A call like <code>getModelIds()</code> uses the selected
@@ -375,7 +375,7 @@ export function ParameterConfigurationSection() {
         />
       </section>
 
-      <section id="request-overrides" className="space-y-3">
+      <section id="request-overrides" className="space-y-3 scroll-mt-20">
         <h3 className="text-xl font-semibold sm:text-2xl">Request Overrides</h3>
         <p className="text-muted-foreground">
           Passing arguments to <code>getModelIds(...)</code> overrides those defaults for that

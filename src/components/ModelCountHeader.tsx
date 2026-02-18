@@ -53,13 +53,13 @@ export function ModelCountHeader({
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
         Live
       </span>
-      <p className="hidden sm:block text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         <span className="font-medium text-foreground">{count}</span> {label}
         {relativeTime && (
-          <>
+          <span className="hidden sm:inline">
             <span className="mx-1.5">·</span>
             <span className="text-xs">Updated {relativeTime}</span>
-          </>
+          </span>
         )}
       </p>
     </div>
