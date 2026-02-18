@@ -357,7 +357,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
         <p className="text-muted-foreground">
           Need to tune use case, sorting, limits, reliability filters, and exclusions? Open{' '}
           <a
-            href={isCompact ? '/docs#parameter-configuration' : '#parameter-configuration'}
+            href={isCompact ? '/docs/parameter-configuration' : '#parameter-configuration'}
             className="text-primary hover:underline"
           >
             Parameter Configuration

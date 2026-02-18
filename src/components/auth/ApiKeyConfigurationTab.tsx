@@ -44,6 +44,30 @@ interface ModelsApiResponse {
   lastUpdated?: string;
 }
 
+function getDefaultPreferences(): ApiKeyPreferences {
+  return {
+    useCases: [...DEFAULT_USE_CASE],
+    sort: DEFAULT_SORT,
+    topN: DEFAULT_TOP_N,
+    maxErrorRate: undefined,
+    timeRange: DEFAULT_TIME_RANGE,
+    myReports: DEFAULT_MY_REPORTS,
+    excludeModelIds: [],
+  };
+}
+
+function normalizePreferences(preferences: ApiKeyPreferences): ApiKeyPreferences {
+  return {
+    useCases: preferences.useCases ?? [...DEFAULT_USE_CASE],
+    sort: preferences.sort ?? DEFAULT_SORT,
+    topN: preferences.topN ?? DEFAULT_TOP_N,
+    maxErrorRate: preferences.maxErrorRate,
+    timeRange: preferences.timeRange ?? DEFAULT_TIME_RANGE,
+    myReports: preferences.myReports ?? DEFAULT_MY_REPORTS,
+    excludeModelIds: preferences.excludeModelIds ?? [],
+  };
+}
+
 async function fetchApiKeys(): Promise<ApiKey[]> {
   const response = await authClient.apiKey.list();
   return ((response.data as ApiKey[]) || []).filter((key) => key.enabled);
@@ -103,7 +127,7 @@ async function fetchModelsForPreview(
 
 export function ApiKeyConfigurationTab() {
   const [configuringKey, setConfiguringKey] = useState<ApiKey | null>(null);
-  const [preferences, setPreferences] = useState<ApiKeyPreferences>({});
+  const [preferences, setPreferences] = useState<ApiKeyPreferences>(getDefaultPreferences);
   const [previewPage, setPreviewPage] = useState(1);
   const [prefsMessage, setPrefsMessage] = useState<{
     type: 'success' | 'error';
@@ -118,13 +142,13 @@ export function ApiKeyConfigurationTab() {
   const { data: modelsData, isLoading: isLoadingModels } = useQuery({
     queryKey: [
       'previewModels',
-      preferences.timeRange || DEFAULT_TIME_RANGE,
+      preferences.timeRange ?? DEFAULT_TIME_RANGE,
       preferences.maxErrorRate,
       preferences.myReports,
     ],
     queryFn: () =>
       fetchModelsForPreview(
-        preferences.timeRange || DEFAULT_TIME_RANGE,
+        preferences.timeRange ?? DEFAULT_TIME_RANGE,
         preferences.maxErrorRate,
         preferences.myReports
       ),
@@ -136,12 +160,13 @@ export function ApiKeyConfigurationTab() {
     setConfiguringKey(key);
     setPrefsMessage(null);
     setPreviewPage(1);
+    setPreferences(getDefaultPreferences());
 
     try {
       const prefs = await fetchPreferences(key.id);
-      setPreferences(prefs);
+      setPreferences(normalizePreferences(prefs));
     } catch {
-      setPreferences({});
+      setPreferences(getDefaultPreferences());
     }
   };
 
@@ -164,7 +189,7 @@ export function ApiKeyConfigurationTab() {
     if (useCase === 'all') {
       updatePref('useCases', []);
     } else {
-      const current = preferences.useCases || [];
+      const current = preferences.useCases ?? [];
       const updated = current.includes(useCase)
         ? current.filter((uc) => uc !== useCase)
         : [...current, useCase];
@@ -174,12 +199,12 @@ export function ApiKeyConfigurationTab() {
   };
 
   const previewModels = useMemo(() => {
-    const allModels = modelsData?.models || [];
-    const useCases = preferences.useCases || [];
-    const sort = preferences.sort || DEFAULT_SORT;
+    const allModels = modelsData?.models ?? [];
+    const useCases = preferences.useCases ?? [];
+    const sort = preferences.sort ?? DEFAULT_SORT;
     const filtered = filterModelsByUseCase(allModels, useCases);
     const sorted = sortModels(filtered, sort);
-    const excluded = new Set(preferences.excludeModelIds || []);
+    const excluded = new Set(preferences.excludeModelIds ?? []);
     const withoutExcluded = sorted.filter((model) => !excluded.has(model.id));
     const topN = preferences.topN;
     return topN ? withoutExcluded.slice(0, topN) : withoutExcluded;
@@ -201,7 +226,7 @@ export function ApiKeyConfigurationTab() {
   };
 
   const toggleExcludedModel = (modelId: string) => {
-    const current = preferences.excludeModelIds || [];
+    const current = preferences.excludeModelIds ?? [];
     const next = current.includes(modelId)
       ? current.filter((id) => id !== modelId)
       : [...current, modelId];
@@ -210,15 +235,7 @@ export function ApiKeyConfigurationTab() {
   };
 
   const handleResetPrefs = () => {
-    setPreferences({
-      useCases: DEFAULT_USE_CASE,
-      sort: DEFAULT_SORT,
-      topN: DEFAULT_TOP_N,
-      maxErrorRate: undefined,
-      timeRange: DEFAULT_TIME_RANGE,
-      myReports: DEFAULT_MY_REPORTS,
-      excludeModelIds: [],
-    });
+    setPreferences(getDefaultPreferences());
     setPreviewPage(1);
     setPrefsMessage(null);
   };
@@ -248,14 +265,14 @@ export function ApiKeyConfigurationTab() {
     <div className="space-y-6">
       <ApiPreferencesConfigurator
         modelControlsProps={{
-          activeUseCases: preferences.useCases || [],
-          activeSort: preferences.sort || DEFAULT_SORT,
+          activeUseCases: preferences.useCases ?? DEFAULT_USE_CASE,
+          activeSort: preferences.sort ?? DEFAULT_SORT,
           activeTopN: preferences.topN,
           excludeControlLabel: 'Exclude Models',
           reliabilityFilterEnabled: preferences.maxErrorRate !== undefined,
           activeMaxErrorRate: preferences.maxErrorRate,
-          activeTimeRange: preferences.timeRange || DEFAULT_TIME_RANGE,
-          activeMyReports: preferences.myReports || DEFAULT_MY_REPORTS,
+          activeTimeRange: preferences.timeRange ?? DEFAULT_TIME_RANGE,
+          activeMyReports: preferences.myReports ?? DEFAULT_MY_REPORTS,
           showReliabilityControls: true,
           onToggleUseCase: toggleUseCase,
           onSortChange: (sort) => {
@@ -279,11 +296,11 @@ export function ApiKeyConfigurationTab() {
             updatePref('myReports', val);
             setPreviewPage(1);
           },
-          excludeModels: (modelsData?.models || []).map((model) => ({
+          excludeModels: (modelsData?.models ?? []).map((model) => ({
             id: model.id,
             name: model.name,
           })),
-          excludedModelIds: preferences.excludeModelIds || [],
+          excludedModelIds: preferences.excludeModelIds ?? [],
           onExcludedModelIdsChange: (ids) => {
             updatePref('excludeModelIds', ids);
             setPreviewPage(1);
@@ -299,14 +316,14 @@ export function ApiKeyConfigurationTab() {
           itemsPerPage: 5,
           lastUpdated: modelsData?.lastUpdated || null,
           headerLabel: 'Preview',
-          excludedModelIds: preferences.excludeModelIds || [],
+          excludedModelIds: preferences.excludeModelIds ?? [],
           excludeActionMode: 'exclude',
           onToggleExcludeModel: toggleExcludedModel,
         }}
         helper={
           <>
             Tune filters and preview the output list. For full parameter details, see{' '}
-            <a href="/docs#parameter-configuration" className="text-primary hover:underline">
+            <a href="/docs/parameter-configuration" className="text-primary hover:underline">
               docs
             </a>
             .
