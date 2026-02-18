@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useHealth, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { IssuesChart } from '@/components/model-health/HealthChart';
@@ -55,18 +55,6 @@ async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
   return data.preferences || {};
 }
 
-async function savePreferences(apiKeyId: string, preferences: ApiKeyPreferences): Promise<void> {
-  const response = await fetch('/api/auth/preferences', {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKeyId, preferences }),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to save preferences');
-  }
-}
-
 export function HealthTabContent() {
   const { data: session } = useCachedSession();
   const {
@@ -98,7 +86,6 @@ export function HealthTabContent() {
   const [modelListView, setModelListView] = useState<'reported' | 'all'>('reported');
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>(NO_API_KEY_VALUE);
   const [localSnapshot, setLocalSnapshot] = useState<ApiKeyPreferences | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const isUsingApiKey = !!session?.user && selectedApiKeyId !== NO_API_KEY_VALUE;
 
   const { data: apiKeys = [] } = useQuery({
@@ -114,11 +101,10 @@ export function HealthTabContent() {
       !apiKeys.some((key) => key.id === selectedApiKeyId)
     ) {
       setSelectedApiKeyId(NO_API_KEY_VALUE);
-      setSaveStatus('idle');
     }
   }, [session?.user, apiKeys, selectedApiKeyId]);
 
-  const { data: selectedPreferences, refetch: refetchSelectedPreferences } = useQuery({
+  const { data: selectedPreferences } = useQuery({
     queryKey: ['healthApiKeyPreferences', selectedApiKeyId],
     queryFn: () => fetchPreferences(selectedApiKeyId),
     enabled: isUsingApiKey,
@@ -136,7 +122,6 @@ export function HealthTabContent() {
     setMyReports(selectedPreferences.myReports ?? DEFAULT_MY_REPORTS);
     setExcludedModelIds(selectedPreferences.excludeModelIds ?? []);
     setCurrentPage(1);
-    setSaveStatus('idle');
   }, [
     isUsingApiKey,
     selectedPreferences,
@@ -148,54 +133,6 @@ export function HealthTabContent() {
     setRange,
     setMyReports,
   ]);
-
-  const currentPreferences = useMemo<ApiKeyPreferences>(
-    () => ({
-      useCases: activeUseCases,
-      sort: activeSort,
-      topN: activeTopN,
-      maxErrorRate: reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
-      timeRange: range as ApiKeyPreferences['timeRange'],
-      myReports,
-      excludeModelIds: excludedModelIds,
-    }),
-    [
-      activeUseCases,
-      activeSort,
-      activeTopN,
-      reliabilityFilterEnabled,
-      activeMaxErrorRate,
-      range,
-      myReports,
-      excludedModelIds,
-    ]
-  );
-
-  const isDirty = useMemo(() => {
-    if (!isUsingApiKey || selectedPreferences === undefined) return false;
-    const baseline: ApiKeyPreferences = {
-      useCases: selectedPreferences.useCases ?? DEFAULT_USE_CASE,
-      sort: selectedPreferences.sort ?? DEFAULT_SORT,
-      topN: selectedPreferences.topN ?? DEFAULT_TOP_N,
-      maxErrorRate: selectedPreferences.maxErrorRate,
-      timeRange: selectedPreferences.timeRange ?? DEFAULT_TIME_RANGE,
-      myReports: selectedPreferences.myReports ?? DEFAULT_MY_REPORTS,
-      excludeModelIds: selectedPreferences.excludeModelIds ?? [],
-    };
-    return JSON.stringify(currentPreferences) !== JSON.stringify(baseline);
-  }, [isUsingApiKey, selectedPreferences, currentPreferences]);
-
-  const savePrefsMutation = useMutation({
-    mutationFn: ({ keyId, preferences }: { keyId: string; preferences: ApiKeyPreferences }) =>
-      savePreferences(keyId, preferences),
-    onSuccess: () => {
-      setSaveStatus('saved');
-      void refetchSelectedPreferences();
-    },
-    onError: () => {
-      setSaveStatus('error');
-    },
-  });
 
   const handleApiKeyChange = (value: string) => {
     if (value === NO_API_KEY_VALUE) {
@@ -210,7 +147,6 @@ export function HealthTabContent() {
         setExcludedModelIds(localSnapshot.excludeModelIds ?? []);
       }
       setSelectedApiKeyId(NO_API_KEY_VALUE);
-      setSaveStatus('idle');
       return;
     }
 
@@ -226,7 +162,6 @@ export function HealthTabContent() {
       });
     }
     setSelectedApiKeyId(value);
-    setSaveStatus('idle');
   };
 
   // Fetch all models for the "All" view (lazy - only when selected)
@@ -264,7 +199,6 @@ export function HealthTabContent() {
   const handleTimeRangeChange = useCallback(
     (value: string) => {
       setRange(value as TimeRange);
-      setSaveStatus('idle');
     },
     [setRange]
   );
@@ -327,7 +261,7 @@ export function HealthTabContent() {
       </p>
 
       {session?.user && (
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 flex items-center gap-3">
           <Select value={selectedApiKeyId} onValueChange={handleApiKeyChange}>
             <SelectTrigger className="w-full sm:w-56 md:w-auto h-9 md:h-12!" size="default">
               <SelectValue placeholder="Select API key" />
@@ -341,31 +275,6 @@ export function HealthTabContent() {
               ))}
             </SelectContent>
           </Select>
-          {isUsingApiKey && (
-            <div className="flex items-center gap-3">
-              <p className="text-xs text-muted-foreground">
-                {saveStatus === 'saved'
-                  ? 'Preferences saved.'
-                  : saveStatus === 'error'
-                    ? 'Save failed. Try again.'
-                    : isDirty
-                      ? 'Unsaved changes.'
-                      : ''}
-              </p>
-              <Button
-                size="lg"
-                onClick={() =>
-                  savePrefsMutation.mutate({
-                    keyId: selectedApiKeyId,
-                    preferences: currentPreferences,
-                  })
-                }
-                disabled={savePrefsMutation.isPending || !isDirty}
-              >
-                {savePrefsMutation.isPending ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          )}
         </div>
       )}
 
@@ -378,36 +287,22 @@ export function HealthTabContent() {
         activeMyReports={myReports}
         simpleHealthControls
         showReliabilityControls={false}
-        onToggleUseCase={(useCase) => {
-          toggleUseCase(useCase);
-          setSaveStatus('idle');
-        }}
-        onSortChange={(sort) => {
-          setActiveSort(sort);
-          setSaveStatus('idle');
-        }}
-        onTopNChange={(topN) => {
-          setActiveTopN(topN);
-          setSaveStatus('idle');
-        }}
+        onToggleUseCase={toggleUseCase}
+        onSortChange={setActiveSort}
+        onTopNChange={setActiveTopN}
         onTimeRangeChange={handleTimeRangeChange}
-        onMyReportsChange={(value) => {
-          setMyReports(value);
-          setSaveStatus('idle');
-        }}
-        excludeControlLabel={isUsingApiKey ? 'Exclude Models' : 'Hide Models'}
+        onMyReportsChange={setMyReports}
+        excludeControlLabel="Hide Models"
         excludeModels={activeModels.map((model) => ({ id: model.id, name: model.name }))}
         excludedModelIds={excludedModelIds}
         onExcludedModelIdsChange={(ids) => {
           setExcludedModelIds(ids);
           setCurrentPage(1);
-          setSaveStatus('idle');
         }}
         onReset={() => {
           resetToDefaults();
           setExcludedModelIds([]);
           setCurrentPage(1);
-          setSaveStatus('idle');
         }}
         size="lg"
       />
@@ -468,7 +363,7 @@ export function HealthTabContent() {
             : `model${visibleModels.length === 1 ? '' : 's'} shown (${allModelsData?.length ?? 0} total active)`
         }
         excludedModelIds={excludedModelIds}
-        excludeActionMode={isUsingApiKey ? 'exclude' : 'hide'}
+        excludeActionMode="hide"
         onToggleExcludeModel={(modelId) => {
           setExcludedModelIds((prev) =>
             prev.includes(modelId) ? prev.filter((id) => id !== modelId) : [...prev, modelId]
