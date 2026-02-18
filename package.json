@@ -2,6 +2,8 @@
   "name": "free-llm-router",
   "type": "module",
   "version": "0.0.1",
+  "description": "Open-source API for discovering free LLM models with community reliability signals",
+  "license": "MIT",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
