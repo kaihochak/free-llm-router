@@ -5,6 +5,7 @@ import { ParameterConfigurationSectionWithProvider } from '../components/docs/Pa
 import { CodeExamplesSection } from '../components/docs/CodeExamplesSection';
 import { ApiReferenceSection } from '../components/docs/ApiReferenceSection';
 import { QueryParamsSection } from '../components/docs/QueryParamsSection';
+import DataAttributionFooter from '../components/DataAttributionFooter.astro';
 import { generateAPISchema } from '../lib/seo';
 import { DocsSidebar } from '../components/DocsSidebar';
 ---
@@ -24,15 +25,7 @@ import { DocsSidebar } from '../components/DocsSidebar';
       <ApiReferenceSection client:load />
       <QueryParamsSection client:load />
 
-      <!-- Footer -->
-      <footer class="border-t pt-12 text-center text-sm text-muted-foreground">
-        <p>
-          Model data synced from <a
-            href="https://openrouter.ai"
-            class="underline hover:text-foreground">OpenRouter</a
-          >
-        </p>
-      </footer>
+      <DataAttributionFooter class="border-t pt-12" />
     </div>
   </DocsSidebar>
 </Layout>
