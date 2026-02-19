@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { validatePreferences } from '@/lib/api-definitions';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
 import { jsonResponse } from '@/lib/api-response';
+import { extractApiKeyPreferences, parseApiKeyMetadata } from '@/lib/api-key-metadata';
 
 // GET /api/auth/preferences?apiKeyId=xxx - Get preferences for an API key
 export const GET: APIRoute = async ({ request, locals, url }) => {
@@ -36,19 +37,17 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         return {};
       }
 
-      try {
-        const parsed = JSON.parse(key.metadata);
-        return parsed.preferences || {};
-      } catch {
-        return {};
-      }
+      return extractApiKeyPreferences(key.metadata);
     });
 
     if (preferences === null) {
       return jsonResponse({ error: 'API key not found' }, { status: 404 });
     }
 
-    return jsonResponse({ preferences });
+    return jsonResponse(
+      { preferences },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     console.error('Preferences fetch error:', error);
     return jsonResponse({ error: 'Internal server error' }, { status: 500 });
@@ -93,17 +92,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       }
 
       // Preserve existing metadata and add/update preferences
-      let metadata: Record<string, unknown> = {};
-      if (existing.metadata) {
-        try {
-          const parsed = JSON.parse(existing.metadata);
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            metadata = parsed;
-          }
-        } catch {
-          // Ignore parse errors, start fresh
-        }
-      }
+      const metadata: Record<string, unknown> = parseApiKeyMetadata(existing.metadata);
 
       metadata.preferences = preferences;
 
@@ -122,7 +111,10 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'API key not found' }, { status: 404 });
     }
 
-    return jsonResponse({ preferences: updated, message: 'Preferences saved' });
+    return jsonResponse(
+      { preferences: updated, message: 'Preferences saved' },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     console.error('Preferences save error:', error);
     return jsonResponse({ error: 'Internal server error' }, { status: 500 });
