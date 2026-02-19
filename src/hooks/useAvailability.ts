@@ -81,6 +81,8 @@ export function useAvailability() {
         sort: activeSort,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const toggleUseCase = (useCase: UseCaseType | 'all') => {
