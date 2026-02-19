@@ -125,7 +125,10 @@ export function ModelControls({
   const gapClass = isSmall ? 'gap-1' : 'gap-2';
   const buttonClass = isSmall ? 'h-5! md:h-8! min-w-[16px]' : 'h-8! md:h-10! min-w-[20px]';
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
-  const excludeIds = excludeModels.map((model) => model.id);
+  // Keep selected IDs in the item set so the combobox doesn't drop values during async model loads.
+  const excludeIds = Array.from(
+    new Set([...excludeModels.map((model) => model.id), ...excludedModelIds])
+  );
   const excludeLabelById = new Map(
     excludeModels.map((model) => [model.id, model.name || model.id])
   );

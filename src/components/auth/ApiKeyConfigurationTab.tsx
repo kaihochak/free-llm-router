@@ -74,25 +74,35 @@ async function fetchApiKeys(): Promise<ApiKey[]> {
 }
 
 async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
-  const response = await fetch(`/api/auth/preferences?apiKeyId=${apiKeyId}`, {
+  const response = await fetch(`/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`, {
     credentials: 'include',
+    cache: 'no-store',
+    headers: { Accept: 'application/json' },
   });
   if (!response.ok) return {};
   const data = await response.json();
   return data.preferences || {};
 }
 
-async function savePreferences(apiKeyId: string, preferences: ApiKeyPreferences): Promise<void> {
+async function savePreferences(
+  apiKeyId: string,
+  preferences: ApiKeyPreferences
+): Promise<ApiKeyPreferences> {
   const response = await fetch('/api/auth/preferences', {
     method: 'PUT',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ apiKeyId, preferences }),
   });
+
   if (!response.ok) {
     const data = await response.json();
     throw new Error(data.error || 'Failed to save preferences');
   }
+
+  const data = (await response.json()) as { preferences?: ApiKeyPreferences };
+  return data.preferences || {};
 }
 
 async function fetchModelsForPreview(
@@ -245,7 +255,8 @@ export function ApiKeyConfigurationTab() {
       if (!configuringKey) throw new Error('No key selected');
       return savePreferences(configuringKey.id, preferences);
     },
-    onSuccess: () => {
+    onSuccess: (savedPreferences) => {
+      setPreferences(normalizePreferences(savedPreferences));
       setPrefsMessage({ type: 'success', text: 'Preferences saved' });
     },
     onError: (err: Error) => {
