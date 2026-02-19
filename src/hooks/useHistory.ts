@@ -146,6 +146,8 @@ export function useHistory<T extends ApiRequestLog | FeedbackItem | UnifiedHisto
       initialPageParam: 1,
       getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
       enabled: options?.enabled ?? true,
+      retry: false,
+      refetchOnWindowFocus: false,
     });
 
   const loadMore = useCallback(() => {

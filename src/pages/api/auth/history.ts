@@ -2,13 +2,26 @@ import type { APIRoute } from 'astro';
 import { apiRequestLogs, modelFeedback, apiKeys, withUserContext } from '@/db';
 import { eq, desc, and } from 'drizzle-orm';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
-import { jsonResponse } from '@/lib/api-response';
+import {
+  jsonResponse,
+  createRequestId,
+  withRequestId,
+  errorJsonResponse,
+  logApiStage,
+} from '@/lib/api-response';
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
+  const requestId = createRequestId();
+  logApiStage('/api/auth/history', requestId, 'start', { method: 'GET' });
+
   try {
     const result = await getAuthSession(request, locals);
     if (isSessionError(result)) {
-      return jsonResponse({ error: result.error }, { status: result.status });
+      logApiStage('/api/auth/history', requestId, 'session_error', { status: result.status });
+      return errorJsonResponse(
+        { error: result.error, code: 'SESSION_ERROR' },
+        { requestId, status: result.status }
+      );
     }
 
     const { session, databaseUrl } = result;
@@ -18,6 +31,13 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
     const offset = (page - 1) * limit;
     const apiKeyId = url.searchParams.get('apiKeyId');
+    logApiStage('/api/auth/history', requestId, 'session_ok', {
+      userId: session.user.id,
+      type,
+      page,
+      limit,
+      apiKeyId,
+    });
 
     if (type === 'requests') {
       // Fetch request logs with API key info (RLS-protected)
@@ -52,7 +72,10 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       const hasMore = items.length > limit;
       const returnItems = hasMore ? items.slice(0, limit) : items;
 
-      return jsonResponse({ items: returnItems, hasMore });
+      return jsonResponse(
+        { items: returnItems, hasMore },
+        { headers: withRequestId(undefined, requestId) }
+      );
     } else if (type === 'feedback') {
       // Fetch feedback submitted by this user with API key info (RLS-protected)
       // Fetch limit+1 to check if there are more items
@@ -87,7 +110,10 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       const hasMore = items.length > limit;
       const returnItems = hasMore ? items.slice(0, limit) : items;
 
-      return jsonResponse({ items: returnItems, hasMore });
+      return jsonResponse(
+        { items: returnItems, hasMore },
+        { headers: withRequestId(undefined, requestId) }
+      );
     }
 
     if (type === 'unified') {
@@ -271,12 +297,23 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       // hasMore = there are more items beyond what we returned
       const hasMore = merged.length > offset + limit;
 
-      return jsonResponse({ items: paginatedItems, hasMore });
+      return jsonResponse(
+        { items: paginatedItems, hasMore },
+        { headers: withRequestId(undefined, requestId) }
+      );
     }
 
-    return jsonResponse({ error: 'Invalid type parameter' }, { status: 400 });
+    return errorJsonResponse(
+      { error: 'Invalid type parameter', code: 'VALIDATION_ERROR' },
+      { requestId, status: 400 }
+    );
   } catch (error) {
-    console.error('History fetch error:', error);
-    return jsonResponse({ error: 'Internal server error' }, { status: 500 });
+    logApiStage('/api/auth/history', requestId, 'error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return errorJsonResponse(
+      { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+      { requestId, status: 500 }
+    );
   }
 };

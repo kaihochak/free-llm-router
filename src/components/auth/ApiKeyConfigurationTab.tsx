@@ -44,6 +44,23 @@ interface ModelsApiResponse {
   lastUpdated?: string;
 }
 
+async function parseApiError(response: Response, fallback: string): Promise<string> {
+  const requestId = response.headers.get('X-Request-Id');
+  const suffix = requestId ? ` (request ${requestId})` : '';
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      const data = (await response.json()) as { error?: string };
+      return `${data.error || fallback}${suffix}`;
+    } catch {
+      return `${fallback}${suffix}`;
+    }
+  }
+
+  return `${fallback}${suffix}`;
+}
+
 function getDefaultPreferences(): ApiKeyPreferences {
   return {
     useCases: [...DEFAULT_USE_CASE],
@@ -79,7 +96,9 @@ async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
     cache: 'no-store',
     headers: { Accept: 'application/json' },
   });
-  if (!response.ok) return {};
+  if (!response.ok) {
+    throw new Error(await parseApiError(response, 'Could not load saved preferences'));
+  }
   const data = await response.json();
   return data.preferences || {};
 }
@@ -97,8 +116,7 @@ async function savePreferences(
   });
 
   if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || 'Failed to save preferences');
+    throw new Error(await parseApiError(response, 'Failed to save preferences'));
   }
 
   const data = (await response.json()) as { preferences?: ApiKeyPreferences };
@@ -139,6 +157,8 @@ export function ApiKeyConfigurationTab() {
   const [configuringKey, setConfiguringKey] = useState<ApiKey | null>(null);
   const [preferences, setPreferences] = useState<ApiKeyPreferences>(getDefaultPreferences);
   const [previewPage, setPreviewPage] = useState(1);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(false);
+  const [prefLoadError, setPrefLoadError] = useState<string | null>(null);
   const [prefsMessage, setPrefsMessage] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -147,6 +167,8 @@ export function ApiKeyConfigurationTab() {
   const { data: apiKeys = [] } = useQuery({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const { data: modelsData, isLoading: isLoadingModels } = useQuery({
@@ -164,19 +186,24 @@ export function ApiKeyConfigurationTab() {
       ),
     enabled: true,
     staleTime: 5 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const handleConfigureKey = async (key: ApiKey) => {
     setConfiguringKey(key);
     setPrefsMessage(null);
+    setPrefLoadError(null);
     setPreviewPage(1);
-    setPreferences(getDefaultPreferences());
+    setIsLoadingPreferences(true);
 
     try {
       const prefs = await fetchPreferences(key.id);
       setPreferences(normalizePreferences(prefs));
-    } catch {
-      setPreferences(getDefaultPreferences());
+    } catch (error) {
+      setPrefLoadError(error instanceof Error ? error.message : 'Could not load saved preferences');
+    } finally {
+      setIsLoadingPreferences(false);
     }
   };
 
@@ -257,6 +284,7 @@ export function ApiKeyConfigurationTab() {
     },
     onSuccess: (savedPreferences) => {
       setPreferences(normalizePreferences(savedPreferences));
+      setPrefLoadError(null);
       setPrefsMessage({ type: 'success', text: 'Preferences saved' });
     },
     onError: (err: Error) => {
@@ -371,9 +399,21 @@ export function ApiKeyConfigurationTab() {
                     {prefsMessage.text}
                   </span>
                 )}
+                {prefLoadError && (
+                  <>
+                    <span className="text-sm text-red-600">{prefLoadError}</span>
+                    <Button
+                      variant="outline"
+                      onClick={() => configuringKey && void handleConfigureKey(configuringKey)}
+                      disabled={isLoadingPreferences}
+                    >
+                      Retry Load
+                    </Button>
+                  </>
+                )}
                 <Button
                   onClick={() => savePreferencesMutation.mutate()}
-                  disabled={savePreferencesMutation.isPending}
+                  disabled={savePreferencesMutation.isPending || isLoadingPreferences}
                 >
                   {savePreferencesMutation.isPending && (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />

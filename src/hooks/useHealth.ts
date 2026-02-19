@@ -196,6 +196,8 @@ export function useHealth(options?: UseHealthOptions) {
         maxErrorRate: effectiveMaxErrorRate,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const setMyReports = useCallback(
