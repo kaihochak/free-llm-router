@@ -24,10 +24,15 @@ export function SiteHeader({ showSidebarTrigger = true }: SiteHeaderProps) {
             <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
               Docs
             </a>
+            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">
+              Pricing
+            </a>
             <a href="/models" className="text-sm text-muted-foreground hover:text-foreground">
               Models
             </a>
-            <FeedbackDialog />
+            <div className="hidden md:block">
+              <FeedbackDialog />
+            </div>
           </nav>
         </div>
         <div className="flex-1" />
