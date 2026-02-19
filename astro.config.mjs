@@ -15,10 +15,7 @@ export default defineConfig({
 	integrations: [
 		react(),
 		sitemap({
-			customPages: [
-				`${siteConfig.url}/`,
-				`${siteConfig.url}/docs`,
-			],
+			filter: (page) => !page.includes('/login') && !page.includes('/dashboard'),
 		}),
 	],
 	vite: {

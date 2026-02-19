@@ -2,7 +2,7 @@ export const siteConfig = {
   name: 'Free LLM Router',
   url: 'https://freellmrouter.com',
   description:
-    "A live-updated list of free LLM models from OpenRouter. One API call, always a working model. We track availability so you don't have to.",
+    'Find free OpenRouter models with live health and availability. One API call routes to working free models so your app stays up.',
   defaultImage: '/og-image.png',
 };
 

@@ -21,6 +21,7 @@ import {
   corsHeaders,
   rateLimitedResponse,
 } from '@/lib/api-auth';
+import { extractApiKeyPreferences } from '@/lib/api-key-metadata';
 
 export interface ParsedModelParams {
   useCases: UseCaseType[];
@@ -96,8 +97,7 @@ async function loadApiKeyPreferences(db: Database, keyId: string): Promise<ApiKe
 
     if (!key?.metadata) return {};
 
-    const parsed = JSON.parse(key.metadata);
-    return parsed.preferences || {};
+    return extractApiKeyPreferences(key.metadata);
   } catch {
     return {};
   }
