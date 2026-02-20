@@ -26,6 +26,8 @@ import {
 import { Copy, Check, Trash2, Key, Settings } from 'lucide-react';
 import type { ApiKeyPreferences } from '@/lib/api-definitions';
 import { DEFAULT_SORT, DEFAULT_TIME_RANGE } from '@/lib/api-definitions';
+import { fetchJsonOrThrow, NO_STORE_REQUEST_INIT } from '@/lib/client-api';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 interface ApiKey {
   id: string;
@@ -55,37 +57,20 @@ type PreferenceSummaryState =
   | { ok: true; preferences: ApiKeyPreferences }
   | { ok: false; error: string };
 
-async function parseApiError(response: Response, fallback: string): Promise<string> {
-  const requestId = response.headers.get('X-Request-Id');
-  const suffix = requestId ? ` (request ${requestId})` : '';
-  const contentType = response.headers.get('content-type') || '';
-
-  if (contentType.includes('application/json')) {
-    try {
-      const data = (await response.json()) as { error?: string };
-      return `${data.error || fallback}${suffix}`;
-    } catch {
-      return `${fallback}${suffix}`;
-    }
-  }
-
-  return `${fallback}${suffix}`;
-}
-
 async function fetchApiKeys(): Promise<ApiKey[]> {
   const response = await authClient.apiKey.list();
   return (response.data as ApiKey[]) || [];
 }
 
 async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
-  const response = await fetch(`/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`, {
-    credentials: 'include',
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    throw new Error(await parseApiError(response, 'Could not load saved preferences'));
-  }
-  const data = await response.json();
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    `/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`,
+    {
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+    },
+    'Could not load saved preferences'
+  );
   return data.preferences || {};
 }
 
@@ -133,8 +118,7 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
   const { data: apiKeys = [], isLoading: isLoadingKeys } = useQuery({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const { data: preferenceByKeyId = {}, isLoading: isLoadingPreferenceSummaries } = useQuery({
@@ -159,8 +143,7 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
       return Object.fromEntries(entries) as Record<string, PreferenceSummaryState>;
     },
     staleTime: 60 * 1000,
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const createKeyMutation = useMutation({

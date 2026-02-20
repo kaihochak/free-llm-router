@@ -21,6 +21,8 @@ import {
 import { filterModelsByUseCase, sortModels } from '@/lib/model-types';
 import type { Model } from '@/hooks/useModels';
 import { Loader2 } from 'lucide-react';
+import { fetchJsonOrThrow, NO_STORE_REQUEST_INIT } from '@/lib/client-api';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 interface ApiKey {
   id: string;
@@ -42,23 +44,6 @@ interface ModelsApiResponse {
   models: Model[];
   feedbackCounts: FeedbackCounts;
   lastUpdated?: string;
-}
-
-async function parseApiError(response: Response, fallback: string): Promise<string> {
-  const requestId = response.headers.get('X-Request-Id');
-  const suffix = requestId ? ` (request ${requestId})` : '';
-  const contentType = response.headers.get('content-type') || '';
-
-  if (contentType.includes('application/json')) {
-    try {
-      const data = (await response.json()) as { error?: string };
-      return `${data.error || fallback}${suffix}`;
-    } catch {
-      return `${fallback}${suffix}`;
-    }
-  }
-
-  return `${fallback}${suffix}`;
 }
 
 function getDefaultPreferences(): ApiKeyPreferences {
@@ -91,15 +76,15 @@ async function fetchApiKeys(): Promise<ApiKey[]> {
 }
 
 async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
-  const response = await fetch(`/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`, {
-    credentials: 'include',
-    cache: 'no-store',
-    headers: { Accept: 'application/json' },
-  });
-  if (!response.ok) {
-    throw new Error(await parseApiError(response, 'Could not load saved preferences'));
-  }
-  const data = await response.json();
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    `/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`,
+    {
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+      headers: { Accept: 'application/json' },
+    },
+    'Could not load saved preferences'
+  );
   return data.preferences || {};
 }
 
@@ -107,19 +92,17 @@ async function savePreferences(
   apiKeyId: string,
   preferences: ApiKeyPreferences
 ): Promise<ApiKeyPreferences> {
-  const response = await fetch('/api/auth/preferences', {
-    method: 'PUT',
-    credentials: 'include',
-    cache: 'no-store',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ apiKeyId, preferences }),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseApiError(response, 'Failed to save preferences'));
-  }
-
-  const data = (await response.json()) as { preferences?: ApiKeyPreferences };
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    '/api/auth/preferences',
+    {
+      method: 'PUT',
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ apiKeyId, preferences }),
+    },
+    'Failed to save preferences'
+  );
   return data.preferences || {};
 }
 
@@ -167,8 +150,7 @@ export function ApiKeyConfigurationTab() {
   const { data: apiKeys = [] } = useQuery({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const { data: modelsData, isLoading: isLoadingModels } = useQuery({
@@ -186,8 +168,7 @@ export function ApiKeyConfigurationTab() {
       ),
     enabled: true,
     staleTime: 5 * 60 * 1000,
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const handleConfigureKey = async (key: ApiKey) => {

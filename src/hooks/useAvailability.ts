@@ -6,6 +6,7 @@ import {
   DEFAULT_USE_CASE,
 } from '@/lib/api-definitions';
 import { useLocalStorage } from './useLocalStorage';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 export interface AvailabilityData {
   modelId: string;
@@ -81,8 +82,7 @@ export function useAvailability() {
         sort: activeSort,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const toggleUseCase = (useCase: UseCaseType | 'all') => {

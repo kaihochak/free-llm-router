@@ -13,6 +13,7 @@ import {
 } from '@/lib/api-definitions';
 import { useCachedSession } from '@/lib/auth-client';
 import { useLocalStorage } from './useLocalStorage';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 // Re-export TimeRange for backwards compatibility
 export type { TimeRange };
@@ -196,8 +197,7 @@ export function useHealth(options?: UseHealthOptions) {
         maxErrorRate: effectiveMaxErrorRate,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const setMyReports = useCallback(
