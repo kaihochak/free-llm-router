@@ -2,7 +2,14 @@ import type { APIRoute } from 'astro';
 import { getModelAvailability } from '@/services/openrouter';
 import { initializeDb } from '@/lib/api-params';
 import { validateUseCases, validateSort } from '@/lib/api-definitions';
-import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
+import {
+  apiResponseHeaders,
+  jsonResponse,
+  createRequestId,
+  withRequestId,
+  errorJsonResponse,
+  logApiStage,
+} from '@/lib/api-response';
 
 /**
  * Availability endpoint for model availability history.
@@ -14,9 +21,17 @@ import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
  * - sort: sort order (contextLength, maxOutput, capable, name)
  */
 export const GET: APIRoute = async (context) => {
+  const requestId = createRequestId();
+  logApiStage('/api/availability', requestId, 'start', { method: 'GET' });
+
   try {
     const db = await initializeDb(context);
-    if (db instanceof Response) return db;
+    if (db instanceof Response) {
+      return errorJsonResponse(
+        { error: 'Database not configured', code: 'CONFIG_ERROR' },
+        { requestId, status: 500, headers: apiResponseHeaders({ cors: false }) }
+      );
+    }
 
     const params = context.url.searchParams;
 
@@ -28,6 +43,7 @@ export const GET: APIRoute = async (context) => {
 
     const sortParam = params.get('sort');
     const sort = sortParam ? validateSort(sortParam) : undefined;
+    logApiStage('/api/availability', requestId, 'query_start', { days, useCases, sort });
 
     const { models, dates } = await getModelAvailability(db, {
       days,
@@ -42,13 +58,20 @@ export const GET: APIRoute = async (context) => {
         lastUpdated: new Date().toISOString(),
         count: models.length,
       },
-      { headers: apiResponseHeaders({ cacheControl: 'public, max-age=300', cors: false }) }
+      {
+        headers: withRequestId(
+          apiResponseHeaders({ cacheControl: 'public, max-age=300', cors: false }),
+          requestId
+        ),
+      }
     );
   } catch (error) {
-    console.error('[API/availability] Error:', error);
-    return jsonResponse(
-      { error: 'Failed to fetch availability data' },
-      { status: 500, headers: apiResponseHeaders({ cors: false }) }
+    logApiStage('/api/availability', requestId, 'error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return errorJsonResponse(
+      { error: 'Failed to fetch availability data', code: 'INTERNAL_ERROR' },
+      { requestId, status: 500, headers: apiResponseHeaders({ cors: false }) }
     );
   }
 };

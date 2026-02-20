@@ -8,6 +8,7 @@ import { createAuth, type AuthEnv } from '@/lib/auth';
 export interface SessionResult {
   session: { user: { id: string } };
   databaseUrl: string;
+  databaseUrlAdmin?: string;
 }
 
 export interface SessionError {
@@ -56,14 +57,24 @@ export async function getAuthSession(
     githubClientSecret: config.githubClientSecret,
   };
 
-  const auth = createAuth(authEnv);
-  const session = await auth.api.getSession({ headers: request.headers });
+  let session: Awaited<ReturnType<ReturnType<typeof createAuth>['api']['getSession']>>;
+  try {
+    const auth = createAuth(authEnv);
+    session = await auth.api.getSession({ headers: request.headers });
+  } catch (error) {
+    console.error('[Auth Session] getSession failed:', error);
+    return { error: 'Unauthorized', status: 401 };
+  }
 
   if (!session?.user?.id) {
     return { error: 'Unauthorized', status: 401 };
   }
 
-  return { session: session as SessionResult['session'], databaseUrl: config.databaseUrl };
+  return {
+    session: session as SessionResult['session'],
+    databaseUrl: config.databaseUrl,
+    databaseUrlAdmin: config.databaseUrlAdmin,
+  };
 }
 
 /**
@@ -101,8 +112,15 @@ export async function getAuthSessionWithAuth(
     githubClientSecret: config.githubClientSecret,
   };
 
-  const auth = createAuth(authEnv);
-  const session = await auth.api.getSession({ headers: request.headers });
+  let auth: ReturnType<typeof createAuth>;
+  let session: Awaited<ReturnType<ReturnType<typeof createAuth>['api']['getSession']>>;
+  try {
+    auth = createAuth(authEnv);
+    session = await auth.api.getSession({ headers: request.headers });
+  } catch (error) {
+    console.error('[Auth Session] getSessionWithAuth failed:', error);
+    return { error: 'Unauthorized', status: 401 };
+  }
 
   if (!session?.user?.id) {
     return { error: 'Unauthorized', status: 401 };
@@ -111,6 +129,7 @@ export async function getAuthSessionWithAuth(
   return {
     session: session as SessionResult['session'],
     databaseUrl: config.databaseUrl,
+    databaseUrlAdmin: config.databaseUrlAdmin,
     auth,
   };
 }

@@ -1,29 +1,125 @@
 import type { APIRoute } from 'astro';
-import { apiRequestLogs, modelFeedback, apiKeys, withUserContext } from '@/db';
+import { apiRequestLogs, modelFeedback, apiKeys, createDb } from '@/db';
 import { eq, desc, and } from 'drizzle-orm';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
-import { jsonResponse } from '@/lib/api-response';
+import {
+  jsonResponse,
+  createRequestId,
+  withRequestId,
+  errorJsonResponse,
+  logApiStage,
+} from '@/lib/api-response';
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
+  const requestId = createRequestId();
+  logApiStage('/api/auth/history', requestId, 'start', { method: 'GET' });
+
   try {
     const result = await getAuthSession(request, locals);
     if (isSessionError(result)) {
-      return jsonResponse({ error: result.error }, { status: result.status });
+      logApiStage('/api/auth/history', requestId, 'session_error', { status: result.status });
+      return errorJsonResponse(
+        { error: result.error, code: 'SESSION_ERROR' },
+        { requestId, status: result.status }
+      );
     }
 
-    const { session, databaseUrl } = result;
+    const { session, databaseUrl, databaseUrlAdmin } = result;
+    const db = createDb(databaseUrlAdmin || databaseUrl);
 
     const type = url.searchParams.get('type') || 'requests';
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
     const offset = (page - 1) * limit;
     const apiKeyId = url.searchParams.get('apiKeyId');
+    logApiStage('/api/auth/history', requestId, 'session_ok', {
+      userId: session.user.id,
+      type,
+      page,
+      limit,
+      apiKeyId,
+    });
 
     if (type === 'requests') {
       // Fetch request logs with API key info (RLS-protected)
       // Fetch limit+1 to check if there are more items
-      const items = await withUserContext(databaseUrl, session.user.id, async (db) => {
-        return db
+      const items = await db
+        .select({
+          id: apiRequestLogs.id,
+          endpoint: apiRequestLogs.endpoint,
+          method: apiRequestLogs.method,
+          statusCode: apiRequestLogs.statusCode,
+          responseTimeMs: apiRequestLogs.responseTimeMs,
+          responseData: apiRequestLogs.responseData,
+          createdAt: apiRequestLogs.createdAt,
+          apiKeyId: apiRequestLogs.apiKeyId,
+          apiKeyName: apiKeys.name,
+          apiKeyPrefix: apiKeys.prefix,
+        })
+        .from(apiRequestLogs)
+        .leftJoin(apiKeys, eq(apiRequestLogs.apiKeyId, apiKeys.id))
+        .where(
+          and(
+            eq(apiRequestLogs.userId, session.user.id),
+            apiKeyId ? eq(apiRequestLogs.apiKeyId, apiKeyId) : undefined
+          )
+        )
+        .orderBy(desc(apiRequestLogs.createdAt))
+        .limit(limit + 1)
+        .offset(offset);
+
+      const hasMore = items.length > limit;
+      const returnItems = hasMore ? items.slice(0, limit) : items;
+
+      return jsonResponse(
+        { items: returnItems, hasMore },
+        { headers: withRequestId(undefined, requestId) }
+      );
+    } else if (type === 'feedback') {
+      // Fetch feedback submitted by this user with API key info (RLS-protected)
+      // Fetch limit+1 to check if there are more items
+      const items = await db
+        .select({
+          id: modelFeedback.id,
+          modelId: modelFeedback.modelId,
+          requestId: modelFeedback.requestId,
+          isSuccess: modelFeedback.isSuccess,
+          issue: modelFeedback.issue,
+          details: modelFeedback.details,
+          source: modelFeedback.source,
+          createdAt: modelFeedback.createdAt,
+          apiKeyId: modelFeedback.apiKeyId,
+          apiKeyName: apiKeys.name,
+          apiKeyPrefix: apiKeys.prefix,
+        })
+        .from(modelFeedback)
+        .leftJoin(apiKeys, eq(modelFeedback.apiKeyId, apiKeys.id))
+        .where(
+          and(
+            eq(modelFeedback.source, session.user.id),
+            apiKeyId ? eq(modelFeedback.apiKeyId, apiKeyId) : undefined
+          )
+        )
+        .orderBy(desc(modelFeedback.createdAt))
+        .limit(limit + 1)
+        .offset(offset);
+
+      const hasMore = items.length > limit;
+      const returnItems = hasMore ? items.slice(0, limit) : items;
+
+      return jsonResponse(
+        { items: returnItems, hasMore },
+        { headers: withRequestId(undefined, requestId) }
+      );
+    }
+
+    if (type === 'unified') {
+      // Fetch both requests and feedback, merge by createdAt
+      // For "See More" pattern: fetch offset+limit+1 from each source to check hasMore
+      const fetchLimit = offset + limit + 1;
+
+      const [requests, feedback] = await Promise.all([
+        db
           .select({
             id: apiRequestLogs.id,
             endpoint: apiRequestLogs.endpoint,
@@ -45,19 +141,8 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
             )
           )
           .orderBy(desc(apiRequestLogs.createdAt))
-          .limit(limit + 1)
-          .offset(offset);
-      });
-
-      const hasMore = items.length > limit;
-      const returnItems = hasMore ? items.slice(0, limit) : items;
-
-      return jsonResponse({ items: returnItems, hasMore });
-    } else if (type === 'feedback') {
-      // Fetch feedback submitted by this user with API key info (RLS-protected)
-      // Fetch limit+1 to check if there are more items
-      const items = await withUserContext(databaseUrl, session.user.id, async (db) => {
-        return db
+          .limit(fetchLimit),
+        db
           .select({
             id: modelFeedback.id,
             modelId: modelFeedback.modelId,
@@ -80,76 +165,8 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
             )
           )
           .orderBy(desc(modelFeedback.createdAt))
-          .limit(limit + 1)
-          .offset(offset);
-      });
-
-      const hasMore = items.length > limit;
-      const returnItems = hasMore ? items.slice(0, limit) : items;
-
-      return jsonResponse({ items: returnItems, hasMore });
-    }
-
-    if (type === 'unified') {
-      // Fetch both requests and feedback, merge by createdAt
-      // For "See More" pattern: fetch offset+limit+1 from each source to check hasMore
-      const fetchLimit = offset + limit + 1;
-
-      const [requests, feedback] = await withUserContext(
-        databaseUrl,
-        session.user.id,
-        async (db) => {
-          return Promise.all([
-            db
-              .select({
-                id: apiRequestLogs.id,
-                endpoint: apiRequestLogs.endpoint,
-                method: apiRequestLogs.method,
-                statusCode: apiRequestLogs.statusCode,
-                responseTimeMs: apiRequestLogs.responseTimeMs,
-                responseData: apiRequestLogs.responseData,
-                createdAt: apiRequestLogs.createdAt,
-                apiKeyId: apiRequestLogs.apiKeyId,
-                apiKeyName: apiKeys.name,
-                apiKeyPrefix: apiKeys.prefix,
-              })
-              .from(apiRequestLogs)
-              .leftJoin(apiKeys, eq(apiRequestLogs.apiKeyId, apiKeys.id))
-              .where(
-                and(
-                  eq(apiRequestLogs.userId, session.user.id),
-                  apiKeyId ? eq(apiRequestLogs.apiKeyId, apiKeyId) : undefined
-                )
-              )
-              .orderBy(desc(apiRequestLogs.createdAt))
-              .limit(fetchLimit),
-            db
-              .select({
-                id: modelFeedback.id,
-                modelId: modelFeedback.modelId,
-                requestId: modelFeedback.requestId,
-                isSuccess: modelFeedback.isSuccess,
-                issue: modelFeedback.issue,
-                details: modelFeedback.details,
-                source: modelFeedback.source,
-                createdAt: modelFeedback.createdAt,
-                apiKeyId: modelFeedback.apiKeyId,
-                apiKeyName: apiKeys.name,
-                apiKeyPrefix: apiKeys.prefix,
-              })
-              .from(modelFeedback)
-              .leftJoin(apiKeys, eq(modelFeedback.apiKeyId, apiKeys.id))
-              .where(
-                and(
-                  eq(modelFeedback.source, session.user.id),
-                  apiKeyId ? eq(modelFeedback.apiKeyId, apiKeyId) : undefined
-                )
-              )
-              .orderBy(desc(modelFeedback.createdAt))
-              .limit(fetchLimit),
-          ]);
-        }
-      );
+          .limit(fetchLimit),
+      ]);
 
       // Group feedback by requestId for linking
       const feedbackByRequestId = new Map<string, typeof feedback>();
@@ -271,12 +288,23 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       // hasMore = there are more items beyond what we returned
       const hasMore = merged.length > offset + limit;
 
-      return jsonResponse({ items: paginatedItems, hasMore });
+      return jsonResponse(
+        { items: paginatedItems, hasMore },
+        { headers: withRequestId(undefined, requestId) }
+      );
     }
 
-    return jsonResponse({ error: 'Invalid type parameter' }, { status: 400 });
+    return errorJsonResponse(
+      { error: 'Invalid type parameter', code: 'VALIDATION_ERROR' },
+      { requestId, status: 400 }
+    );
   } catch (error) {
-    console.error('History fetch error:', error);
-    return jsonResponse({ error: 'Internal server error' }, { status: 500 });
+    logApiStage('/api/auth/history', requestId, 'error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return errorJsonResponse(
+      { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+      { requestId, status: 500 }
+    );
   }
 };

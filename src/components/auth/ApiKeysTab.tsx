@@ -26,6 +26,8 @@ import {
 import { Copy, Check, Trash2, Key, Settings } from 'lucide-react';
 import type { ApiKeyPreferences } from '@/lib/api-definitions';
 import { DEFAULT_SORT, DEFAULT_TIME_RANGE } from '@/lib/api-definitions';
+import { fetchJsonOrThrow, NO_STORE_REQUEST_INIT } from '@/lib/client-api';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 interface ApiKey {
   id: string;
@@ -51,17 +53,24 @@ interface PreferenceSummaryItem {
   value: string;
 }
 
+type PreferenceSummaryState =
+  | { ok: true; preferences: ApiKeyPreferences }
+  | { ok: false; error: string };
+
 async function fetchApiKeys(): Promise<ApiKey[]> {
   const response = await authClient.apiKey.list();
   return (response.data as ApiKey[]) || [];
 }
 
 async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
-  const response = await fetch(`/api/auth/preferences?apiKeyId=${apiKeyId}`, {
-    credentials: 'include',
-  });
-  if (!response.ok) return {};
-  const data = await response.json();
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    `/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`,
+    {
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+    },
+    'Could not load saved preferences'
+  );
   return data.preferences || {};
 }
 
@@ -109,25 +118,32 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
   const { data: apiKeys = [], isLoading: isLoadingKeys } = useQuery({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const { data: preferenceByKeyId = {}, isLoading: isLoadingPreferenceSummaries } = useQuery({
     queryKey: ['apiKeyPreferenceSummaries', apiKeys.map((key) => key.id).join(',')],
     enabled: apiKeys.length > 0,
     queryFn: async () => {
-      const entries = await Promise.all(
-        apiKeys.map(async (key) => {
-          try {
-            const preferences = await fetchPreferences(key.id);
-            return [key.id, preferences] as const;
-          } catch {
-            return [key.id, {}] as const;
-          }
-        })
-      );
-      return Object.fromEntries(entries) as Record<string, ApiKeyPreferences>;
+      const entries: Array<readonly [string, PreferenceSummaryState]> = [];
+      for (const key of apiKeys) {
+        try {
+          const preferences = await fetchPreferences(key.id);
+          entries.push([key.id, { ok: true, preferences }] as const);
+        } catch (error) {
+          entries.push([
+            key.id,
+            {
+              ok: false,
+              error: error instanceof Error ? error.message : 'Could not load saved preferences',
+            },
+          ] as const);
+        }
+      }
+      return Object.fromEntries(entries) as Record<string, PreferenceSummaryState>;
     },
     staleTime: 60 * 1000,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const createKeyMutation = useMutation({
@@ -297,7 +313,11 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
                 </TableHeader>
                 <TableBody>
                   {apiKeys.map((key) => {
-                    const preferenceSummary = summarizePreferences(preferenceByKeyId[key.id] || {});
+                    const preferenceState = preferenceByKeyId[key.id];
+                    const preferenceSummary =
+                      preferenceState && preferenceState.ok
+                        ? summarizePreferences(preferenceState.preferences)
+                        : [];
 
                     return [
                       <TableRow key={key.id}>
@@ -342,14 +362,18 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
                           ) : (
                             <div className="flex items-center justify-between gap-3 rounded-md p-1">
                               <div className="flex flex-wrap items-center gap-2 text-xs">
-                                {preferenceSummary.map((item) => (
-                                  <Badge key={`${key.id}-${item.label}`} variant="secondary">
-                                    <span className="mr-1 text-muted-foreground">
-                                      {item.label}:
-                                    </span>
-                                    {item.value}
-                                  </Badge>
-                                ))}
+                                {preferenceState && !preferenceState.ok ? (
+                                  <Badge variant="destructive">{preferenceState.error}</Badge>
+                                ) : (
+                                  preferenceSummary.map((item) => (
+                                    <Badge key={`${key.id}-${item.label}`} variant="secondary">
+                                      <span className="mr-1 text-muted-foreground">
+                                        {item.label}:
+                                      </span>
+                                      {item.value}
+                                    </Badge>
+                                  ))
+                                )}
                               </div>
                               <Button asChild variant="ghost" size="sm" className="h-8 shrink-0">
                                 <a href="/dashboard?tab=configure">

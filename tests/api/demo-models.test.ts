@@ -16,8 +16,10 @@ describe('/api/demo/models', () => {
     const response = await GET(context as Parameters<typeof GET>[0]);
 
     assert.strictEqual(response.status, 403);
-    const body = await parseJsonResponse<{ error: string }>(response);
+    const body = await parseJsonResponse<{ error: string; requestId?: string }>(response);
     assert.strictEqual(body.error, 'Forbidden');
+    assert.ok(body.requestId);
+    assert.ok(response.headers.get('X-Request-Id'));
   });
 
   it('allows requests from localhost origin (with DEMO_API_KEY)', async () => {

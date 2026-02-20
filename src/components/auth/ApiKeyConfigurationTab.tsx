@@ -21,6 +21,8 @@ import {
 import { filterModelsByUseCase, sortModels } from '@/lib/model-types';
 import type { Model } from '@/hooks/useModels';
 import { Loader2 } from 'lucide-react';
+import { fetchJsonOrThrow, NO_STORE_REQUEST_INIT } from '@/lib/client-api';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 interface ApiKey {
   id: string;
@@ -74,13 +76,15 @@ async function fetchApiKeys(): Promise<ApiKey[]> {
 }
 
 async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
-  const response = await fetch(`/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`, {
-    credentials: 'include',
-    cache: 'no-store',
-    headers: { Accept: 'application/json' },
-  });
-  if (!response.ok) return {};
-  const data = await response.json();
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    `/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`,
+    {
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+      headers: { Accept: 'application/json' },
+    },
+    'Could not load saved preferences'
+  );
   return data.preferences || {};
 }
 
@@ -88,20 +92,17 @@ async function savePreferences(
   apiKeyId: string,
   preferences: ApiKeyPreferences
 ): Promise<ApiKeyPreferences> {
-  const response = await fetch('/api/auth/preferences', {
-    method: 'PUT',
-    credentials: 'include',
-    cache: 'no-store',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ apiKeyId, preferences }),
-  });
-
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || 'Failed to save preferences');
-  }
-
-  const data = (await response.json()) as { preferences?: ApiKeyPreferences };
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    '/api/auth/preferences',
+    {
+      method: 'PUT',
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ apiKeyId, preferences }),
+    },
+    'Failed to save preferences'
+  );
   return data.preferences || {};
 }
 
@@ -139,6 +140,8 @@ export function ApiKeyConfigurationTab() {
   const [configuringKey, setConfiguringKey] = useState<ApiKey | null>(null);
   const [preferences, setPreferences] = useState<ApiKeyPreferences>(getDefaultPreferences);
   const [previewPage, setPreviewPage] = useState(1);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(false);
+  const [prefLoadError, setPrefLoadError] = useState<string | null>(null);
   const [prefsMessage, setPrefsMessage] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -147,6 +150,7 @@ export function ApiKeyConfigurationTab() {
   const { data: apiKeys = [] } = useQuery({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const { data: modelsData, isLoading: isLoadingModels } = useQuery({
@@ -164,19 +168,23 @@ export function ApiKeyConfigurationTab() {
       ),
     enabled: true,
     staleTime: 5 * 60 * 1000,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   const handleConfigureKey = async (key: ApiKey) => {
     setConfiguringKey(key);
     setPrefsMessage(null);
+    setPrefLoadError(null);
     setPreviewPage(1);
-    setPreferences(getDefaultPreferences());
+    setIsLoadingPreferences(true);
 
     try {
       const prefs = await fetchPreferences(key.id);
       setPreferences(normalizePreferences(prefs));
-    } catch {
-      setPreferences(getDefaultPreferences());
+    } catch (error) {
+      setPrefLoadError(error instanceof Error ? error.message : 'Could not load saved preferences');
+    } finally {
+      setIsLoadingPreferences(false);
     }
   };
 
@@ -257,6 +265,7 @@ export function ApiKeyConfigurationTab() {
     },
     onSuccess: (savedPreferences) => {
       setPreferences(normalizePreferences(savedPreferences));
+      setPrefLoadError(null);
       setPrefsMessage({ type: 'success', text: 'Preferences saved' });
     },
     onError: (err: Error) => {
@@ -371,9 +380,21 @@ export function ApiKeyConfigurationTab() {
                     {prefsMessage.text}
                   </span>
                 )}
+                {prefLoadError && (
+                  <>
+                    <span className="text-sm text-red-600">{prefLoadError}</span>
+                    <Button
+                      variant="outline"
+                      onClick={() => configuringKey && void handleConfigureKey(configuringKey)}
+                      disabled={isLoadingPreferences}
+                    >
+                      Retry Load
+                    </Button>
+                  </>
+                )}
                 <Button
                   onClick={() => savePreferencesMutation.mutate()}
-                  disabled={savePreferencesMutation.isPending}
+                  disabled={savePreferencesMutation.isPending || isLoadingPreferences}
                 >
                   {savePreferencesMutation.isPending && (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
