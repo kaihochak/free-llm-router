@@ -26,7 +26,9 @@ describe('/api/auth/history', () => {
     const response = await GET(context as Parameters<typeof GET>[0]);
 
     assert.strictEqual(response.status, 500);
-    const body = await parseJsonResponse<{ error: string }>(response);
+    const body = await parseJsonResponse<{ error: string; requestId?: string }>(response);
     assert.ok(body.error.includes('configuration') || body.error.includes('error'));
+    assert.ok(body.requestId);
+    assert.ok(response.headers.get('X-Request-Id'));
   });
 });

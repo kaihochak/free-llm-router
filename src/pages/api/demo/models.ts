@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getClientIp, createRateLimiter, isAllowedOrigin } from '@/lib/api-utils';
 import { siteConfig } from '@/lib/seo';
+import { createRequestId, withRequestId, errorJsonResponse, logApiStage } from '@/lib/api-response';
 
 // Lightweight in-memory cache (best effort per instance).
 // This keeps the endpoint anonymous while reducing demo key burn.
@@ -23,12 +24,12 @@ const ALLOWED_ORIGINS = [
  * Uses a server-side DEMO_API_KEY to fetch models without exposing credentials to the browser.
  */
 export const GET: APIRoute = async ({ locals, url, request }) => {
+  const requestId = createRequestId();
+  logApiStage('/api/demo/models', requestId, 'start', { method: 'GET' });
+
   // Check origin first (blocks off-site scraping)
   if (!isAllowedOrigin(request, ALLOWED_ORIGINS)) {
-    return new Response(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return errorJsonResponse({ error: 'Forbidden', code: 'FORBIDDEN' }, { requestId, status: 403 });
   }
 
   const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
@@ -38,19 +39,19 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
   const baseUrl = env.BETTER_AUTH_URL || import.meta.env.BETTER_AUTH_URL || url.origin;
 
   if (!demoKey) {
-    return new Response(JSON.stringify({ error: 'Demo API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return errorJsonResponse(
+      { error: 'Demo API key not configured', code: 'CONFIG_ERROR' },
+      { requestId, status: 500 }
+    );
   }
 
   const ip = getClientIp(request);
   const { limited } = rateLimiter.check(ip);
   if (limited) {
-    return new Response(JSON.stringify({ error: 'Too many requests' }), {
-      status: 429,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return errorJsonResponse(
+      { error: 'Too many requests', code: 'RATE_LIMITED' },
+      { requestId, status: 429 }
+    );
   }
 
   const cacheKey = url.search;
@@ -60,10 +61,13 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
   if (cached && cached.expiresAt > now) {
     return new Response(cached.body, {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
-      },
+      headers: withRequestId(
+        {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+        },
+        requestId
+      ),
     });
   }
 
@@ -86,26 +90,37 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
     const text = await response.text();
 
     if (!response.ok) {
-      return new Response(text || JSON.stringify({ error: 'Failed to fetch models' }), {
-        status: response.status === 429 ? 429 : 502,
-        headers: { 'Content-Type': 'application/json' },
+      logApiStage('/api/demo/models', requestId, 'upstream_error', {
+        upstreamStatus: response.status,
       });
+      return errorJsonResponse(
+        {
+          error: text ? 'Failed to fetch models' : 'Failed to fetch models',
+          code: response.status === 429 ? 'RATE_LIMITED' : 'UPSTREAM_ERROR',
+        },
+        { requestId, status: response.status === 429 ? 429 : 502 }
+      );
     }
 
     cache.set(cacheKey, { body: text, expiresAt: now + CACHE_TTL_MS });
 
     return new Response(text, {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
-      },
+      headers: withRequestId(
+        {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+        },
+        requestId
+      ),
     });
   } catch (error) {
-    console.error('[API/demo/models] Error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch models' }), {
-      status: 502,
-      headers: { 'Content-Type': 'application/json' },
+    logApiStage('/api/demo/models', requestId, 'error', {
+      error: error instanceof Error ? error.message : String(error),
     });
+    return errorJsonResponse(
+      { error: 'Failed to fetch models', code: 'UPSTREAM_ERROR' },
+      { requestId, status: 502 }
+    );
   }
 };

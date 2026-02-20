@@ -21,6 +21,8 @@ import {
   DEFAULT_TIME_RANGE,
   DEFAULT_USE_CASE,
 } from '@/lib/api-definitions';
+import { fetchJsonOrThrow, NO_STORE_REQUEST_INIT } from '@/lib/client-api';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 interface ApiKeyOption {
   id: string;
@@ -36,24 +38,29 @@ async function fetchApiKeys(): Promise<ApiKeyOption[]> {
 }
 
 async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
-  const response = await fetch(`/api/auth/preferences?apiKeyId=${apiKeyId}`, {
-    credentials: 'include',
-  });
-  if (!response.ok) return {};
-  const data = await response.json();
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    `/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`,
+    {
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+    },
+    'Could not load saved preferences'
+  );
   return data.preferences || {};
 }
 
 async function savePreferences(apiKeyId: string, preferences: ApiKeyPreferences): Promise<void> {
-  const response = await fetch('/api/auth/preferences', {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKeyId, preferences }),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to save preferences');
-  }
+  await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    '/api/auth/preferences',
+    {
+      method: 'PUT',
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKeyId, preferences }),
+    },
+    'Failed to save preferences'
+  );
 }
 
 export function ParameterConfigurationSection() {
@@ -83,6 +90,7 @@ export function ParameterConfigurationSection() {
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>(NO_API_KEY_VALUE);
   const [localSnapshot, setLocalSnapshot] = useState<ApiKeyPreferences | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [prefLoadError, setPrefLoadError] = useState<string | null>(null);
   const [excludedModelIds, setExcludedModelIds] = useState<string[]>([]);
   const [previewPage, setPreviewPage] = useState(1);
 
@@ -90,6 +98,7 @@ export function ParameterConfigurationSection() {
     queryKey: ['parameterSectionApiKeys'],
     queryFn: fetchApiKeys,
     enabled: !!session?.user,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   useEffect(() => {
@@ -103,10 +112,15 @@ export function ParameterConfigurationSection() {
     }
   }, [session?.user, apiKeys, selectedApiKeyId]);
 
-  const { data: selectedPreferences, refetch: refetchSelectedPreferences } = useQuery({
+  const {
+    data: selectedPreferences,
+    error: selectedPreferencesError,
+    refetch: refetchSelectedPreferences,
+  } = useQuery({
     queryKey: ['parameterSectionApiKeyPreferences', selectedApiKeyId],
     queryFn: () => fetchPreferences(selectedApiKeyId),
     enabled: !!session?.user && selectedApiKeyId !== NO_API_KEY_VALUE,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   useEffect(() => {
@@ -127,6 +141,7 @@ export function ParameterConfigurationSection() {
     setActiveMyReports(selectedPreferences.myReports ?? DEFAULT_MY_REPORTS);
     setExcludedModelIds(selectedPreferences.excludeModelIds ?? []);
     setPreviewPage(1);
+    setPrefLoadError(null);
     setSaveStatus('idle');
   }, [
     session?.user,
@@ -140,6 +155,20 @@ export function ParameterConfigurationSection() {
     setActiveTimeRange,
     setActiveMyReports,
   ]);
+
+  useEffect(() => {
+    if (selectedApiKeyId === NO_API_KEY_VALUE) {
+      setPrefLoadError(null);
+      return;
+    }
+    if (selectedPreferencesError) {
+      setPrefLoadError(
+        selectedPreferencesError instanceof Error
+          ? selectedPreferencesError.message
+          : 'Could not load saved preferences'
+      );
+    }
+  }, [selectedApiKeyId, selectedPreferencesError]);
 
   const currentPreferences = useMemo<ApiKeyPreferences>(
     () => ({
@@ -225,6 +254,7 @@ export function ParameterConfigurationSection() {
       setLocalSnapshot(currentPreferences);
     }
     setSelectedApiKeyId(value);
+    setPrefLoadError(null);
     setSaveStatus('idle');
   };
 
@@ -320,14 +350,25 @@ export function ParameterConfigurationSection() {
                   {selectedApiKeyId !== NO_API_KEY_VALUE && (
                     <div className="flex items-center gap-3">
                       <p className="text-xs text-muted-foreground">
-                        {saveStatus === 'saved'
-                          ? 'Preferences saved.'
-                          : saveStatus === 'error'
-                            ? 'Save failed. Try again.'
-                            : isDirty
-                              ? 'Unsaved changes.'
-                              : ''}
+                        {prefLoadError
+                          ? prefLoadError
+                          : saveStatus === 'saved'
+                            ? 'Preferences saved.'
+                            : saveStatus === 'error'
+                              ? 'Save failed. Try again.'
+                              : isDirty
+                                ? 'Unsaved changes.'
+                                : ''}
                       </p>
+                      {prefLoadError && (
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          onClick={() => void refetchSelectedPreferences()}
+                        >
+                          Retry Load
+                        </Button>
+                      )}
                       <Button
                         size="lg"
                         onClick={() =>

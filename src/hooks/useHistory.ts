@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 export interface ResponseDataParams {
   useCases?: string[];
@@ -146,6 +147,7 @@ export function useHistory<T extends ApiRequestLog | FeedbackItem | UnifiedHisto
       initialPageParam: 1,
       getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
       enabled: options?.enabled ?? true,
+      ...STRICT_QUERY_OPTIONS,
     });
 
   const loadMore = useCallback(() => {
