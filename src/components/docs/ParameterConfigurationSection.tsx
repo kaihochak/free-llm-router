@@ -21,6 +21,8 @@ import {
   DEFAULT_TIME_RANGE,
   DEFAULT_USE_CASE,
 } from '@/lib/api-definitions';
+import { fetchJsonOrThrow, NO_STORE_REQUEST_INIT } from '@/lib/client-api';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 interface ApiKeyOption {
   id: string;
@@ -30,51 +32,35 @@ interface ApiKeyOption {
 
 const NO_API_KEY_VALUE = '__no_api_key__';
 
-async function parseApiError(response: Response, fallback: string): Promise<string> {
-  const requestId = response.headers.get('X-Request-Id');
-  const suffix = requestId ? ` (request ${requestId})` : '';
-  const contentType = response.headers.get('content-type') || '';
-
-  if (contentType.includes('application/json')) {
-    try {
-      const data = (await response.json()) as { error?: string };
-      return `${data.error || fallback}${suffix}`;
-    } catch {
-      return `${fallback}${suffix}`;
-    }
-  }
-
-  return `${fallback}${suffix}`;
-}
-
 async function fetchApiKeys(): Promise<ApiKeyOption[]> {
   const response = await authClient.apiKey.list();
   return ((response.data as ApiKeyOption[]) || []).filter((key) => key.enabled);
 }
 
 async function fetchPreferences(apiKeyId: string): Promise<ApiKeyPreferences> {
-  const response = await fetch(`/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`, {
-    credentials: 'include',
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    throw new Error(await parseApiError(response, 'Could not load saved preferences'));
-  }
-  const data = await response.json();
+  const data = await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    `/api/auth/preferences?apiKeyId=${encodeURIComponent(apiKeyId)}`,
+    {
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+    },
+    'Could not load saved preferences'
+  );
   return data.preferences || {};
 }
 
 async function savePreferences(apiKeyId: string, preferences: ApiKeyPreferences): Promise<void> {
-  const response = await fetch('/api/auth/preferences', {
-    method: 'PUT',
-    credentials: 'include',
-    cache: 'no-store',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKeyId, preferences }),
-  });
-  if (!response.ok) {
-    throw new Error(await parseApiError(response, 'Failed to save preferences'));
-  }
+  await fetchJsonOrThrow<{ preferences?: ApiKeyPreferences }>(
+    '/api/auth/preferences',
+    {
+      method: 'PUT',
+      credentials: 'include',
+      ...NO_STORE_REQUEST_INIT,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKeyId, preferences }),
+    },
+    'Failed to save preferences'
+  );
 }
 
 export function ParameterConfigurationSection() {
@@ -112,8 +98,7 @@ export function ParameterConfigurationSection() {
     queryKey: ['parameterSectionApiKeys'],
     queryFn: fetchApiKeys,
     enabled: !!session?.user,
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   useEffect(() => {
@@ -135,8 +120,7 @@ export function ParameterConfigurationSection() {
     queryKey: ['parameterSectionApiKeyPreferences', selectedApiKeyId],
     queryFn: () => fetchPreferences(selectedApiKeyId),
     enabled: !!session?.user && selectedApiKeyId !== NO_API_KEY_VALUE,
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   useEffect(() => {

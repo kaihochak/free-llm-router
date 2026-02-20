@@ -20,6 +20,7 @@ import {
   DEFAULT_RELIABILITY_FILTER_ENABLED,
   DEFAULT_USE_CASE,
 } from '@/lib/api-definitions';
+import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 
 export interface Model {
   id: string;
@@ -215,8 +216,7 @@ export function useModels(options?: UseModelsOptions) {
         myReports: effectiveMyReports,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...STRICT_QUERY_OPTIONS,
   });
 
   // Filter and sort on frontend
