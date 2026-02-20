@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { apiKeys, withUserContext } from '@/db';
+import { apiKeys, createDb } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { validatePreferences } from '@/lib/api-definitions';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
@@ -27,7 +27,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    const { session, databaseUrl } = result;
+    const { session, databaseUrl, databaseUrlAdmin } = result;
     logApiStage('/api/auth/preferences', requestId, 'session_ok', { userId: session.user.id });
     const apiKeyId = url.searchParams.get('apiKeyId');
 
@@ -43,24 +43,13 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       userId: session.user.id,
       apiKeyId,
     });
-    const preferences = await withUserContext(databaseUrl, session.user.id, async (db) => {
-      // Verify the API key belongs to this user
-      const [key] = await db
-        .select({ metadata: apiKeys.metadata })
-        .from(apiKeys)
-        .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
-        .limit(1);
-
-      if (!key) {
-        return null;
-      }
-
-      if (!key.metadata) {
-        return {};
-      }
-
-      return extractApiKeyPreferences(key.metadata);
-    });
+    const db = createDb(databaseUrlAdmin || databaseUrl);
+    const [key] = await db
+      .select({ metadata: apiKeys.metadata })
+      .from(apiKeys)
+      .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
+      .limit(1);
+    const preferences = key ? extractApiKeyPreferences(key.metadata) : null;
 
     if (preferences === null) {
       logApiStage('/api/auth/preferences', requestId, 'not_found', {
@@ -113,7 +102,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const { session, databaseUrl } = result;
+    const { session, databaseUrl, databaseUrlAdmin } = result;
     logApiStage('/api/auth/preferences', requestId, 'session_ok', { userId: session.user.id });
 
     let body: { apiKeyId?: string; preferences?: unknown };
@@ -145,21 +134,19 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       apiKeyId,
     });
 
-    const updated = await withUserContext(databaseUrl, session.user.id, async (db) => {
-      // Verify the API key belongs to this user
-      const [existing] = await db
-        .select({ metadata: apiKeys.metadata })
-        .from(apiKeys)
-        .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
-        .limit(1);
+    const db = createDb(databaseUrlAdmin || databaseUrl);
+    const [existing] = await db
+      .select({ metadata: apiKeys.metadata })
+      .from(apiKeys)
+      .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
+      .limit(1);
 
-      if (!existing) {
-        return null;
-      }
-
-      // Preserve existing metadata and add/update preferences
+    const updated = (() => {
+      if (!existing) return null;
+      return preferences;
+    })();
+    if (existing) {
       const metadata: Record<string, unknown> = parseApiKeyMetadata(existing.metadata);
-
       metadata.preferences = preferences;
 
       await db
@@ -168,10 +155,8 @@ export const PUT: APIRoute = async ({ request, locals }) => {
           metadata: JSON.stringify(metadata),
           updatedAt: new Date(),
         })
-        .where(eq(apiKeys.id, apiKeyId));
-
-      return preferences;
-    });
+        .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)));
+    }
 
     if (updated === null) {
       logApiStage('/api/auth/preferences', requestId, 'not_found', {

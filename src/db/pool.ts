@@ -9,19 +9,10 @@ if (typeof WebSocket === 'undefined') {
   neonConfig.webSocketConstructor = ws.WebSocket;
 }
 
-const pools = new Map<string, Pool>();
-
-function getPool(databaseUrl: string): Pool {
-  const existing = pools.get(databaseUrl);
-  if (existing) return existing;
-
-  const pool = new Pool({ connectionString: databaseUrl });
-  pools.set(databaseUrl, pool);
-  return pool;
-}
-
 export function createDb(databaseUrl: string): NeonDatabase<typeof schema> {
-  const pool = getPool(databaseUrl);
+  // Cloudflare runtimes require request-scoped I/O objects.
+  // Avoid sharing pools across requests to prevent cross-request socket reuse.
+  const pool = new Pool({ connectionString: databaseUrl });
   return drizzle(pool, { schema });
 }
 
