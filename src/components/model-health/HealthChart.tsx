@@ -4,13 +4,14 @@ import { useMemo, useState, useEffect } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { type ChartConfig, ChartContainer, ChartLegend, ChartTooltip } from '@/components/ui/chart';
-import type { IssueSummary, TimelinePoint, TimeRange } from '@/services/openrouter';
+import type { IssueData, TimelinePoint, TimeRange } from '@/hooks/useHealth';
 import { cn } from '@/lib/utils';
 
 interface IssuesChartProps {
   timeline: TimelinePoint[];
-  issues: IssueSummary[];
+  issues: IssueData[];
   range: TimeRange;
+  showErrorRateDetails?: boolean;
 }
 
 // Chart color palette (cycles through these for each model)
@@ -53,7 +54,7 @@ function InteractiveLegendContent({
   payload?: any[];
   visibleSeries: Set<string>;
   onToggle: (dataKey: string) => void;
-  issues: IssueSummary[];
+  issues: IssueData[];
 }) {
   if (!payload?.length) {
     return null;
@@ -110,11 +111,13 @@ function SortedTooltipContent({
   payload,
   label,
   chartConfig,
+  showErrorRateDetails,
 }: {
   active?: boolean;
   payload?: any[];
   label?: string;
   chartConfig: ChartConfig;
+  showErrorRateDetails: boolean;
 }) {
   if (!active || !payload?.length) {
     return null;
@@ -127,7 +130,10 @@ function SortedTooltipContent({
       const meta = item.payload?.[`${name}_meta`] as
         | { errorRate: number; errorCount: number; totalCount: number }
         | undefined;
-      return (meta?.totalCount ?? 0) > 0;
+      if (showErrorRateDetails) {
+        return (meta?.totalCount ?? 0) > 0;
+      }
+      return typeof item.value === 'number' && !Number.isNaN(item.value);
     })
     .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
@@ -141,7 +147,6 @@ function SortedTooltipContent({
       <div className="grid gap-1.5">
         {sortedPayload.map((item) => {
           const name = String(item.name ?? '');
-          // Get the meta data with counts from the payload
           const meta = item.payload?.[`${name}_meta`] as
             | { errorRate: number; errorCount: number; totalCount: number }
             | undefined;
@@ -158,7 +163,9 @@ function SortedTooltipContent({
                 {chartConfig[name]?.label || name}
               </span>
               <span className="font-mono font-medium tabular-nums text-foreground">
-                {item.value}% ({errorCount}/{totalCount})
+                {showErrorRateDetails && totalCount > 0
+                  ? `${Number(item.value ?? 0).toFixed(1)}% (${errorCount}/${totalCount})`
+                  : `${Number(item.value ?? 0).toFixed(1)}%`}
               </span>
             </div>
           );
@@ -168,7 +175,12 @@ function SortedTooltipContent({
   );
 }
 
-export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
+export function IssuesChart({
+  timeline,
+  issues,
+  range,
+  showErrorRateDetails = false,
+}: IssuesChartProps) {
   // Get unique model IDs from issues (sorted by total issues)
   const modelIds = useMemo(() => {
     return issues.map((issue) => issue.modelId);
@@ -296,6 +308,7 @@ export function IssuesChart({ timeline, issues, range }: IssuesChartProps) {
               payload={props.payload as any[]}
               label={props.label as string}
               chartConfig={chartConfig}
+              showErrorRateDetails={showErrorRateDetails}
             />
           )}
         />

@@ -21,11 +21,11 @@ export type { TimeRange };
 export interface IssueData {
   modelId: string;
   modelName: string;
-  rateLimited: number;
-  unavailable: number;
-  error: number;
-  total: number;
-  successCount: number;
+  rateLimited?: number;
+  unavailable?: number;
+  error?: number;
+  total?: number;
+  successCount?: number;
   errorRate: number;
   // Model metadata for filtering
   modality: string | null;
@@ -38,8 +38,8 @@ export interface IssueData {
 
 export interface TimelineModelData {
   errorRate: number;
-  errorCount: number;
-  totalCount: number;
+  errorCount?: number;
+  totalCount?: number;
 }
 
 export interface TimelinePoint {

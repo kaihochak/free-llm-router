@@ -34,10 +34,10 @@ interface ApiKeyOption {
 const NO_API_KEY_VALUE = '__no_api_key__';
 
 interface FeedbackEntry {
-  rateLimited: number;
-  unavailable: number;
-  error: number;
-  successCount: number;
+  rateLimited?: number;
+  unavailable?: number;
+  error?: number;
+  successCount?: number;
   errorRate: number;
 }
 
@@ -178,17 +178,24 @@ export function HealthTabContent() {
       } = await response.json();
       return data.models.map((model) => {
         const feedback = data.feedbackCounts[model.id];
-        return {
+        const nextModel: Model = {
           ...model,
-          issueCount: feedback
-            ? feedback.rateLimited + feedback.unavailable + feedback.error
-            : undefined,
           errorRate: feedback ? feedback.errorRate : undefined,
-          successCount: feedback ? feedback.successCount : undefined,
-          rateLimited: feedback ? feedback.rateLimited : undefined,
-          unavailable: feedback ? feedback.unavailable : undefined,
-          errorCount: feedback ? feedback.error : undefined,
-        } as Model;
+        };
+        if (
+          feedback &&
+          typeof feedback.error === 'number' &&
+          typeof feedback.rateLimited === 'number' &&
+          typeof feedback.unavailable === 'number' &&
+          typeof feedback.successCount === 'number'
+        ) {
+          nextModel.issueCount = feedback.error + feedback.rateLimited + feedback.unavailable;
+          nextModel.successCount = feedback.successCount;
+          nextModel.rateLimited = feedback.rateLimited;
+          nextModel.unavailable = feedback.unavailable;
+          nextModel.errorCount = feedback.error;
+        }
+        return nextModel;
       });
     },
     enabled: modelListView === 'all',
@@ -205,24 +212,35 @@ export function HealthTabContent() {
 
   // Convert IssueData to Model format for ModelList
   const models: Model[] = useMemo(() => {
-    return issues.map((issue) => ({
-      id: issue.modelId,
-      name: issue.modelName,
-      contextLength: issue.contextLength,
-      maxCompletionTokens: issue.maxCompletionTokens,
-      description: null,
-      modality: issue.modality,
-      inputModalities: issue.inputModalities,
-      outputModalities: issue.outputModalities,
-      supportedParameters: issue.supportedParameters,
-      isModerated: null,
-      issueCount: issue.total,
-      errorRate: issue.errorRate,
-      successCount: issue.successCount,
-      rateLimited: issue.rateLimited,
-      unavailable: issue.unavailable,
-      errorCount: issue.error,
-    }));
+    return issues.map((issue) => {
+      const model: Model = {
+        id: issue.modelId,
+        name: issue.modelName,
+        contextLength: issue.contextLength,
+        maxCompletionTokens: issue.maxCompletionTokens,
+        description: null,
+        modality: issue.modality,
+        inputModalities: issue.inputModalities,
+        outputModalities: issue.outputModalities,
+        supportedParameters: issue.supportedParameters,
+        isModerated: null,
+        errorRate: issue.errorRate,
+      };
+      if (
+        typeof issue.total === 'number' &&
+        typeof issue.successCount === 'number' &&
+        typeof issue.rateLimited === 'number' &&
+        typeof issue.unavailable === 'number' &&
+        typeof issue.error === 'number'
+      ) {
+        model.issueCount = issue.total;
+        model.successCount = issue.successCount;
+        model.rateLimited = issue.rateLimited;
+        model.unavailable = issue.unavailable;
+        model.errorCount = issue.error;
+      }
+      return model;
+    });
   }, [issues]);
 
   // All models filtered/sorted client-side for the "All" view
@@ -315,7 +333,12 @@ export function HealthTabContent() {
         </span>
       </div>
       <div className="mb-8">
-        <IssuesChart timeline={timeline} issues={visibleIssues} range={range} />
+        <IssuesChart
+          timeline={timeline}
+          issues={visibleIssues}
+          range={range}
+          showErrorRateDetails={false}
+        />
       </div>
 
       {/* Issues list */}
@@ -353,6 +376,7 @@ export function HealthTabContent() {
         models={visibleModels}
         loading={modelListView === 'reported' ? loading : allModelsLoading}
         error={error}
+        showErrorRateDetails={false}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         lastUpdated={lastUpdated}
