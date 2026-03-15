@@ -13,6 +13,7 @@ import {
   DEFAULT_TIME_RANGE,
 } from '@/lib/api-definitions';
 import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
+import { exposeErrorRateDetails } from '@/lib/feature-flags';
 
 function validateRange(value: string | null): TimeRange {
   const validated = validateTimeRange(value);
@@ -85,18 +86,57 @@ export const GET: APIRoute = async (context) => {
 
     // Single source: stats DB functions (fma_stats role / RLS-compliant)
     const timeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, filteredModelIds);
-
-    // Helper: does timeline have any series data (beyond date/meta)
-    const hasSeries = (points: typeof timeline) =>
-      points.some((p) => Object.keys(p).some((k) => k !== 'date' && !k.endsWith('_meta')));
+    const includeErrorRateDetails = exposeErrorRateDetails(runtime?.env);
+    const responseIssues = includeErrorRateDetails
+      ? issues
+      : issues.map(
+          ({
+            modelId,
+            modelName,
+            errorRate,
+            modality,
+            inputModalities,
+            outputModalities,
+            supportedParameters,
+            contextLength,
+            maxCompletionTokens,
+          }) => ({
+            modelId,
+            modelName,
+            errorRate,
+            modality,
+            inputModalities,
+            outputModalities,
+            supportedParameters,
+            contextLength,
+            maxCompletionTokens,
+          })
+        );
+    const responseTimeline = includeErrorRateDetails
+      ? timeline
+      : timeline.map((point) => {
+          const sanitized: Record<string, string | number> = { date: point.date };
+          for (const [key, value] of Object.entries(point)) {
+            if (key === 'date' || key.endsWith('_meta')) continue;
+            if (typeof value === 'number') {
+              sanitized[key] = value;
+              continue;
+            }
+            if (value && typeof value === 'object' && 'errorRate' in value) {
+              const withErrorRate = value as { errorRate: number };
+              sanitized[key] = withErrorRate.errorRate;
+            }
+          }
+          return sanitized;
+        });
 
     return jsonResponse(
       {
-        issues,
-        timeline,
+        issues: responseIssues,
+        timeline: responseTimeline,
         range,
         lastUpdated: new Date().toISOString(),
-        count: issues.length,
+        count: responseIssues.length,
       },
       { headers: apiResponseHeaders({ cacheControl: 'public, max-age=60', cors: false }) }
     );
