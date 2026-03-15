@@ -14,6 +14,7 @@ import {
   noContentResponse,
   type HeaderMap,
 } from '@/lib/api-response';
+import { exposeErrorRateDetails } from '@/lib/feature-flags';
 
 /**
  * Full model endpoint - returns complete model objects with all metadata
@@ -57,6 +58,15 @@ export const GET: APIRoute = async (context) => {
       getRecentFeedbackCounts(db, timeRange, userId, statsDbUrl),
       getLastUpdated(db),
     ]);
+    const includeErrorRateDetails = exposeErrorRateDetails(runtime?.env);
+    const responseFeedbackCounts = includeErrorRateDetails
+      ? feedbackCounts
+      : Object.fromEntries(
+          Object.entries(feedbackCounts).map(([modelId, feedback]) => [
+            modelId,
+            { errorRate: feedback.errorRate },
+          ])
+        );
 
     // Apply exclusions first, then topN for deterministic behavior.
     const excludedSet = new Set(excludeModelIds);
@@ -93,7 +103,7 @@ export const GET: APIRoute = async (context) => {
     return jsonResponse(
       {
         models,
-        feedbackCounts,
+        feedbackCounts: responseFeedbackCounts,
         lastUpdated: updatedAt?.toISOString() ?? new Date().toISOString(),
         useCases: useCases.length > 0 ? useCases : undefined,
         sort,

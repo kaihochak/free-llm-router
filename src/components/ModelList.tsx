@@ -30,6 +30,7 @@ interface ModelListProps {
   excludedModelIds?: string[];
   onToggleExcludeModel?: (modelId: string) => void;
   excludeActionMode?: 'hide' | 'exclude';
+  showErrorRateDetails?: boolean;
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
@@ -117,6 +118,7 @@ export function ModelList({
   excludedModelIds = [],
   onToggleExcludeModel,
   excludeActionMode = 'exclude',
+  showErrorRateDetails = false,
 }: ModelListProps) {
   const [pendingExclude, setPendingExclude] = useState<{ id: string; name: string } | null>(null);
   const totalPages = Math.max(1, Math.ceil(models.length / itemsPerPage));
@@ -217,16 +219,19 @@ export function ModelList({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="font-medium">
-                          {model.errorRate.toFixed(1)}% ({model.issueCount}/
-                          {(model.issueCount ?? 0) + (model.successCount ?? 0)})
+                          {showErrorRateDetails
+                            ? `${model.errorRate.toFixed(1)}% (${model.issueCount}/${
+                                (model.issueCount ?? 0) + (model.successCount ?? 0)
+                              })`
+                            : `Error rate: ${model.errorRate.toFixed(1)}%`}
                         </p>
-                        {(model.rateLimited ?? 0) > 0 && (
+                        {showErrorRateDetails && (model.rateLimited ?? 0) > 0 && (
                           <p className="text-muted-foreground">Rate limited: {model.rateLimited}</p>
                         )}
-                        {(model.unavailable ?? 0) > 0 && (
+                        {showErrorRateDetails && (model.unavailable ?? 0) > 0 && (
                           <p className="text-muted-foreground">Unavailable: {model.unavailable}</p>
                         )}
-                        {(model.errorCount ?? 0) > 0 && (
+                        {showErrorRateDetails && (model.errorCount ?? 0) > 0 && (
                           <p className="text-muted-foreground">Errors: {model.errorCount}</p>
                         )}
                       </TooltipContent>

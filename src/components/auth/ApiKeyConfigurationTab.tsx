@@ -32,10 +32,10 @@ interface ApiKey {
 
 interface FeedbackCounts {
   [modelId: string]: {
-    rateLimited: number;
-    unavailable: number;
-    error: number;
-    successCount: number;
+    rateLimited?: number;
+    unavailable?: number;
+    error?: number;
+    successCount?: number;
     errorRate: number;
   };
 }
@@ -125,13 +125,31 @@ async function fetchModelsForPreview(
   const data: ModelsApiResponse = await response.json();
   const models = data.models.map((model) => {
     const feedback = data.feedbackCounts?.[model.id];
-    const issueCount = feedback ? feedback.rateLimited + feedback.unavailable + feedback.error : 0;
     const errorRate = feedback ? feedback.errorRate : 0;
-    const successCount = feedback ? feedback.successCount : 0;
-    const rateLimited = feedback ? feedback.rateLimited : 0;
-    const unavailable = feedback ? feedback.unavailable : 0;
-    const errorCount = feedback ? feedback.error : 0;
-    return { ...model, issueCount, errorRate, successCount, rateLimited, unavailable, errorCount };
+    const errorCount = feedback?.error;
+    const rateLimited = feedback?.rateLimited;
+    const unavailable = feedback?.unavailable;
+    const successCount = feedback?.successCount;
+
+    if (
+      typeof errorCount !== 'number' ||
+      typeof rateLimited !== 'number' ||
+      typeof unavailable !== 'number' ||
+      typeof successCount !== 'number'
+    ) {
+      return { ...model, errorRate };
+    }
+
+    const issueCount = errorCount + rateLimited + unavailable;
+    return {
+      ...model,
+      errorRate,
+      issueCount,
+      successCount,
+      rateLimited,
+      unavailable,
+      errorCount,
+    };
   });
   return { models, lastUpdated: data.lastUpdated || null };
 }
