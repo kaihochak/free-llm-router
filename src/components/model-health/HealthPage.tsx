@@ -40,24 +40,35 @@ function IssuesPageContent() {
 
   // Convert IssueData to Model format for ModelList
   const models: Model[] = useMemo(() => {
-    return issues.map((issue) => ({
-      id: issue.modelId,
-      name: issue.modelName,
-      contextLength: issue.contextLength,
-      maxCompletionTokens: issue.maxCompletionTokens,
-      description: null,
-      modality: issue.modality,
-      inputModalities: issue.inputModalities,
-      outputModalities: issue.outputModalities,
-      supportedParameters: issue.supportedParameters,
-      isModerated: null,
-      issueCount: issue.total,
-      errorRate: issue.errorRate,
-      successCount: issue.successCount,
-      rateLimited: issue.rateLimited,
-      unavailable: issue.unavailable,
-      errorCount: issue.error,
-    }));
+    return issues.map((issue) => {
+      const model: Model = {
+        id: issue.modelId,
+        name: issue.modelName,
+        contextLength: issue.contextLength,
+        maxCompletionTokens: issue.maxCompletionTokens,
+        description: null,
+        modality: issue.modality,
+        inputModalities: issue.inputModalities,
+        outputModalities: issue.outputModalities,
+        supportedParameters: issue.supportedParameters,
+        isModerated: null,
+        errorRate: issue.errorRate,
+      };
+      if (
+        typeof issue.total === 'number' &&
+        typeof issue.successCount === 'number' &&
+        typeof issue.rateLimited === 'number' &&
+        typeof issue.unavailable === 'number' &&
+        typeof issue.error === 'number'
+      ) {
+        model.issueCount = issue.total;
+        model.successCount = issue.successCount;
+        model.rateLimited = issue.rateLimited;
+        model.unavailable = issue.unavailable;
+        model.errorCount = issue.error;
+      }
+      return model;
+    });
   }, [issues]);
 
   return (
@@ -103,7 +114,12 @@ function IssuesPageContent() {
         <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
       </div>
       <div className="mb-8">
-        <IssuesChart timeline={timeline} issues={issues} range={range} />
+        <IssuesChart
+          timeline={timeline}
+          issues={issues}
+          range={range}
+          showErrorRateDetails={false}
+        />
       </div>
 
       {/* Issues list */}
@@ -111,7 +127,13 @@ function IssuesPageContent() {
         <span className="font-medium">Models by Error Rate</span>
         <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
       </div>
-      <ModelList models={models} loading={loading} error={error} currentPage={1} />
+      <ModelList
+        models={models}
+        loading={loading}
+        error={error}
+        currentPage={1}
+        showErrorRateDetails={false}
+      />
     </section>
   );
 }
