@@ -257,6 +257,7 @@ export async function getActiveModels(db: Database) {
       outputModalities: freeModels.outputModalities,
       supportedParameters: freeModels.supportedParameters,
       isModerated: freeModels.isModerated,
+      lastSeenAt: freeModels.lastSeenAt,
       createdAt: freeModels.createdAt,
     })
     .from(freeModels)
@@ -1110,4 +1111,222 @@ export async function getModelAvailability(
   }
 
   return { models: result, dates };
+}
+
+// ---------------------------------------------------------------------------
+// Model detail page helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Return availability snapshots for a single model over the last `days` days.
+ * Returns `{ dates: string[], availability: Record<string, boolean> }`.
+ */
+export async function getModelAvailabilityById(
+  db: Database,
+  modelId: string,
+  days = 90
+): Promise<{ dates: string[]; availability: Record<string, boolean> }> {
+  const cutoffDate = new Date();
+  cutoffDate.setUTCDate(cutoffDate.getUTCDate() - days);
+  cutoffDate.setUTCHours(0, 0, 0, 0);
+
+  const snapshots = await db
+    .select({
+      snapshotDate: modelAvailabilitySnapshots.snapshotDate,
+      isAvailable: modelAvailabilitySnapshots.isAvailable,
+    })
+    .from(modelAvailabilitySnapshots)
+    .where(
+      and(
+        eq(modelAvailabilitySnapshots.modelId, modelId),
+        gte(modelAvailabilitySnapshots.snapshotDate, cutoffDate)
+      )
+    );
+
+  const availability: Record<string, boolean> = {};
+  for (const s of snapshots) {
+    availability[s.snapshotDate.toISOString().split('T')[0]] = s.isAvailable;
+  }
+
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+
+  return { dates, availability };
+}
+
+export interface ModelFeedbackSummary {
+  errorRate: number;
+  successCount: number;
+  rateLimited: number;
+  unavailable: number;
+  error: number;
+}
+
+/** Fetch a single active model by ID. Returns null when not found or inactive. */
+export async function getModelById(db: Database, modelId: string) {
+  const rows = await db
+    .select()
+    .from(freeModels)
+    .where(and(eq(freeModels.id, modelId), eq(freeModels.isActive, true)))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/**
+ * Return up to `limit` related models from the same provider, excluding the
+ * given model. Falls back to an empty array when there are none.
+ */
+export async function getRelatedModels(db: Database, model: { id: string }, limit = 5) {
+  const provider = model.id.split('/')[0];
+  if (!provider) return [];
+
+  const likePattern = `${provider}/%`;
+
+  return db
+    .select({
+      id: freeModels.id,
+      name: freeModels.name,
+      contextLength: freeModels.contextLength,
+      maxCompletionTokens: freeModels.maxCompletionTokens,
+      modality: freeModels.modality,
+      inputModalities: freeModels.inputModalities,
+      supportedParameters: freeModels.supportedParameters,
+    })
+    .from(freeModels)
+    .where(
+      and(
+        eq(freeModels.isActive, true),
+        sql`${freeModels.id} LIKE ${likePattern}`,
+        sql`${freeModels.id} != ${model.id}`
+      )
+    )
+    .limit(limit);
+}
+
+/**
+ * Return up to `limit` models with similar capabilities (vision, tools,
+ * reasoning, long context) from different providers.
+ */
+export async function getSimilarModels(
+  db: Database,
+  model: {
+    id: string;
+    inputModalities?: string[] | null;
+    supportedParameters?: string[] | null;
+    contextLength?: number | null;
+  },
+  limit = 5
+) {
+  const provider = model.id.split('/')[0];
+
+  // Build capability conditions to match
+  const conditions: SQL<unknown>[] = [
+    eq(freeModels.isActive, true),
+    sql`${freeModels.id} != ${model.id}`,
+  ];
+
+  // Exclude same provider so this doesn't overlap with "More from {provider}"
+  if (provider) {
+    conditions.push(sql`${freeModels.id} NOT LIKE ${`${provider}/%`}`);
+  }
+
+  // Score: count how many capabilities match
+  const scoreParts: string[] = [];
+
+  if (model.inputModalities?.includes('image')) {
+    scoreParts.push(
+      `CASE WHEN 'image' = ANY(${freeModels.inputModalities.name}) THEN 1 ELSE 0 END`
+    );
+  }
+  if (model.supportedParameters?.includes('tools')) {
+    scoreParts.push(
+      `CASE WHEN 'tools' = ANY(${freeModels.supportedParameters.name}) THEN 1 ELSE 0 END`
+    );
+  }
+  if (
+    model.supportedParameters?.includes('reasoning') ||
+    model.supportedParameters?.includes('include_reasoning')
+  ) {
+    scoreParts.push(
+      `CASE WHEN 'reasoning' = ANY(${freeModels.supportedParameters.name}) OR 'include_reasoning' = ANY(${freeModels.supportedParameters.name}) THEN 1 ELSE 0 END`
+    );
+  }
+  if ((model.contextLength ?? 0) >= 100000) {
+    scoreParts.push(`CASE WHEN ${freeModels.contextLength.name} >= 100000 THEN 1 ELSE 0 END`);
+  }
+
+  // If the model has no notable capabilities, just return empty
+  if (scoreParts.length === 0) return [];
+
+  const scoreExpr = sql.raw(`(${scoreParts.join(' + ')})`);
+
+  return db
+    .select({
+      id: freeModels.id,
+      name: freeModels.name,
+      contextLength: freeModels.contextLength,
+      maxCompletionTokens: freeModels.maxCompletionTokens,
+      modality: freeModels.modality,
+      inputModalities: freeModels.inputModalities,
+      supportedParameters: freeModels.supportedParameters,
+    })
+    .from(freeModels)
+    .where(and(...conditions))
+    .orderBy(sql`${scoreExpr} DESC`)
+    .limit(limit);
+}
+
+/**
+ * Aggregate feedback for a single model over a given time window.
+ * Defaults to 7 days. Returns null when there is no feedback data at all.
+ */
+export async function getModelFeedbackById(
+  db: Database,
+  modelId: string,
+  windowMs: number = 7 * 24 * 60 * 60 * 1000
+): Promise<ModelFeedbackSummary | null> {
+  const cutoff = new Date(Date.now() - windowMs);
+
+  const results = await db
+    .select({
+      issue: modelFeedback.issue,
+      isSuccess: modelFeedback.isSuccess,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(modelFeedback)
+    .where(and(eq(modelFeedback.modelId, modelId), gte(modelFeedback.createdAt, cutoff)))
+    .groupBy(modelFeedback.issue, modelFeedback.isSuccess);
+
+  if (results.length === 0) return null;
+
+  const summary: ModelFeedbackSummary = {
+    errorRate: 0,
+    successCount: 0,
+    rateLimited: 0,
+    unavailable: 0,
+    error: 0,
+  };
+
+  for (const row of results) {
+    if (row.isSuccess) {
+      summary.successCount += row.count;
+    } else if (row.issue === 'rate_limited') {
+      summary.rateLimited += row.count;
+    } else if (row.issue === 'unavailable') {
+      summary.unavailable += row.count;
+    } else if (row.issue === 'error') {
+      summary.error += row.count;
+    }
+  }
+
+  const errorCount = summary.rateLimited + summary.unavailable + summary.error;
+  const total = summary.successCount + errorCount;
+  summary.errorRate = total > 0 ? Math.round((errorCount / total) * 10000) / 100 : 0;
+
+  return summary;
 }
