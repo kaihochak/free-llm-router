@@ -14,7 +14,8 @@ import {
 import { ModelCountHeader } from '@/components/ModelCountHeader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Model } from '@/hooks/useModels';
-import { ArrowUpRight, ChevronLeft, ChevronRight, CircleMinus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleMinus } from 'lucide-react';
+import { modelDetailPath } from '@/lib/model-urls';
 
 interface ModelListProps {
   models: Model[];
@@ -44,11 +45,6 @@ function formatTokens(count: number | null): string {
 
 function getProvider(modelId: string): string {
   return modelId.split('/')[0] || modelId;
-}
-
-function getOpenRouterUrl(modelId: string): string {
-  // Keep the :free suffix in the URL
-  return `https://openrouter.ai/${modelId}`;
 }
 
 function getProviderLogoUrl(provider: string): string {
@@ -136,7 +132,7 @@ export function ModelList({
     content = <div className="py-8 text-center text-destructive">Error: {error}</div>;
   } else {
     content = (
-      <div className="rounded-xl border bg-card divide-y">
+      <div className="rounded-xl border bg-card divide-y overflow-hidden">
         {paginatedModels.map((model) => {
           const badges = getCapabilityBadges(model);
           const provider = getProvider(model.id);
@@ -146,9 +142,7 @@ export function ModelList({
           return (
             <a
               key={model.id}
-              href={getOpenRouterUrl(model.id)}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={modelDetailPath(model.id)}
               className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
             >
               {/* Provider Logo */}
@@ -270,7 +264,7 @@ export function ModelList({
                   </TooltipProvider>
                 )}
 
-                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
             </a>
           );
