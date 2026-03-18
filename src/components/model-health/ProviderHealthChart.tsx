@@ -23,23 +23,22 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: '30d', label: '30d' },
 ];
 
-async function fetchModelHealth(modelId: string, range: TimeRange): Promise<HealthResponse> {
+async function fetchProviderHealth(provider: string, range: TimeRange): Promise<HealthResponse> {
   const params = new URLSearchParams({ range });
   const response = await fetch(`/api/health?${params.toString()}`);
   if (!response.ok) throw new Error('Failed to fetch health data');
   const data: HealthResponse = await response.json();
 
-  // Filter to just this model
-  const normalizedId = modelId.replace(/:free$/, '');
+  const prefix = `${provider}/`;
+
   return {
     ...data,
-    issues: data.issues.filter((i) => i.modelId === modelId || i.modelId === normalizedId),
+    issues: data.issues.filter((i) => i.modelId.startsWith(prefix)),
     timeline: data.timeline.map((point) => {
       const filtered: Record<string, string | number | object> = { date: point.date };
       for (const [key, value] of Object.entries(point)) {
         if (key === 'date') continue;
-        const normalizedKey = key.replace(/:free$/, '').replace(/_meta$/, '');
-        if (normalizedKey === normalizedId || key === modelId || key === `${modelId}_meta`) {
+        if (key.startsWith(prefix)) {
           filtered[key] = value;
         }
       }
@@ -48,12 +47,12 @@ async function fetchModelHealth(modelId: string, range: TimeRange): Promise<Heal
   };
 }
 
-function ModelDetailChartInner({ modelId }: { modelId: string }) {
+function ProviderHealthChartInner({ provider }: { provider: string }) {
   const [range, setRange] = useState<TimeRange>('7d');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['model-health', modelId, range],
-    queryFn: () => fetchModelHealth(modelId, range),
+    queryKey: ['provider-health', provider, range],
+    queryFn: () => fetchProviderHealth(provider, range),
     ...STRICT_QUERY_OPTIONS,
   });
 
@@ -78,8 +77,13 @@ function ModelDetailChartInner({ modelId }: { modelId: string }) {
         <div className="h-48 rounded-xl border bg-card flex items-center justify-center text-sm text-muted-foreground">
           Loading chart...
         </div>
-      ) : data && data.timeline.length > 0 ? (
-        <IssuesChart timeline={data.timeline} issues={data.issues} range={range} />
+      ) : data && data.timeline.length > 0 && data.issues.length > 0 ? (
+        <IssuesChart
+          timeline={data.timeline}
+          issues={data.issues}
+          range={range}
+          showErrorRateDetails={false}
+        />
       ) : (
         <div className="h-48 rounded-xl border bg-card flex items-center justify-center text-sm text-muted-foreground">
           No data available for this time range
@@ -89,10 +93,10 @@ function ModelDetailChartInner({ modelId }: { modelId: string }) {
   );
 }
 
-export function ModelDetailChart({ modelId }: { modelId: string }) {
+export function ProviderHealthChart({ provider }: { provider: string }) {
   return (
     <QueryProvider>
-      <ModelDetailChartInner modelId={modelId} />
+      <ProviderHealthChartInner provider={provider} />
     </QueryProvider>
   );
 }
