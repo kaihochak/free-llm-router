@@ -2,3 +2,5 @@ User-agent: *
 Allow: /
 
 Sitemap: https://freellmrouter.com/sitemap-index.xml
+Sitemap: https://freellmrouter.com/sitemap-models.xml
+Sitemap: https://freellmrouter.com/sitemap-providers.xml
