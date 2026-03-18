@@ -9,6 +9,7 @@ import {
   getModelFeedbackById,
   getModelAvailabilityById,
 } from '@/services/openrouter';
+import { AvailabilityMatrix } from '@/components/model-availability/AvailabilityMatrix';
 import { generateModelSchema, generateBreadcrumbSchema, generateFAQSchema } from '@/lib/seo';
 import { modelDetailPath, getProviderFromId } from '@/lib/model-urls';
 import { ModelDetailChart } from '@/components/model-health/ModelDetailChart';
@@ -155,32 +156,25 @@ const isNew = model.createdAt
 
 const openRouterUrl = `https://openrouter.ai/${model.id}`;
 
-// Availability helpers
+// Availability — shape into AvailabilityData[] for the AvailabilityMatrix component
 const hasAvailability = Object.keys(availabilityData.availability).length > 0;
 const availableDays = Object.values(availabilityData.availability).filter(Boolean).length;
 const totalTrackedDays = Object.keys(availabilityData.availability).length;
-
-// Group dates by month for headers
-function getMonth(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00Z');
-  return d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
-}
-function getDay(dateStr: string): number {
-  return new Date(dateStr + 'T00:00:00Z').getUTCDate();
-}
-function formatDateFull(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00Z');
-  return d.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
-// Use last 30 days for the grid display
-const displayDates = availabilityData.dates.slice(-30);
+const availabilityModels = hasAvailability
+  ? [
+      {
+        modelId: model.id,
+        modelName: model.name,
+        modality: model.modality,
+        inputModalities: model.inputModalities,
+        outputModalities: model.outputModalities,
+        supportedParameters: model.supportedParameters,
+        contextLength: model.contextLength,
+        maxCompletionTokens: model.maxCompletionTokens,
+        availability: availabilityData.availability,
+      },
+    ]
+  : [];
 ---
 
 <Layout title={title} description={description} jsonLd={jsonLd} url={modelDetailPath(model.id)}>
@@ -416,50 +410,11 @@ const displayDates = availabilityData.dates.slice(-30);
             Available {availableDays} of {totalTrackedDays} tracked days. Daily snapshots show
             whether this model was accessible as a free model on OpenRouter.
           </p>
-          <div class="rounded-xl border bg-card p-4 overflow-x-auto">
-            <div class="flex gap-[2px] min-w-fit">
-              {displayDates.map((date) => {
-                const available = availabilityData.availability[date];
-                const color =
-                  available === true
-                    ? 'bg-emerald-500'
-                    : available === false
-                      ? 'bg-red-500'
-                      : 'bg-muted';
-                const label =
-                  available === true
-                    ? 'Available'
-                    : available === false
-                      ? 'Unavailable'
-                      : 'No data';
-                return (
-                  <div class="flex flex-col items-center gap-1 group relative">
-                    <div
-                      class:list={['w-2.5 h-8 rounded-sm', color]}
-                      title={`${formatDateFull(date)}: ${label}`}
-                    />
-                    {getDay(date) === 1 && (
-                      <span class="text-[9px] text-muted-foreground absolute -bottom-4">
-                        {getMonth(date)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div class="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
-            <div class="flex items-center gap-1">
-              <span class="w-2 h-2 rounded-sm bg-emerald-500 inline-block" /> Available
-            </div>
-            <div class="flex items-center gap-1">
-              <span class="w-2 h-2 rounded-sm bg-red-500 inline-block" /> Unavailable
-            </div>
-            <div class="flex items-center gap-1">
-              <span class="w-2 h-2 rounded-sm bg-muted inline-block" /> No data
-            </div>
-            <span class="ml-auto">Last 30 days</span>
-          </div>
+          <AvailabilityMatrix
+            client:load
+            models={availabilityModels}
+            dates={availabilityData.dates}
+          />
         </section>
       )
     }
