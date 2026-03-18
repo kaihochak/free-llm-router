@@ -11,7 +11,7 @@ import {
 } from '@/services/openrouter';
 import { AvailabilityMatrix } from '@/components/model-availability/AvailabilityMatrix';
 import { generateModelSchema, generateBreadcrumbSchema, generateFAQSchema } from '@/lib/seo';
-import { modelDetailPath, getProviderFromId } from '@/lib/model-urls';
+import { modelDetailPath, getProviderFromId, providerDetailPath } from '@/lib/model-urls';
 import { ModelDetailChart } from '@/components/model-health/ModelDetailChart';
 
 const slug = Astro.params.slug;
@@ -35,6 +35,7 @@ const [
   feedback6h,
   feedback24h,
   feedback7d,
+  feedback30d,
   relatedModels,
   similarModels,
   availabilityData,
@@ -43,12 +44,13 @@ const [
   getModelFeedbackById(db, modelId, 6 * HOUR_MS),
   getModelFeedbackById(db, modelId, 24 * HOUR_MS),
   getModelFeedbackById(db, modelId, 7 * 24 * HOUR_MS),
+  getModelFeedbackById(db, modelId, 30 * 24 * HOUR_MS),
   getRelatedModels(db, model),
   getSimilarModels(db, model),
   getModelAvailabilityById(db, modelId, 90),
 ]);
 
-const hasFeedback = feedback1h || feedback6h || feedback24h || feedback7d;
+const hasFeedback = feedback1h || feedback6h || feedback24h || feedback7d || feedback30d;
 
 const provider = getProviderFromId(model.id);
 const providerCapitalized = provider.charAt(0).toUpperCase() + provider.slice(1);
@@ -143,6 +145,13 @@ const jsonLd = [
   generateFAQSchema(faqs),
 ];
 
+function errorRateColor(rate: number | undefined): string {
+  if (rate === undefined) return 'text-muted-foreground';
+  if (rate > 20) return 'text-destructive';
+  if (rate > 10) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-green-600 dark:text-green-400';
+}
+
 function formatTokens(count: number | null): string {
   if (!count) return '-';
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
@@ -205,7 +214,11 @@ const availabilityModels = hasAvailability
               {model.name}
             </h1>
             <p class="text-sm text-muted-foreground mt-1">
-              by <span class="capitalize">{provider}</span>
+              by <a
+                href={providerDetailPath(provider)}
+                class="capitalize hover:text-foreground transition-colors underline-offset-2 hover:underline"
+                >{provider}</a
+              >
               {
                 isNew && (
                   <span class="ml-2 inline-flex items-center rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
@@ -311,94 +324,86 @@ const availabilityModels = hasAvailability
 
     <!-- Reliability -->
     <section class="mb-8">
-      <h2 class="text-lg font-semibold mb-3">Reliability</h2>
+      <h2 class="text-lg font-semibold mb-3">Error Rate</h2>
+      <p class="text-xs text-muted-foreground mb-3 leading-relaxed">
+        Based on feedback reported by Free LLM Router users. Error rate reflects the percentage of
+        requests that encountered issues such as rate limiting, unavailability, or errors.
+        <a href="/docs" class="underline hover:text-foreground transition-colors">Learn more</a>.
+      </p>
 
       <!-- Interactive chart -->
       <div class="mb-4">
         <ModelDetailChart client:load modelId={model.id} />
       </div>
 
-      <!-- Static error rates (SEO-friendly) -->
+      <!-- Static error rates table (SEO-friendly) -->
       {
         hasFeedback && (
-          <div class="rounded-xl border bg-card divide-y overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-3">
-              <span class="text-sm text-muted-foreground">Error Rate (1h)</span>
-              <span
-                class:list={[
-                  'text-sm font-medium',
-                  !feedback1h
-                    ? 'text-muted-foreground'
-                    : feedback1h.errorRate > 20
-                      ? 'text-destructive'
-                      : feedback1h.errorRate > 10
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-green-600 dark:text-green-400',
-                ]}
-              >
-                {feedback1h ? `${feedback1h.errorRate.toFixed(1)}%` : '-'}
-              </span>
-            </div>
-            <div class="flex items-center justify-between px-4 py-3">
-              <span class="text-sm text-muted-foreground">Error Rate (6h)</span>
-              <span
-                class:list={[
-                  'text-sm font-medium',
-                  !feedback6h
-                    ? 'text-muted-foreground'
-                    : feedback6h.errorRate > 20
-                      ? 'text-destructive'
-                      : feedback6h.errorRate > 10
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-green-600 dark:text-green-400',
-                ]}
-              >
-                {feedback6h ? `${feedback6h.errorRate.toFixed(1)}%` : '-'}
-              </span>
-            </div>
-            <div class="flex items-center justify-between px-4 py-3">
-              <span class="text-sm text-muted-foreground">Error Rate (24h)</span>
-              <span
-                class:list={[
-                  'text-sm font-medium',
-                  !feedback24h
-                    ? 'text-muted-foreground'
-                    : feedback24h.errorRate > 20
-                      ? 'text-destructive'
-                      : feedback24h.errorRate > 10
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-green-600 dark:text-green-400',
-                ]}
-              >
-                {feedback24h ? `${feedback24h.errorRate.toFixed(1)}%` : '-'}
-              </span>
-            </div>
-            <div class="flex items-center justify-between px-4 py-3">
-              <span class="text-sm text-muted-foreground">Error Rate (7d)</span>
-              <span
-                class:list={[
-                  'text-sm font-medium',
-                  !feedback7d
-                    ? 'text-muted-foreground'
-                    : feedback7d.errorRate > 20
-                      ? 'text-destructive'
-                      : feedback7d.errorRate > 10
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-green-600 dark:text-green-400',
-                ]}
-              >
-                {feedback7d ? `${feedback7d.errorRate.toFixed(1)}%` : '-'}
-              </span>
+          <div class="rounded-xl border bg-card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Model</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">1h</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">6h</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">24h</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">7d</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">30d</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  <tr>
+                    <td class="px-4 py-3 font-medium text-foreground truncate max-w-[200px]">
+                      {model.name}
+                    </td>
+                    <td
+                      class:list={[
+                        'px-4 py-3 text-right font-mono',
+                        errorRateColor(feedback1h?.errorRate),
+                      ]}
+                    >
+                      {feedback1h ? `${feedback1h.errorRate.toFixed(1)}%` : '-'}
+                    </td>
+                    <td
+                      class:list={[
+                        'px-4 py-3 text-right font-mono',
+                        errorRateColor(feedback6h?.errorRate),
+                      ]}
+                    >
+                      {feedback6h ? `${feedback6h.errorRate.toFixed(1)}%` : '-'}
+                    </td>
+                    <td
+                      class:list={[
+                        'px-4 py-3 text-right font-mono',
+                        errorRateColor(feedback24h?.errorRate),
+                      ]}
+                    >
+                      {feedback24h ? `${feedback24h.errorRate.toFixed(1)}%` : '-'}
+                    </td>
+                    <td
+                      class:list={[
+                        'px-4 py-3 text-right font-mono',
+                        errorRateColor(feedback7d?.errorRate),
+                      ]}
+                    >
+                      {feedback7d ? `${feedback7d.errorRate.toFixed(1)}%` : '-'}
+                    </td>
+                    <td
+                      class:list={[
+                        'px-4 py-3 text-right font-mono',
+                        errorRateColor(feedback30d?.errorRate),
+                      ]}
+                    >
+                      {feedback30d ? `${feedback30d.errorRate.toFixed(1)}%` : '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         )
       }
-
-      <p class="text-xs text-muted-foreground mt-2 leading-relaxed">
-        Based on feedback reported by Free LLM Router users. Error rate reflects the percentage of
-        requests that encountered issues such as rate limiting, unavailability, or errors.
-        <a href="/docs" class="underline hover:text-foreground transition-colors">Learn more</a>.
-      </p>
     </section>
 
     <!-- Availability -->
@@ -456,7 +461,12 @@ const availabilityModels = hasAvailability
     {
       relatedModels.length > 0 && (
         <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-3">More from {providerCapitalized}</h2>
+          <h2 class="text-lg font-semibold mb-3">
+            More from{' '}
+            <a href={providerDetailPath(provider)} class="hover:text-primary transition-colors">
+              {providerCapitalized}
+            </a>
+          </h2>
           <div class="rounded-xl border bg-card divide-y overflow-hidden">
             {relatedModels.map((related) => {
               const relProvider = getProviderFromId(related.id);

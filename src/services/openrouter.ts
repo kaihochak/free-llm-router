@@ -1330,3 +1330,119 @@ export async function getModelFeedbackById(
 
   return summary;
 }
+
+// ---------------------------------------------------------------------------
+// Provider page helpers
+// ---------------------------------------------------------------------------
+
+/** Fetch all active models belonging to a given provider. */
+export async function getModelsByProvider(db: Database, provider: string) {
+  const likePattern = `${provider}/%`;
+  return db
+    .select({
+      id: freeModels.id,
+      name: freeModels.name,
+      contextLength: freeModels.contextLength,
+      maxCompletionTokens: freeModels.maxCompletionTokens,
+      description: freeModels.description,
+      modality: freeModels.modality,
+      inputModalities: freeModels.inputModalities,
+      outputModalities: freeModels.outputModalities,
+      supportedParameters: freeModels.supportedParameters,
+      isModerated: freeModels.isModerated,
+      createdAt: freeModels.createdAt,
+    })
+    .from(freeModels)
+    .where(and(eq(freeModels.isActive, true), sql`${freeModels.id} LIKE ${likePattern}`));
+}
+
+/**
+ * Get availability data for all models of a provider.
+ * Returns the same shape as getModelAvailability but scoped to one provider.
+ */
+export async function getProviderAvailability(db: Database, provider: string, days = 90) {
+  const likePattern = `${provider}/%`;
+  const cutoffDate = new Date();
+  cutoffDate.setUTCDate(cutoffDate.getUTCDate() - days);
+  cutoffDate.setUTCHours(0, 0, 0, 0);
+
+  const snapshots = await db
+    .select({
+      modelId: modelAvailabilitySnapshots.modelId,
+      snapshotDate: modelAvailabilitySnapshots.snapshotDate,
+      isAvailable: modelAvailabilitySnapshots.isAvailable,
+    })
+    .from(modelAvailabilitySnapshots)
+    .where(
+      and(
+        sql`${modelAvailabilitySnapshots.modelId} LIKE ${likePattern}`,
+        gte(modelAvailabilitySnapshots.snapshotDate, cutoffDate)
+      )
+    );
+
+  const models = await db
+    .select({
+      id: freeModels.id,
+      name: freeModels.name,
+      modality: freeModels.modality,
+      inputModalities: freeModels.inputModalities,
+      outputModalities: freeModels.outputModalities,
+      supportedParameters: freeModels.supportedParameters,
+      contextLength: freeModels.contextLength,
+      maxCompletionTokens: freeModels.maxCompletionTokens,
+    })
+    .from(freeModels)
+    .where(sql`${freeModels.id} LIKE ${likePattern}`);
+
+  const availabilityMap: Record<string, Record<string, boolean>> = {};
+  for (const s of snapshots) {
+    const dateStr = s.snapshotDate.toISOString().split('T')[0];
+    if (!availabilityMap[s.modelId]) availabilityMap[s.modelId] = {};
+    availabilityMap[s.modelId][dateStr] = s.isAvailable;
+  }
+
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+
+  const modelMap = new Map(models.map((m) => [m.id, m]));
+  const result = Object.entries(availabilityMap)
+    .filter(([modelId]) => modelMap.has(modelId))
+    .map(([modelId, availability]) => {
+      const m = modelMap.get(modelId)!;
+      return {
+        modelId: m.id,
+        modelName: m.name,
+        modality: m.modality,
+        inputModalities: m.inputModalities,
+        outputModalities: m.outputModalities,
+        supportedParameters: m.supportedParameters,
+        contextLength: m.contextLength,
+        maxCompletionTokens: m.maxCompletionTokens,
+        availability,
+      };
+    });
+
+  return { models: result, dates };
+}
+
+/** Return a sorted list of distinct provider names from active models. */
+export async function getDistinctProviders(db: Database): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({
+      id: freeModels.id,
+    })
+    .from(freeModels)
+    .where(eq(freeModels.isActive, true));
+
+  const providers = new Set<string>();
+  for (const row of rows) {
+    const p = row.id.split('/')[0];
+    if (p) providers.add(p);
+  }
+
+  return [...providers].sort();
+}

@@ -7,3 +7,8 @@ export function modelDetailPath(modelId: string): string {
 export function getProviderFromId(modelId: string): string {
   return modelId.split('/')[0] || modelId;
 }
+
+/** Build the internal path for a provider detail page */
+export function providerDetailPath(provider: string): string {
+  return `/providers/${provider}`;
+}
