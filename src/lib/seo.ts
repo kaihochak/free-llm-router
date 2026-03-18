@@ -52,3 +52,61 @@ export function generateAPISchema() {
     documentation: `${siteConfig.url}/docs`,
   };
 }
+
+/** JSON-LD SoftwareApplication schema for a single model page. */
+export function generateModelSchema(model: {
+  id: string;
+  name: string;
+  description?: string | null;
+  contextLength?: number | null;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: model.name,
+    description: model.description ?? `Free AI model available on OpenRouter.`,
+    applicationCategory: 'AI Model',
+    operatingSystem: 'Cloud',
+    url: `${siteConfig.url}/models/${model.id}`,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    provider: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
+  };
+}
+
+/** JSON-LD BreadcrumbList schema from an array of {name, url} items. */
+export function generateBreadcrumbSchema(items: { name: string; url: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: `${siteConfig.url}${item.url}`,
+    })),
+  };
+}
+
+/** JSON-LD FAQPage schema from an array of {question, answer} items. */
+export function generateFAQSchema(faqs: { question: string; answer: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+}
