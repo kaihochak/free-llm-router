@@ -95,6 +95,23 @@ export function generateBreadcrumbSchema(items: { name: string; url: string }[])
   };
 }
 
+/** JSON-LD CollectionPage schema for a provider page listing its models. */
+export function generateProviderSchema(provider: string, modelCount: number) {
+  const providerCapitalized = provider.charAt(0).toUpperCase() + provider.slice(1);
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `Free ${providerCapitalized} Models on OpenRouter`,
+    description: `Browse ${modelCount} free ${providerCapitalized} AI models available on OpenRouter. View reliability and availability data.`,
+    url: `${siteConfig.url}/providers/${provider}`,
+    provider: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
+  };
+}
+
 /** JSON-LD FAQPage schema from an array of {question, answer} items. */
 export function generateFAQSchema(faqs: { question: string; answer: string }[]) {
   return {

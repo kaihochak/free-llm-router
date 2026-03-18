@@ -41,7 +41,7 @@ function ModelsPageContent() {
 
   return (
     <section className="scroll-mt-16 sm:mt-4">
-      <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Models</h2>
+      <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Free Models</h2>
       <p className="mb-8 text-base text-muted-foreground sm:text-lg">
         We are not OpenRouter. Model data is based on community reports.
       </p>
