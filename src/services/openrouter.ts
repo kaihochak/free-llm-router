@@ -1166,13 +1166,9 @@ export interface ModelFeedbackSummary {
   error: number;
 }
 
-/** Fetch a single active model by ID. Returns null when not found or inactive. */
+/** Fetch a single model by ID (active or inactive). Returns null when not found. */
 export async function getModelById(db: Database, modelId: string) {
-  const rows = await db
-    .select()
-    .from(freeModels)
-    .where(and(eq(freeModels.id, modelId), eq(freeModels.isActive, true)))
-    .limit(1);
+  const rows = await db.select().from(freeModels).where(eq(freeModels.id, modelId)).limit(1);
 
   return rows[0] ?? null;
 }
