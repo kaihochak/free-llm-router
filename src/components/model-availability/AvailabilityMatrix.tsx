@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
+import { modelDetailPath } from '@/lib/model-urls';
 import type { AvailabilityData } from '@/hooks/useAvailability';
 
 interface AvailabilityMatrixProps {
@@ -16,7 +18,11 @@ interface AvailabilityMatrixProps {
   dates: string[];
   loading?: boolean;
   error?: string | null;
+  showStatusFilter?: boolean;
+  showModelCount?: boolean;
 }
+
+type AvailabilityStatusFilter = 'all_models' | 'currently_free' | 'no_longer_free';
 
 function formatDateShort(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00Z');
@@ -48,13 +54,61 @@ function getShortModelName(name: string): string {
   return name.replace(/^[^/]+\//, '').replace(/:free$/, '');
 }
 
-export function AvailabilityMatrix({ models, dates, loading, error }: AvailabilityMatrixProps) {
+export function AvailabilityMatrix({
+  models,
+  dates,
+  loading,
+  error,
+  showStatusFilter = true,
+  showModelCount = true,
+}: AvailabilityMatrixProps) {
   // Show last 30 days by default, with pagination options
   const [visibleDays, setVisibleDays] = useState(30);
+  const [statusFilter, setStatusFilter] = useState<AvailabilityStatusFilter>('all_models');
+  const matrixRootRef = useRef<HTMLDivElement | null>(null);
 
   const visibleDates = useMemo(() => {
     return dates.slice(-visibleDays);
   }, [dates, visibleDays]);
+
+  const displayModels = useMemo(() => {
+    const latestVisibleDate = visibleDates[visibleDates.length - 1];
+
+    const filtered = models.filter((model) => {
+      if (statusFilter === 'currently_free') return model.isActive !== false;
+      if (statusFilter === 'no_longer_free') return model.isActive === false;
+      return true;
+    });
+
+    const latestAvailableIndex = (model: AvailabilityData) => {
+      for (let i = visibleDates.length - 1; i >= 0; i--) {
+        if (model.availability[visibleDates[i]] === true) {
+          return i;
+        }
+      }
+      return -1;
+    };
+
+    return [...filtered].sort((a, b) => {
+      const aLatest = latestAvailableIndex(a);
+      const bLatest = latestAvailableIndex(b);
+      if (aLatest !== bLatest) return bLatest - aLatest;
+
+      const aAvailableOnLatest = latestVisibleDate
+        ? a.availability[latestVisibleDate] === true
+        : false;
+      const bAvailableOnLatest = latestVisibleDate
+        ? b.availability[latestVisibleDate] === true
+        : false;
+      if (aAvailableOnLatest !== bAvailableOnLatest) return aAvailableOnLatest ? -1 : 1;
+
+      const aDays = getAvailableDaysCount(a, visibleDates);
+      const bDays = getAvailableDaysCount(b, visibleDates);
+      if (aDays !== bDays) return bDays - aDays;
+
+      return a.modelName.localeCompare(b.modelName);
+    });
+  }, [models, statusFilter, visibleDates]);
 
   // Group dates by month for header
   const monthHeaders = useMemo(() => {
@@ -89,6 +143,38 @@ export function AvailabilityMatrix({ models, dates, loading, error }: Availabili
     return headers;
   }, [visibleDates]);
 
+  useEffect(() => {
+    const scroller = matrixRootRef.current?.querySelector<HTMLDivElement>(
+      '[data-slot="table-container"]'
+    );
+    if (!scroller) return;
+
+    const scrollToRight = () => {
+      scroller.scrollLeft = scroller.scrollWidth - scroller.clientWidth;
+    };
+
+    // Run after layout settles (fonts/table widths/hydration).
+    let raf1 = 0;
+    let raf2 = 0;
+    const timeoutId = window.setTimeout(scrollToRight, 120);
+
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(scrollToRight);
+    });
+
+    const observer = new ResizeObserver(() => {
+      scrollToRight();
+    });
+    observer.observe(scroller);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [visibleDates.length, displayModels.length]);
+
   if (loading && models.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
@@ -115,7 +201,41 @@ export function AvailabilityMatrix({ models, dates, loading, error }: Availabili
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
-      <div className="overflow-x-auto">
+      {(showModelCount || showStatusFilter) && (
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <span className="text-sm text-muted-foreground">
+            {showModelCount
+              ? `${displayModels.length} model${displayModels.length === 1 ? '' : 's'} shown`
+              : ''}
+          </span>
+          {showStatusFilter && (
+            <ButtonGroup>
+              <Button
+                variant={statusFilter === 'all_models' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all_models')}
+              >
+                All Free Models
+              </Button>
+              <Button
+                variant={statusFilter === 'currently_free' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('currently_free')}
+              >
+                Currently free
+              </Button>
+              <Button
+                variant={statusFilter === 'no_longer_free' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('no_longer_free')}
+              >
+                No longer free
+              </Button>
+            </ButtonGroup>
+          )}
+        </div>
+      )}
+      <div ref={matrixRootRef}>
         <Table>
           <TableHeader>
             {/* Month header row */}
@@ -151,23 +271,28 @@ export function AvailabilityMatrix({ models, dates, loading, error }: Availabili
             </TableRow>
           </TableHeader>
           <TableBody>
-            {models.map((model) => {
+            {displayModels.map((model) => {
               const daysAvailable = getAvailableDaysCount(model, visibleDates);
 
               return (
                 <TableRow key={model.modelId}>
                   <TableCell className="sticky left-0 z-10 bg-card font-medium">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="truncate block max-w-[180px] cursor-help text-sm">
-                          {getShortModelName(model.modelName)}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-medium">{model.modelName}</p>
-                        <p className="text-xs opacity-80">{model.modelId}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <a
+                      href={modelDetailPath(model.modelId)}
+                      className="block rounded-sm hover:text-primary transition-colors"
+                    >
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="truncate block max-w-[180px] cursor-pointer text-sm underline-offset-2 hover:underline">
+                            {getShortModelName(model.modelName)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">{model.modelName}</p>
+                          <p className="text-xs opacity-80">{model.modelId}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </a>
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
                     {daysAvailable}
@@ -209,6 +334,12 @@ export function AvailabilityMatrix({ models, dates, loading, error }: Availabili
           </TableBody>
         </Table>
       </div>
+
+      {displayModels.length === 0 && (
+        <div className="border-t p-6 text-center text-sm text-muted-foreground">
+          No models match this filter.
+        </div>
+      )}
 
       {/* Pagination controls for date range */}
       {dates.length > 30 && (

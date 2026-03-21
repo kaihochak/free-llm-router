@@ -11,6 +11,7 @@ import { STRICT_QUERY_OPTIONS } from '@/lib/query-defaults';
 export interface AvailabilityData {
   modelId: string;
   modelName: string;
+  isActive: boolean | null;
   modality: string | null;
   inputModalities: string[] | null;
   outputModalities: string[] | null;
