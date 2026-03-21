@@ -182,6 +182,7 @@ const availabilityModels = hasAvailability
       {
         modelId: model.id,
         modelName: model.name,
+        isActive: model.isActive,
         modality: model.modality,
         inputModalities: model.inputModalities,
         outputModalities: model.outputModalities,
@@ -284,6 +285,26 @@ const availabilityModels = hasAvailability
         )
       }
     </header>
+
+    <!-- Availability -->
+    {
+      hasAvailability && (
+        <section class="mb-8">
+          <h2 class="text-lg font-semibold mb-3">Availability</h2>
+          <p class="text-xs text-muted-foreground mb-3">
+            Available {availableDays} of {totalTrackedDays} tracked days. Daily snapshots show
+            whether this model was accessible as a free model on OpenRouter.
+          </p>
+          <AvailabilityMatrix
+            client:load
+            models={availabilityModels}
+            dates={availabilityData.dates}
+            showStatusFilter={false}
+            showModelCount={false}
+          />
+        </section>
+      )
+    }
 
     <!-- Description -->
     {
@@ -427,24 +448,6 @@ const availabilityModels = hasAvailability
         )
       }
     </section>
-
-    <!-- Availability -->
-    {
-      hasAvailability && (
-        <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-3">Availability</h2>
-          <p class="text-xs text-muted-foreground mb-3">
-            Available {availableDays} of {totalTrackedDays} tracked days. Daily snapshots show
-            whether this model was accessible as a free model on OpenRouter.
-          </p>
-          <AvailabilityMatrix
-            client:load
-            models={availabilityModels}
-            dates={availabilityData.dates}
-          />
-        </section>
-      )
-    }
 
     <!-- Similar Models -->
     {

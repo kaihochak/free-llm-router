@@ -1012,6 +1012,7 @@ export async function getFeedbackTimeline(
 export interface AvailabilityData {
   modelId: string;
   modelName: string;
+  isActive: boolean | null;
   modality: string | null;
   inputModalities: string[] | null;
   outputModalities: string[] | null;
@@ -1055,6 +1056,7 @@ export async function getModelAvailability(
     .select({
       id: freeModels.id,
       name: freeModels.name,
+      isActive: freeModels.isActive,
       modality: freeModels.modality,
       inputModalities: freeModels.inputModalities,
       outputModalities: freeModels.outputModalities,
@@ -1091,6 +1093,7 @@ export async function getModelAvailability(
   let result: AvailabilityData[] = modelsWithAvailability.map((model) => ({
     modelId: model.id,
     modelName: model.name,
+    isActive: model.isActive,
     modality: model.modality,
     inputModalities: model.inputModalities,
     outputModalities: model.outputModalities,
@@ -1384,6 +1387,7 @@ export async function getProviderAvailability(db: Database, provider: string, da
       inputModalities: freeModels.inputModalities,
       outputModalities: freeModels.outputModalities,
       supportedParameters: freeModels.supportedParameters,
+      isActive: freeModels.isActive,
       contextLength: freeModels.contextLength,
       maxCompletionTokens: freeModels.maxCompletionTokens,
     })
@@ -1416,6 +1420,7 @@ export async function getProviderAvailability(db: Database, provider: string, da
         inputModalities: m.inputModalities,
         outputModalities: m.outputModalities,
         supportedParameters: m.supportedParameters,
+        isActive: m.isActive,
         contextLength: m.contextLength,
         maxCompletionTokens: m.maxCompletionTokens,
         availability,
