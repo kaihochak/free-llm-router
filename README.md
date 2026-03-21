@@ -3,93 +3,71 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Open-source API and web app for discovering free LLM models on [OpenRouter](https://openrouter.ai) with community-driven reliability signals.
+Open-source app for discovering healthy free OpenRouter models, with a dashboard for configuration and docs-driven SDK usage.
 
-## What is this?
+## Quick Start (SDK + Dashboard)
 
-Free LLM models are great for building AI features at zero cost, but they're often unavailable, rate-limited, or just disappear. Free LLM Router gives you an API that returns a live-updated, filterable list of available free models — along with community health data so you know which ones actually work.
+1. Sign in at [freellmrouter.com/dashboard](https://freellmrouter.com/dashboard).
+2. Create an API key and configure your model preferences in the dashboard.
+3. Open [freellmrouter.com/docs](https://freellmrouter.com/docs) and follow the SDK/helper integration pattern.
+4. Use the configured model IDs in your app via OpenRouter.
 
-## Features
+If you need raw HTTP details, the API is available under `/api/...` (full reference in docs).
 
-- **Live-updated model list** — Continuously tracks which free models on OpenRouter are available right now
-- **Filter by use case** — Narrow results by chat, vision, tools, long context, or reasoning capabilities
-- **Community health signals** — Users submit success/failure feedback; flaky models get ranked lower
-- **Model exclusion** — Blacklist specific models so they never appear in your results
-- **Hosted or self-hosted** — 200 requests/day free on the hosted version, or self-host with no limits
+## What You Get
 
-## Quick Start (Hosted API)
+- Live-updated free model discovery
+- Health and availability signals
+- Feedback ingestion to improve reliability rankings
+- Per-key saved preferences from the dashboard
 
-1. Create an API key at [freellmrouter.com](https://freellmrouter.com)
-2. Make a request:
+## Self-Hosting (Simple Path)
 
-```bash
-curl -H "X-API-Key: your-api-key-here" \
-  "https://freellmrouter.com/api/v1/models/ids?useCase=reasoning&topN=5"
-```
+For self-hosting, keep README setup minimal, then use your own deployed docs as the source of truth.
 
-```json
-{
-  "ids": [
-    "deepseek/deepseek-r1-0528:free",
-    "google/gemini-2.5-pro-exp-03-25:free",
-    "qwen/qwen3-235b-a22b:free",
-    "google/gemma-3-27b-it:free",
-    "moonshotai/kimi-k2:free"
-  ],
-  "count": 5
-}
-```
-
-### Endpoints
-
-| Endpoint                       | Auth     | Description                          |
-| ------------------------------ | -------- | ------------------------------------ |
-| `GET /api/v1/models/ids`       | Required | Lightweight — returns model IDs only |
-| `GET /api/v1/models/full`      | Required | Full model objects with health data  |
-| `POST /api/v1/models/feedback` | Required | Submit success/failure feedback      |
-| `GET /api/availability`        | Public   | Model availability history           |
-| `GET /api/health`              | Public   | Community health metrics             |
-
-Common query params: `useCase`, `sort`, `topN`, `maxErrorRate`, `timeRange`, `excludeModelIds`
-
-Full API reference: [freellmrouter.com/docs](https://freellmrouter.com/docs)
-
-## Self-Hosting
-
-### Prerequisites
-
-- [Bun](https://bun.sh) (runtime)
-- PostgreSQL database ([Neon](https://neon.tech) recommended)
-- GitHub OAuth app (for authentication)
-
-### Setup
+### 1) Install
 
 ```bash
 bun install
-cp .env.example .env    # Configure DATABASE_URL, GitHub OAuth, and BETTER_AUTH_SECRET
-bun run db:push          # Push schema to your database
-bun run dev              # Start dev server at localhost:4321
+cp .env.example .env
 ```
 
-See [.env.example](.env.example) for all required environment variables.
+### 2) Configure env
 
-## Tech Stack
+Set the required values in `.env` (database + auth). Start with `.env.example`.
 
-Astro · React · Cloudflare Pages · Drizzle ORM · Neon PostgreSQL · better-auth · Tailwind CSS
+### 3) Run/deploy
 
-## Repository Guide
+```bash
+bun run db:push
+bun run dev
+```
 
-- `src/pages/api/` — API routes
-- `src/services/` — Model sync and business logic
-- `src/components/` — React UI components and docs
-- `src/db/` — Drizzle schema and database client
-- `scripts/` — Database management scripts
+Local app: `http://localhost:4321`
 
-## Contributing
+After deploying, use your own docs page for integration and operations:
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-Please also review our [Code of Conduct](CODE_OF_CONDUCT.md).
+- `https://<your-domain>/docs`
+
+That docs page covers API endpoints, query params, auth header format, SDK examples, and admin/ops routes.
+
+## Core Scripts
+
+- `bun run dev`
+- `bun run build`
+- `bun run preview`
+- `bun run test`
+- `bun run db:push`
+
+For all other scripts and operational details, use the docs page.
+
+## More Docs
+
+- Hosted docs: [freellmrouter.com/docs](https://freellmrouter.com/docs)
+- RLS setup details: [docs/DATABASE_RLS.md](docs/DATABASE_RLS.md)
+- Optional SQL for RLS roles/policies: [sql/enable_rls.sql](sql/enable_rls.sql)
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
