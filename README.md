@@ -36,6 +36,12 @@ cp .env.example .env
 
 Set the required values in `.env` (database + auth). Start with `.env.example`.
 
+Analytics notes:
+
+- Google Analytics uses `PUBLIC_GA_MEASUREMENT_ID` (for example `G-XXXXXXXXXX`).
+- Because production/staging deploys are built in GitHub Actions, set this value in your GitHub Environment secrets (not only in Cloudflare dashboard variables) so it is available during `bun run build`.
+- PostHog uses `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`.
+
 ### 3) Run/deploy
 
 ```bash
