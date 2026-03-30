@@ -3,7 +3,7 @@ export const siteConfig = {
   url: 'https://freellmrouter.com',
   description:
     'Find free OpenRouter models with live health and availability. One API call routes to working free models so your app stays up.',
-  defaultImage: '/og-image.png',
+  defaultImage: '/og-image.svg',
 };
 
 export interface SEOProps {

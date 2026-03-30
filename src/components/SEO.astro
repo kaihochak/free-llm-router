@@ -13,9 +13,13 @@ const {
   jsonLd,
 } = Astro.props;
 
-const fullTitle = title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
+const titleHasBrand = title.toLowerCase().includes(siteConfig.name.toLowerCase());
+const fullTitle = titleHasBrand ? title : `${title} | ${siteConfig.name}`;
 
-const canonicalUrl = new URL(url, siteConfig.url).href;
+const canonical = new URL(url, siteConfig.url);
+canonical.search = '';
+canonical.hash = '';
+const canonicalUrl = canonical.href;
 const imageUrl = image.startsWith('http') ? image : new URL(image, siteConfig.url).href;
 
 const jsonLdScripts = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
