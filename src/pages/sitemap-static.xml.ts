@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { siteConfig } from '@/lib/seo';
 
-const STATIC_PATHS = ['/', '/models', '/docs', '/pricing'] as const;
+const STATIC_PATHS = ['/', '/models', '/providers', '/docs', '/pricing'] as const;
 
 export const GET: APIRoute = () => {
   const today = new Date().toISOString().split('T')[0];
