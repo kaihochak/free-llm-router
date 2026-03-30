@@ -14,7 +14,7 @@ export const GET: APIRoute = async (context) => {
   const urls = providers
     .map(
       (p) => `  <url>
-    <loc>${siteConfig.url}/providers/${p}</loc>
+    <loc>${siteConfig.url}/providers/${encodeURIComponent(p)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -29,7 +29,7 @@ ${urls}
 
   return new Response(xml, {
     headers: {
-      'Content-Type': 'application/xml',
+      'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600',
     },
   });
