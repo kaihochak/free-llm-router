@@ -24,5 +24,7 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
-# Claude
+# Claude / Codex
 .claude/
+.CLAUDE.md
+.AGENTS.md
