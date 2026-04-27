@@ -10,6 +10,7 @@ import {
   withKeyHashContext,
   withUserContext,
 } from '@/db';
+import { access } from '@/lib/runtime-access';
 
 export interface ApiKeyValidation {
   valid: boolean;
@@ -36,16 +37,14 @@ export const corsHeaders = {
  * Only DATABASE_URL and BETTER_AUTH_URL are required for API key verification
  * GitHub OAuth envs are optional (only needed for OAuth flows, not API key verification)
  */
-function getEnv(context: APIContext): Partial<AuthEnv> & { missing: string[] } {
-  const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const env = runtime?.env || {};
-
-  const databaseUrl = env.DATABASE_URL || import.meta.env.DATABASE_URL;
-  const baseUrl = env.BETTER_AUTH_URL || import.meta.env.BETTER_AUTH_URL;
-  const secret = env.BETTER_AUTH_SECRET || import.meta.env.BETTER_AUTH_SECRET;
+function getEnvConfig(context: APIContext): Partial<AuthEnv> & { missing: string[] } {
+  const rt = access(context);
+  const databaseUrl = rt.dbUrl('app');
+  const baseUrl = rt.env('BETTER_AUTH_URL');
+  const secret = rt.env('BETTER_AUTH_SECRET');
   // GitHub envs are optional for API key verification
-  const githubClientId = env.GITHUB_CLIENT_ID || import.meta.env.GITHUB_CLIENT_ID;
-  const githubClientSecret = env.GITHUB_CLIENT_SECRET || import.meta.env.GITHUB_CLIENT_SECRET;
+  const githubClientId = rt.env('GITHUB_CLIENT_ID');
+  const githubClientSecret = rt.env('GITHUB_CLIENT_SECRET');
 
   const missing: string[] = [];
   if (!databaseUrl) missing.push('DATABASE_URL');
@@ -179,7 +178,7 @@ async function checkUserRateLimit(
  * Expected format: "Bearer fma_xxxxx"
  */
 export async function validateApiKey(context: APIContext): Promise<ApiKeyValidation> {
-  const envResult = getEnv(context);
+  const envResult = getEnvConfig(context);
   if (envResult.missing.length > 0) {
     return {
       valid: false,
@@ -395,7 +394,7 @@ export async function logApiRequest(
  * Queries the database directly instead of using Better Auth's verifyApiKey.
  */
 export async function validateApiKeyOnly(context: APIContext): Promise<ApiKeyValidation> {
-  const envResult = getEnv(context);
+  const envResult = getEnvConfig(context);
   if (envResult.missing.length > 0) {
     return {
       valid: false,

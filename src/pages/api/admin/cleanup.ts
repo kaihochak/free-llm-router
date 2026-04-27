@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb, modelFeedback, apiRequestLogs, modelAvailabilitySnapshots } from '@/db';
 import { lt } from 'drizzle-orm';
 import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
+import { access } from '@/lib/runtime-access';
 
 const MODEL_FEEDBACK_RETENTION_DAYS = 90;
 const API_LOGS_RETENTION_DAYS = 30;
@@ -24,17 +25,12 @@ type CleanupDeps = {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
+  const rt = access(locals);
   const deps = (locals as { cleanupDeps?: CleanupDeps }).cleanupDeps;
   const dbFactory = deps?.createDb ?? createDb;
   const now = deps?.now ? deps.now() : new Date();
-  const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
-  const adminSecret = runtime?.env?.ADMIN_SECRET || importMetaEnv?.ADMIN_SECRET;
-  const databaseUrl =
-    runtime?.env?.DATABASE_URL_ADMIN ||
-    importMetaEnv?.DATABASE_URL_ADMIN ||
-    runtime?.env?.DATABASE_URL ||
-    importMetaEnv?.DATABASE_URL;
+  const adminSecret = rt.env('ADMIN_SECRET');
+  const databaseUrl = rt.dbUrl('admin');
 
   // Validate admin secret
   if (!adminSecret) {

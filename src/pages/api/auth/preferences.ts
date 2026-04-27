@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { apiKeys, createDb } from '@/db';
+import { apiKeys } from '@/db';
+import { access } from '@/lib/runtime-access';
 import { eq, and } from 'drizzle-orm';
 import { validatePreferences } from '@/lib/api-definitions';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
@@ -27,7 +28,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    const { session, databaseUrl, databaseUrlAdmin } = result;
+    const { session } = result;
     logApiStage('/api/auth/preferences', requestId, 'session_ok', { userId: session.user.id });
     const apiKeyId = url.searchParams.get('apiKeyId');
 
@@ -43,7 +44,13 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       userId: session.user.id,
       apiKeyId,
     });
-    const db = createDb(databaseUrlAdmin || databaseUrl);
+    const db = access(locals).db('admin');
+    if (!db) {
+      return errorJsonResponse(
+        { error: 'Database not configured', code: 'CONFIG_ERROR' },
+        { requestId, status: 500 }
+      );
+    }
     const [key] = await db
       .select({ metadata: apiKeys.metadata })
       .from(apiKeys)
@@ -102,7 +109,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const { session, databaseUrl, databaseUrlAdmin } = result;
+    const { session } = result;
     logApiStage('/api/auth/preferences', requestId, 'session_ok', { userId: session.user.id });
 
     let body: { apiKeyId?: string; preferences?: unknown };
@@ -134,7 +141,13 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       apiKeyId,
     });
 
-    const db = createDb(databaseUrlAdmin || databaseUrl);
+    const db = access(locals).db('admin');
+    if (!db) {
+      return errorJsonResponse(
+        { error: 'Database not configured', code: 'CONFIG_ERROR' },
+        { requestId, status: 500 }
+      );
+    }
     const [existing] = await db
       .select({ metadata: apiKeys.metadata })
       .from(apiKeys)

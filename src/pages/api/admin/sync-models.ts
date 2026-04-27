@@ -3,6 +3,7 @@ import { createDb, syncMeta } from '@/db';
 import { syncModels, getLastUpdated, type SyncResult } from '@/services/openrouter';
 import { eq } from 'drizzle-orm';
 import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
+import { access } from '@/lib/runtime-access';
 
 // Sync lock duration in milliseconds (5 minutes)
 const SYNC_LOCK_DURATION_MS = 5 * 60 * 1000;
@@ -28,13 +29,9 @@ const STALE_THRESHOLD_MS = 60 * 60 * 1000;
  * - 500: Server error
  */
 export const POST: APIRoute = async ({ request, locals, url }) => {
-  const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const adminSecret = runtime?.env?.ADMIN_SECRET || import.meta.env.ADMIN_SECRET;
-  const databaseUrl =
-    runtime?.env?.DATABASE_URL_ADMIN ||
-    import.meta.env.DATABASE_URL_ADMIN ||
-    runtime?.env?.DATABASE_URL ||
-    import.meta.env.DATABASE_URL;
+  const rt = access(locals);
+  const adminSecret = rt.env('ADMIN_SECRET');
+  const db = rt.db('admin');
 
   // Validate admin secret
   if (!adminSecret) {
@@ -52,7 +49,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     );
   }
 
-  if (!databaseUrl) {
+  if (!db) {
     return jsonResponse(
       { error: 'Database not configured' },
       { status: 500, headers: apiResponseHeaders({ cors: false }) }
@@ -60,7 +57,6 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   }
 
   try {
-    const db = createDb(databaseUrl);
     const forceSync = url.searchParams.get('force') === 'true';
 
     // Try to acquire sync lock using database

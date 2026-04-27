@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { createDb, siteFeedback } from '@/db';
+import { siteFeedback } from '@/db';
+import { access } from '@/lib/runtime-access';
 import { getClientIp, createRateLimiter, createCooldownTracker } from '@/lib/api-utils';
 
 interface FeedbackPayload {
@@ -41,13 +42,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-    const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
-    const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
-    const turnstileSecret =
-      runtime?.env?.TURNSTILE_SECRET_KEY || importMetaEnv?.TURNSTILE_SECRET_KEY;
+    const rt = access(locals);
+    const db = rt.db('app');
+    const turnstileSecret = rt.env('TURNSTILE_SECRET_KEY');
 
-    if (!databaseUrl) {
+    if (!db) {
       return new Response(JSON.stringify({ error: 'Database not configured' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -131,7 +130,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const db = createDb(databaseUrl);
     const id = crypto.randomUUID();
 
     await db.insert(siteFeedback).values({

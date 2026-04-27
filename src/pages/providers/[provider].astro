@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/base.astro';
 import DataAttributionFooter from '../../components/DataAttributionFooter.astro';
-import { createDb } from '@/db';
+import { access } from '@/lib/runtime-access';
 import {
   getModelsByProvider,
   getModelFeedbackById,
@@ -18,9 +18,8 @@ if (!provider) {
   return Astro.redirect('/models');
 }
 
-const runtime = (Astro.locals as { runtime?: { env?: Record<string, string> } }).runtime;
-const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
-const db = createDb(databaseUrl);
+const db = access(Astro.locals).db('app');
+if (!db) throw new Error('Missing env: DATABASE_URL');
 
 const models = await getModelsByProvider(db, provider);
 if (models.length === 0) {

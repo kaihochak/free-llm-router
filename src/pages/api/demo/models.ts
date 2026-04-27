@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getClientIp, createRateLimiter, isAllowedOrigin } from '@/lib/api-utils';
 import { siteConfig } from '@/lib/seo';
 import { createRequestId, withRequestId, errorJsonResponse, logApiStage } from '@/lib/api-response';
+import { access } from '@/lib/runtime-access';
 
 // Lightweight in-memory cache (best effort per instance).
 // This keeps the endpoint anonymous while reducing demo key burn.
@@ -32,11 +33,9 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
     return errorJsonResponse({ error: 'Forbidden', code: 'FORBIDDEN' }, { requestId, status: 403 });
   }
 
-  const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const env = runtime?.env || {};
-
-  const demoKey = env.DEMO_API_KEY || import.meta.env.DEMO_API_KEY;
-  const baseUrl = env.BETTER_AUTH_URL || import.meta.env.BETTER_AUTH_URL || url.origin;
+  const rt = access(locals);
+  const demoKey = rt.env('DEMO_API_KEY');
+  const baseUrl = rt.env('BETTER_AUTH_URL') || url.origin;
 
   if (!demoKey) {
     return errorJsonResponse(
