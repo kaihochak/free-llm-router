@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { apiRequestLogs, modelFeedback, apiKeys, createDb } from '@/db';
+import { apiRequestLogs, modelFeedback, apiKeys } from '@/db';
+import { access } from '@/lib/runtime-access';
 import { eq, desc, and } from 'drizzle-orm';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
 import {
@@ -24,8 +25,14 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    const { session, databaseUrl, databaseUrlAdmin } = result;
-    const db = createDb(databaseUrlAdmin || databaseUrl);
+    const { session } = result;
+    const db = access(locals).db('admin');
+    if (!db) {
+      return errorJsonResponse(
+        { error: 'Database not configured', code: 'CONFIG_ERROR' },
+        { requestId, status: 500 }
+      );
+    }
 
     const type = url.searchParams.get('type') || 'requests';
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));

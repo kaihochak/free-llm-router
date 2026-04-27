@@ -23,9 +23,15 @@ head_sampling_rate = 1
 # Staging environment
 [env.staging]
 name = "free-llm-router-sync-staging"
-# Secret: DATABASE_URL_ADMIN (set via wrangler secret put DATABASE_URL_ADMIN --env staging)
+# Secrets:
+# - ACTIVE_DB_SLOT (optional, defaults to 1)
+# - DATABASE_URL_ADMIN (slot 1)
+# - DATABASE_URL_ADMIN_<N> (slot N)
 
 # Production environment
 [env.production]
 name = "free-llm-router-sync-production"
-# Secret: DATABASE_URL_ADMIN (set via wrangler secret put DATABASE_URL_ADMIN --env production)
+# Secrets:
+# - ACTIVE_DB_SLOT (optional, defaults to 1)
+# - DATABASE_URL_ADMIN (slot 1)
+# - DATABASE_URL_ADMIN_<N> (slot N)

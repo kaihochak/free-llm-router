@@ -15,6 +15,7 @@ import {
   type HeaderMap,
 } from '@/lib/api-response';
 import { exposeErrorRateDetails } from '@/lib/feature-flags';
+import { access } from '@/lib/runtime-access';
 
 /**
  * Full model endpoint - returns complete model objects with all metadata
@@ -31,8 +32,8 @@ export const GET: APIRoute = async (context) => {
   try {
     const { db, databaseUrl, params, validation } = req;
     const { useCases, sort, topN, maxErrorRate, timeRange, myReports, excludeModelIds } = params;
-    const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
-    const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || import.meta.env.DATABASE_URL_STATS;
+    const rt = access(context);
+    const statsDbUrl = rt.dbUrl('stats');
 
     // Get userId if myReports is enabled (optional authentication)
     let userId: string | undefined;
@@ -58,7 +59,9 @@ export const GET: APIRoute = async (context) => {
       getRecentFeedbackCounts(db, timeRange, userId, statsDbUrl),
       getLastUpdated(db),
     ]);
-    const includeErrorRateDetails = exposeErrorRateDetails(runtime?.env);
+    const includeErrorRateDetails = exposeErrorRateDetails({
+      EXPOSE_ERROR_RATE_DETAILS: rt.env('EXPOSE_ERROR_RATE_DETAILS'),
+    });
     const responseFeedbackCounts = includeErrorRateDetails
       ? feedbackCounts
       : Object.fromEntries(

@@ -5,13 +5,17 @@
  * It directly connects to the Neon database to sync models.
  *
  * Required secrets (set via `wrangler secret put`):
- * - DATABASE_URL_ADMIN: Neon database URL with admin permissions
+ * - ACTIVE_DB_SLOT (optional, defaults to 1)
+ * - DATABASE_URL_ADMIN (slot 1)
+ * - DATABASE_URL_ADMIN_<N> (slot N)
  */
 
 import { neon } from '@neondatabase/serverless';
 
 interface Env {
-  DATABASE_URL_ADMIN: string;
+  ACTIVE_DB_SLOT?: string;
+  DATABASE_URL_ADMIN?: string;
+  [key: string]: string | undefined;
 }
 
 interface OpenRouterApiModel {
@@ -48,6 +52,19 @@ function isFreeModel(model: OpenRouterApiModel): boolean {
   const promptCost = parseFloat(model.pricing?.prompt || '999');
   const completionCost = parseFloat(model.pricing?.completion || '999');
   return promptCost === 0 && completionCost === 0;
+}
+
+function parseActiveSlot(raw: string | undefined): number {
+  if (!raw) return 1;
+  const slot = Number(raw);
+  if (!Number.isInteger(slot) || slot < 1) return 1;
+  return slot;
+}
+
+function getAdminDatabaseUrl(env: Env): string | undefined {
+  const slot = parseActiveSlot(env.ACTIVE_DB_SLOT);
+  const key = slot === 1 ? 'DATABASE_URL_ADMIN' : `DATABASE_URL_ADMIN_${slot}`;
+  return env[key];
 }
 
 /** Escape a value for safe SQL insertion */
@@ -199,14 +216,15 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
 export default {
   // HTTP handler (for manual triggers / health checks)
   async fetch(_request: Request, env: Env): Promise<Response> {
-    if (!env.DATABASE_URL_ADMIN) {
+    const databaseUrl = getAdminDatabaseUrl(env);
+    if (!databaseUrl) {
       return new Response(JSON.stringify({ error: 'DATABASE_URL_ADMIN not configured' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const result = await syncModels(env.DATABASE_URL_ADMIN);
+    const result = await syncModels(databaseUrl);
 
     return new Response(JSON.stringify(result, null, 2), {
       status: result.error ? 500 : 200,
@@ -216,14 +234,15 @@ export default {
 
   // Cron handler (scheduled trigger)
   async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
-    if (!env.DATABASE_URL_ADMIN) {
+    const databaseUrl = getAdminDatabaseUrl(env);
+    if (!databaseUrl) {
       console.error('[SyncWorker] DATABASE_URL_ADMIN not configured');
       return;
     }
 
     console.log(`[SyncWorker] Cron triggered at ${new Date(event.scheduledTime).toISOString()}`);
 
-    const result = await syncModels(env.DATABASE_URL_ADMIN);
+    const result = await syncModels(databaseUrl);
 
     console.log('[SyncWorker] Sync result:', JSON.stringify(result));
   },

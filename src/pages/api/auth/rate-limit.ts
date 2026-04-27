@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { users, createDb } from '@/db';
+import { users } from '@/db';
+import { access } from '@/lib/runtime-access';
 import { eq } from 'drizzle-orm';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
 import {
@@ -24,9 +25,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const { session, databaseUrl, databaseUrlAdmin } = result;
+    const { session } = result;
     logApiStage('/api/auth/rate-limit', requestId, 'session_ok', { userId: session.user.id });
-    const db = createDb(databaseUrlAdmin || databaseUrl);
+    const db = access(locals).db('admin');
+    if (!db) {
+      return errorJsonResponse(
+        { error: 'Database not configured', code: 'CONFIG_ERROR' },
+        { requestId, status: 500 }
+      );
+    }
 
     const [record] = await db
       .select({

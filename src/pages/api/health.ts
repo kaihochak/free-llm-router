@@ -14,6 +14,7 @@ import {
 } from '@/lib/api-definitions';
 import { apiResponseHeaders, jsonResponse } from '@/lib/api-response';
 import { exposeErrorRateDetails } from '@/lib/feature-flags';
+import { access } from '@/lib/runtime-access';
 
 function validateRange(value: string | null): TimeRange {
   const validated = validateTimeRange(value);
@@ -40,9 +41,8 @@ export const GET: APIRoute = async (context) => {
   try {
     const db = await initializeDb(context);
     if (db instanceof Response) return db;
-    const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
-    const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
-    const statsDbUrl = runtime?.env?.DATABASE_URL_STATS || importMetaEnv?.DATABASE_URL_STATS;
+    const rt = access(context);
+    const statsDbUrl = rt.dbUrl('stats');
 
     const params = context.url.searchParams;
     const range = validateRange(params.get('range'));
@@ -86,7 +86,9 @@ export const GET: APIRoute = async (context) => {
 
     // Single source: stats DB functions (fma_stats role / RLS-compliant)
     const timeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, filteredModelIds);
-    const includeErrorRateDetails = exposeErrorRateDetails(runtime?.env);
+    const includeErrorRateDetails = exposeErrorRateDetails({
+      EXPOSE_ERROR_RATE_DETAILS: rt.env('EXPOSE_ERROR_RATE_DETAILS'),
+    });
     const responseIssues = includeErrorRateDetails
       ? issues
       : issues.map(

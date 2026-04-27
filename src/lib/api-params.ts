@@ -1,5 +1,5 @@
 import type { APIContext } from 'astro';
-import { type Database, createDb, apiKeys } from '@/db';
+import { type Database, apiKeys } from '@/db';
 import { eq } from 'drizzle-orm';
 import {
   type UseCaseType,
@@ -22,6 +22,7 @@ import {
   rateLimitedResponse,
 } from '@/lib/api-auth';
 import { extractApiKeyPreferences } from '@/lib/api-key-metadata';
+import { access } from '@/lib/runtime-access';
 
 export interface ParsedModelParams {
   useCases: UseCaseType[];
@@ -130,9 +131,8 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
   }
 
   // Get database connection
-  const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
-  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
+  const rt = access(context);
+  const databaseUrl = rt.dbUrl('app');
 
   if (!databaseUrl) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
@@ -141,7 +141,13 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
     });
   }
 
-  const db = createDb(databaseUrl);
+  const db = rt.db('app');
+  if (!db) {
+    return new Response(JSON.stringify({ error: 'Database not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
 
   // Load saved preferences from API key metadata
   const savedPreferences = validation.keyId
@@ -177,18 +183,15 @@ export async function getUserIdIfMyReports(
  * Returns Database if successful, or Response if error
  */
 export async function initializeDb(context: APIContext): Promise<Database | Response> {
-  const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
-  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
-
-  if (!databaseUrl) {
+  const db = access(context).db('app');
+  if (!db) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   }
 
-  return createDb(databaseUrl);
+  return db;
 }
 
 export interface AuthOnlyContext {
@@ -221,9 +224,8 @@ export async function initializeAuthOnly(context: APIContext): Promise<AuthOnlyC
     );
   }
 
-  const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
-  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
+  const rt = access(context);
+  const databaseUrl = rt.dbUrl('app');
 
   if (!databaseUrl) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
@@ -232,6 +234,12 @@ export async function initializeAuthOnly(context: APIContext): Promise<AuthOnlyC
     });
   }
 
-  const db = createDb(databaseUrl);
+  const db = rt.db('app');
+  if (!db) {
+    return new Response(JSON.stringify({ error: 'Database not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
   return { db, databaseUrl, userId: validation.userId, keyId: validation.keyId };
 }
