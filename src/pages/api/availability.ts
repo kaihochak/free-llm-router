@@ -25,7 +25,7 @@ export const GET: APIRoute = async (context) => {
   logApiStage('/api/availability', requestId, 'start', { method: 'GET' });
 
   try {
-    const db = await initializeDb(context);
+    const db = await initializeDb(context, 'admin');
     if (db instanceof Response) {
       return errorJsonResponse(
         { error: 'Database not configured', code: 'CONFIG_ERROR' },
