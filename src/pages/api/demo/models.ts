@@ -89,9 +89,20 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
     const text = await response.text();
 
     if (!response.ok) {
+      const upstreamBody = text.replace(/\s+/g, ' ').trim().slice(0, 300);
       logApiStage('/api/demo/models', requestId, 'upstream_error', {
         upstreamStatus: response.status,
+        upstreamBody,
       });
+      if (response.status === 401) {
+        return errorJsonResponse(
+          {
+            error: 'Demo API key is invalid for the active database',
+            code: 'DEMO_KEY_INVALID',
+          },
+          { requestId, status: 500 }
+        );
+      }
       return errorJsonResponse(
         {
           error: text ? 'Failed to fetch models' : 'Failed to fetch models',
