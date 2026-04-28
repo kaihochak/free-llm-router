@@ -1,6 +1,6 @@
 import type { APIContext } from 'astro';
-import { type Database, apiKeys } from '@/db';
-import { eq } from 'drizzle-orm';
+import { type Database, apiKeys, withUserContext } from '@/db';
+import { and, eq } from 'drizzle-orm';
 import {
   type UseCaseType,
   type SortType,
@@ -90,18 +90,25 @@ export function parseModelParams(
 /**
  * Load saved preferences from an API key's metadata field
  */
-async function loadApiKeyPreferences(db: Database, keyId: string): Promise<ApiKeyPreferences> {
+async function loadApiKeyPreferences(
+  databaseUrl: string,
+  userId: string,
+  keyId: string
+): Promise<ApiKeyPreferences> {
   try {
-    const [key] = await db
-      .select({ metadata: apiKeys.metadata })
-      .from(apiKeys)
-      .where(eq(apiKeys.id, keyId))
-      .limit(1);
+    const [key] = await withUserContext(databaseUrl, userId, async (tx) => {
+      return tx
+        .select({ metadata: apiKeys.metadata })
+        .from(apiKeys)
+        .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
+        .limit(1);
+    });
 
     if (!key?.metadata) return {};
 
     return extractApiKeyPreferences(key.metadata);
-  } catch {
+  } catch (error) {
+    console.warn('[API Params] Failed to load API key preferences:', error);
     return {};
   }
 }
@@ -152,9 +159,10 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
   }
 
   // Load saved preferences from API key metadata
-  const savedPreferences = validation.keyId
-    ? await loadApiKeyPreferences(db, validation.keyId)
-    : undefined;
+  const savedPreferences =
+    validation.keyId && validation.userId
+      ? await loadApiKeyPreferences(databaseUrl, validation.userId, validation.keyId)
+      : undefined;
 
   // Parse parameters with saved preferences as fallback defaults
   const params = parseModelParams(context.url.searchParams, savedPreferences);

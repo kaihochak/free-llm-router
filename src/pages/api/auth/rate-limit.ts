@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { users } from '@/db';
-import { access } from '@/lib/runtime-access';
+import { users, withUserContext } from '@/db';
 import { eq } from 'drizzle-orm';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
 import {
@@ -25,27 +24,22 @@ export const GET: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const { session } = result;
+    const { session, databaseUrl } = result;
     logApiStage('/api/auth/rate-limit', requestId, 'session_ok', { userId: session.user.id });
-    const db = access(locals).db('admin');
-    if (!db) {
-      return errorJsonResponse(
-        { error: 'Database not configured', code: 'CONFIG_ERROR' },
-        { requestId, status: 500 }
-      );
-    }
 
-    const [record] = await db
-      .select({
-        remaining: users.remaining,
-        limit: users.rateLimitMax,
-        requestCount: users.requestCount,
-        timeWindow: users.rateLimitTimeWindow,
-        lastRequest: users.lastRequest,
-      })
-      .from(users)
-      .where(eq(users.id, session.user.id))
-      .limit(1);
+    const [record] = await withUserContext(databaseUrl, session.user.id, async (tx) => {
+      return tx
+        .select({
+          remaining: users.remaining,
+          limit: users.rateLimitMax,
+          requestCount: users.requestCount,
+          timeWindow: users.rateLimitTimeWindow,
+          lastRequest: users.lastRequest,
+        })
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1);
+    });
 
     if (!record) {
       return errorJsonResponse(
