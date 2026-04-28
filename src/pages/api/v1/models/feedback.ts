@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { modelFeedback } from '@/db';
+import { modelFeedback, withUserContext } from '@/db';
 import { initializeAuthOnly } from '@/lib/api-params';
 import { corsHeaders } from '@/lib/api-auth';
 import { apiResponseHeaders, jsonResponse, noContentResponse } from '@/lib/api-response';
@@ -16,7 +16,7 @@ export const POST: APIRoute = async (context) => {
   if (authCtx instanceof Response) return authCtx;
 
   try {
-    const { db, userId, keyId } = authCtx;
+    const { db, databaseUrl, userId, keyId } = authCtx;
 
     const body = await context.request.json();
     const { modelId, success, issue, details, dryRun, requestId } = body;
@@ -49,18 +49,27 @@ export const POST: APIRoute = async (context) => {
 
     // Skip database insert for dry run (e.g., from TryItPanel demo)
     if (!dryRun) {
+      if (!userId) {
+        return jsonResponse(
+          { error: 'Authenticated user context missing for feedback write' },
+          { status: 401, headers: apiResponseHeaders() }
+        );
+      }
+
       const id = crypto.randomUUID();
 
-      await db.insert(modelFeedback).values({
-        id,
-        modelId,
-        requestId: requestId || null, // Optional link to api_request_logs.id
-        apiKeyId: keyId || null, // Track which API key was used
-        isSuccess: success === true,
-        issue: success === true ? null : issue,
-        details: details || null,
-        source: userId || 'api-key',
-        createdAt: new Date(),
+      await withUserContext(databaseUrl, userId, async (tx) => {
+        await tx.insert(modelFeedback).values({
+          id,
+          modelId,
+          requestId: requestId || null, // Optional link to api_request_logs.id
+          apiKeyId: keyId || null, // Track which API key was used
+          isSuccess: success === true,
+          issue: success === true ? null : issue,
+          details: details || null,
+          source: userId,
+          createdAt: new Date(),
+        });
       });
     }
 
