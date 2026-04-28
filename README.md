@@ -71,7 +71,7 @@ For all other scripts and operational details, use the docs page.
 
 - Hosted docs: [freellmrouter.com/docs](https://freellmrouter.com/docs)
 - RLS setup details: [docs/DATABASE_RLS.md](docs/DATABASE_RLS.md)
-- Optional SQL for RLS roles/policies: [sql/enable_rls.sql](sql/enable_rls.sql)
+- Optional SQL for RLS roles/policies: [scripts/db-migration/enable_rls.sql](scripts/db-migration/enable_rls.sql)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
