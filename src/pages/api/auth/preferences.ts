@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { apiKeys } from '@/db';
-import { access } from '@/lib/runtime-access';
+import { apiKeys, withUserContext } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { validatePreferences } from '@/lib/api-definitions';
 import { getAuthSession, isSessionError } from '@/lib/auth-session';
@@ -28,7 +27,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    const { session } = result;
+    const { session, databaseUrl } = result;
     logApiStage('/api/auth/preferences', requestId, 'session_ok', { userId: session.user.id });
     const apiKeyId = url.searchParams.get('apiKeyId');
 
@@ -44,18 +43,13 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       userId: session.user.id,
       apiKeyId,
     });
-    const db = access(locals).db('admin');
-    if (!db) {
-      return errorJsonResponse(
-        { error: 'Database not configured', code: 'CONFIG_ERROR' },
-        { requestId, status: 500 }
-      );
-    }
-    const [key] = await db
-      .select({ metadata: apiKeys.metadata })
-      .from(apiKeys)
-      .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
-      .limit(1);
+    const [key] = await withUserContext(databaseUrl, session.user.id, async (tx) => {
+      return tx
+        .select({ metadata: apiKeys.metadata })
+        .from(apiKeys)
+        .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
+        .limit(1);
+    });
     const preferences = key ? extractApiKeyPreferences(key.metadata) : null;
 
     if (preferences === null) {
@@ -109,7 +103,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const { session } = result;
+    const { session, databaseUrl } = result;
     logApiStage('/api/auth/preferences', requestId, 'session_ok', { userId: session.user.id });
 
     let body: { apiKeyId?: string; preferences?: unknown };
@@ -141,18 +135,13 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       apiKeyId,
     });
 
-    const db = access(locals).db('admin');
-    if (!db) {
-      return errorJsonResponse(
-        { error: 'Database not configured', code: 'CONFIG_ERROR' },
-        { requestId, status: 500 }
-      );
-    }
-    const [existing] = await db
-      .select({ metadata: apiKeys.metadata })
-      .from(apiKeys)
-      .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
-      .limit(1);
+    const [existing] = await withUserContext(databaseUrl, session.user.id, async (tx) => {
+      return tx
+        .select({ metadata: apiKeys.metadata })
+        .from(apiKeys)
+        .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)))
+        .limit(1);
+    });
 
     const updated = (() => {
       if (!existing) return null;
@@ -162,13 +151,15 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       const metadata: Record<string, unknown> = parseApiKeyMetadata(existing.metadata);
       metadata.preferences = preferences;
 
-      await db
-        .update(apiKeys)
-        .set({
-          metadata: JSON.stringify(metadata),
-          updatedAt: new Date(),
-        })
-        .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)));
+      await withUserContext(databaseUrl, session.user.id, async (tx) => {
+        await tx
+          .update(apiKeys)
+          .set({
+            metadata: JSON.stringify(metadata),
+            updatedAt: new Date(),
+          })
+          .where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.userId, session.user.id)));
+      });
     }
 
     if (updated === null) {
