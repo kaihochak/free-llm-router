@@ -18,10 +18,13 @@ if (!provider) {
   return Astro.redirect('/models');
 }
 
-const db = access(Astro.locals).db('app');
-if (!db) throw new Error('Missing env: DATABASE_URL');
+const rt = access(Astro.locals);
+const appDb = rt.db('app');
+if (!appDb) throw new Error('Missing env: DATABASE_URL');
+const adminDb = rt.db('admin');
+if (!adminDb) throw new Error('Missing env: DATABASE_URL_ADMIN');
 
-const models = await getModelsByProvider(db, provider);
+const models = await getModelsByProvider(appDb, provider);
 if (models.length === 0) {
   return new Response(null, { status: 404, statusText: 'Provider not found' });
 }
@@ -36,17 +39,17 @@ const [feedbackResults, availabilityData, allProviders] = await Promise.all([
   Promise.all(
     modelIds.map(async (id) => {
       const [f1h, f6h, f24h, f7d, f30d] = await Promise.all([
-        getModelFeedbackById(db, id, 1 * HOUR_MS),
-        getModelFeedbackById(db, id, 6 * HOUR_MS),
-        getModelFeedbackById(db, id, 24 * HOUR_MS),
-        getModelFeedbackById(db, id, 7 * 24 * HOUR_MS),
-        getModelFeedbackById(db, id, 30 * 24 * HOUR_MS),
+        getModelFeedbackById(appDb, id, 1 * HOUR_MS),
+        getModelFeedbackById(appDb, id, 6 * HOUR_MS),
+        getModelFeedbackById(appDb, id, 24 * HOUR_MS),
+        getModelFeedbackById(appDb, id, 7 * 24 * HOUR_MS),
+        getModelFeedbackById(appDb, id, 30 * 24 * HOUR_MS),
       ]);
       return { id, f1h, f6h, f24h, f7d, f30d };
     })
   ),
-  getProviderAvailability(db, provider, 90),
-  getDistinctProviders(db),
+  getProviderAvailability(adminDb, provider, 90),
+  getDistinctProviders(appDb),
 ]);
 
 // Build feedback lookup

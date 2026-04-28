@@ -20,10 +20,13 @@ if (!slug) {
 }
 
 const modelId = Array.isArray(slug) ? slug.join('/') : slug;
-const db = access(Astro.locals).db('app');
-if (!db) throw new Error('Missing env: DATABASE_URL');
+const rt = access(Astro.locals);
+const appDb = rt.db('app');
+if (!appDb) throw new Error('Missing env: DATABASE_URL');
+const adminDb = rt.db('admin');
+if (!adminDb) throw new Error('Missing env: DATABASE_URL_ADMIN');
 
-const model = await getModelById(db, modelId);
+const model = await getModelById(appDb, modelId);
 if (!model) {
   return new Response(null, { status: 404, statusText: 'Model not found' });
 }
@@ -39,14 +42,14 @@ const [
   similarModels,
   availabilityData,
 ] = await Promise.all([
-  getModelFeedbackById(db, modelId, 1 * HOUR_MS),
-  getModelFeedbackById(db, modelId, 6 * HOUR_MS),
-  getModelFeedbackById(db, modelId, 24 * HOUR_MS),
-  getModelFeedbackById(db, modelId, 7 * 24 * HOUR_MS),
-  getModelFeedbackById(db, modelId, 30 * 24 * HOUR_MS),
-  getRelatedModels(db, model),
-  getSimilarModels(db, model),
-  getModelAvailabilityById(db, modelId, 90),
+  getModelFeedbackById(appDb, modelId, 1 * HOUR_MS),
+  getModelFeedbackById(appDb, modelId, 6 * HOUR_MS),
+  getModelFeedbackById(appDb, modelId, 24 * HOUR_MS),
+  getModelFeedbackById(appDb, modelId, 7 * 24 * HOUR_MS),
+  getModelFeedbackById(appDb, modelId, 30 * 24 * HOUR_MS),
+  getRelatedModels(appDb, model),
+  getSimilarModels(appDb, model),
+  getModelAvailabilityById(adminDb, modelId, 90),
 ]);
 
 const hasFeedback = feedback1h || feedback6h || feedback24h || feedback7d || feedback30d;

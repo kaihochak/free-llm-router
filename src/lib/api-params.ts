@@ -24,6 +24,8 @@ import {
 import { extractApiKeyPreferences } from '@/lib/api-key-metadata';
 import { access } from '@/lib/runtime-access';
 
+type DbRole = 'app' | 'admin' | 'stats' | 'owner';
+
 export interface ParsedModelParams {
   useCases: UseCaseType[];
   sort: SortType;
@@ -182,8 +184,11 @@ export async function getUserIdIfMyReports(
  * Initialize database connection only (for public endpoints)
  * Returns Database if successful, or Response if error
  */
-export async function initializeDb(context: APIContext): Promise<Database | Response> {
-  const db = access(context).db('app');
+export async function initializeDb(
+  context: APIContext,
+  role: DbRole = 'app'
+): Promise<Database | Response> {
+  const db = access(context).db(role);
   if (!db) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
       status: 500,
