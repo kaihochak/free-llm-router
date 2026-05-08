@@ -55,30 +55,32 @@ export function parseModelParams(
   searchParams: URLSearchParams,
   savedPreferences?: ApiKeyPreferences
 ): ParsedModelParams {
-  const prefs = savedPreferences || {};
+  const ignoreSavedPreferences = searchParams.get('_ignoreSavedPreferences') === 'true';
+  const prefs = ignoreSavedPreferences ? {} : savedPreferences || {};
+  const hasValue = (value: string | null): value is string => value !== null && value.trim() !== '';
 
   // Query param provided? Use it. Otherwise use saved preference or default.
   const useCaseParam = searchParams.get('useCase');
-  const useCases = useCaseParam !== null ? validateUseCases(useCaseParam) : prefs.useCases || [];
+  const useCases = hasValue(useCaseParam) ? validateUseCases(useCaseParam) : prefs.useCases || [];
 
   const sortParam = searchParams.get('sort');
-  const sort = sortParam !== null ? validateSort(sortParam) : prefs.sort || DEFAULT_SORT;
+  const sort = hasValue(sortParam) ? validateSort(sortParam) : prefs.sort || DEFAULT_SORT;
 
   const topNParam = searchParams.get('topN');
-  const topN = topNParam !== null ? validateTopN(topNParam) : prefs.topN;
+  const topN = hasValue(topNParam) ? validateTopN(topNParam) : prefs.topN;
 
   const maxErrorRateParam = searchParams.get('maxErrorRate');
-  const maxErrorRate =
-    maxErrorRateParam !== null ? validateMaxErrorRate(maxErrorRateParam) : prefs.maxErrorRate;
+  const maxErrorRate = hasValue(maxErrorRateParam)
+    ? validateMaxErrorRate(maxErrorRateParam)
+    : prefs.maxErrorRate;
 
   const timeRangeParam = searchParams.get('timeRange');
-  const timeRange =
-    timeRangeParam !== null
-      ? validateTimeRange(timeRangeParam)
-      : prefs.timeRange || DEFAULT_TIME_RANGE;
+  const timeRange = hasValue(timeRangeParam)
+    ? validateTimeRange(timeRangeParam)
+    : prefs.timeRange || DEFAULT_TIME_RANGE;
 
   const myReportsParam = searchParams.get('myReports');
-  const myReports = myReportsParam !== null ? myReportsParam === 'true' : prefs.myReports || false;
+  const myReports = hasValue(myReportsParam) ? myReportsParam === 'true' : prefs.myReports || false;
 
   // Internal-only escape hatch used by /api/demo/models to neutralize demo-key exclusions.
   const clearExcludedModels = searchParams.get('_clearExcludedModels') === 'true';
