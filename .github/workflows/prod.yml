@@ -32,7 +32,6 @@ jobs:
       - name: Build project
         run: bun run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           PUBLIC_POSTHOG_KEY: ${{ secrets.PUBLIC_POSTHOG_KEY }}
@@ -62,7 +61,6 @@ jobs:
       - name: Build project
         run: bun run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           PUBLIC_POSTHOG_KEY: ${{ secrets.PUBLIC_POSTHOG_KEY }}
