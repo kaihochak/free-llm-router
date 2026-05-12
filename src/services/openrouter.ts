@@ -183,7 +183,11 @@ export async function syncModels(db: Database): Promise<SyncResult> {
       });
 
     // Record daily availability snapshot for all seen models
-    await recordDailyAvailabilitySnapshot(db, seenIds);
+    try {
+      await recordDailyAvailabilitySnapshot(db, seenIds);
+    } catch (snapshotError) {
+      console.error('[OpenRouterSync] Snapshot write failed:', snapshotError);
+    }
 
     return result;
   } catch (error) {

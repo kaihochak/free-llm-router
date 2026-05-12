@@ -47,6 +47,7 @@ GRANT CREATE ON SCHEMA public TO fma_admin;
 \echo ''
 GRANT SELECT, INSERT, UPDATE, DELETE ON users, sessions, accounts, api_keys, api_request_logs, model_feedback TO fma_app;
 GRANT SELECT, INSERT, UPDATE ON free_models, sync_meta TO fma_app;
+GRANT SELECT, INSERT, UPDATE ON model_availability_snapshots TO fma_app;
 GRANT SELECT, INSERT ON site_feedback TO fma_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON verifications TO fma_app;
 
