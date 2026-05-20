@@ -29,8 +29,25 @@ function resolveLocals(input: unknown): LocalsLike | undefined {
   return input as LocalsLike;
 }
 
+function isDbOrSlotKey(key: string): boolean {
+  return key === 'ACTIVE_DB_SLOT' || key.startsWith('DATABASE_URL');
+}
+
+function hasRuntimeEnv(locals: LocalsLike | undefined): boolean {
+  return Boolean(locals?.runtime?.env);
+}
+
 function readEnv(locals: LocalsLike | undefined, key: string): string | undefined {
-  return locals?.runtime?.env?.[key] || importMetaEnv?.[key];
+  const runtimeValue = locals?.runtime?.env?.[key];
+
+  // DB and slot config must come from a single env source.
+  // In Cloudflare/runtime contexts, do not silently fall back to build-time import.meta.env,
+  // or we can mix ACTIVE_DB_SLOT from runtime with DATABASE_URL values baked at build time.
+  if (isDbOrSlotKey(key) && hasRuntimeEnv(locals)) {
+    return runtimeValue;
+  }
+
+  return runtimeValue || importMetaEnv?.[key];
 }
 
 export interface RuntimeAccess {
@@ -52,11 +69,11 @@ export function access(contextOrLocals: unknown): RuntimeAccess {
   };
 
   const dbUrl = (role: DbRole = 'app'): string | undefined => {
-    const slot = parseSlot(env('ACTIVE_DB_SLOT'));
-    const roleKey = dbKeyForRole(role, slot);
+    const activeSlot = parseSlot(env('ACTIVE_DB_SLOT'));
+    const roleKey = dbKeyForRole(role, activeSlot);
     const roleUrl = env(roleKey);
     if (role === 'admin') {
-      return roleUrl || env(dbKeyForRole('app', slot));
+      return roleUrl || env(dbKeyForRole('app', activeSlot));
     }
     return roleUrl;
   };
