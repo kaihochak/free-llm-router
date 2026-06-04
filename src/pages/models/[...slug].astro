@@ -69,13 +69,26 @@ if (
 }
 if ((model.contextLength ?? 0) >= 100000) capabilities.push('Long Context');
 
+const hasAvailability = Object.keys(availabilityData.availability).length > 0;
+const latestTrackedDate = availabilityData.dates[availabilityData.dates.length - 1] ?? null;
+const latestAvailableSnapshotDate = hasAvailability
+  ? Object.keys(availabilityData.availability).sort().slice(-1)[0]
+  : null;
+const isCurrentlyFree = latestTrackedDate
+  ? availabilityData.availability[latestTrackedDate] === true
+  : model.isActive !== false;
+
 // SEO
-const title = `${model.name} (${providerCapitalized}) - Free on OpenRouter`;
+const title = isCurrentlyFree
+  ? `${model.name} (${providerCapitalized}) - Free on OpenRouter`
+  : `${model.name} (${providerCapitalized}) - No Longer Free on OpenRouter`;
 const capList = capabilities.length > 0 ? ` Supports: ${capabilities.join(', ')}.` : '';
 const ctxDesc = model.contextLength
   ? `${Math.round(model.contextLength / 1000)}K token context.`
   : '';
-const description = `Use ${model.name} for free on OpenRouter. ${ctxDesc}${capList} Route via Free LLM Router API.`;
+const description = isCurrentlyFree
+  ? `Use ${model.name} for free on OpenRouter. ${ctxDesc}${capList} Route via Free LLM Router API.`
+  : `${model.name} is no longer available as a free model on OpenRouter. ${ctxDesc}${capList}`;
 
 const breadcrumbItems = [
   { name: 'Home', url: '/' },
@@ -85,10 +98,15 @@ const breadcrumbItems = [
 
 // Auto-generated FAQ
 const faqs: { question: string; answer: string }[] = [
-  {
-    question: `Is ${model.name} free to use?`,
-    answer: `Yes, ${model.name} is completely free to use through OpenRouter. You can access it via the Free LLM Router API at no cost.`,
-  },
+  isCurrentlyFree
+    ? {
+        question: `Is ${model.name} free to use?`,
+        answer: `Yes, ${model.name} is completely free to use through OpenRouter. You can access it via the Free LLM Router API at no cost.`,
+      }
+    : {
+        question: `Is ${model.name} still free to use?`,
+        answer: `${model.name} is no longer available as a free model on OpenRouter.`,
+      },
 ];
 
 if (model.contextLength) {
@@ -164,9 +182,12 @@ function formatTokens(count: number | null): string {
 const isNew = model.createdAt
   ? new Date(model.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   : false;
-const isInactive = model.isActive === false;
-const lastSeenLabel = model.lastSeenAt
-  ? new Date(model.lastSeenAt).toLocaleDateString('en-US', {
+const isInactive = !isCurrentlyFree;
+const lastSeenDate = latestAvailableSnapshotDate
+  ? new Date(`${latestAvailableSnapshotDate}T00:00:00Z`)
+  : model.lastSeenAt;
+const lastSeenLabel = lastSeenDate
+  ? new Date(lastSeenDate).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -176,7 +197,6 @@ const lastSeenLabel = model.lastSeenAt
 const openRouterUrl = `https://openrouter.ai/${model.id}`;
 
 // Availability — shape into AvailabilityData[] for the AvailabilityMatrix component
-const hasAvailability = Object.keys(availabilityData.availability).length > 0;
 const availableDays = Object.values(availabilityData.availability).filter(Boolean).length;
 const totalTrackedDays = Object.keys(availabilityData.availability).length;
 const availabilityModels = hasAvailability
