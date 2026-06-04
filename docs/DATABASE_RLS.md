@@ -47,6 +47,11 @@ and prints them if they are missing from `.env`.
 - **Stats endpoints** use `DATABASE_URL_STATS` and call SECURITY DEFINER functions.
 - **Schema migrations** use `DATABASE_URL_OWNER` (table owner role).
 
+If slot-based DB rotation is enabled, the same roles may be provided as suffixed keys
+(`DATABASE_URL_2`, `DATABASE_URL_ADMIN_2`, etc.) with `ACTIVE_DB_SLOT` selecting the active set.
+At runtime, DB and slot keys must resolve from one env source consistently; do not mix runtime
+`ACTIVE_DB_SLOT` with build-time `DATABASE_URL*` fallbacks.
+
 ## Example (End-to-End)
 
 **Scenario:** client calls `/api/v1/models/full` with a valid API key.

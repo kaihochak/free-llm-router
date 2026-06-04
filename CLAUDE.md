@@ -24,30 +24,33 @@ This is an Astro site with server-side rendering deployed to Cloudflare Pages. I
 
 ### Key Patterns
 
-**Database Access**: The database connection is created per-request using Cloudflare's runtime environment. API routes access `DATABASE_URL` from `locals.runtime.env` in production or `import.meta.env` in development:
+**Database Access**: The database connection is created per-request using `access(...)` from `src/lib/runtime-access.ts`. In Cloudflare/runtime contexts, DB and slot keys (`ACTIVE_DB_SLOT`, `DATABASE_URL*`) must come from `locals.runtime.env`; local development can fall back to `import.meta.env`.
 
 ```typescript
-const runtime = (locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
-const db = createDb(databaseUrl);
+const rt = access(contextOrLocals);
+const db = rt.db('app');
 ```
 
 **React in Astro**: Interactive components use `client:load` directive and require wrapping with `QueryProvider` for data fetching. The base layout (`src/layouts/base.astro`) handles global styling, theme script, and shared components like `SiteHeader`.
 
-**Model Sync**: The OpenRouter service (`src/services/openrouter.ts`) implements lazy refresh - if data is older than 15 minutes, it syncs from OpenRouter before returning models. Models are stored with `isActive` flag; missing models get marked inactive rather than deleted.
+**Model Sync**: The OpenRouter service (`src/services/openrouter.ts`) syncs against OpenRouter's `/api/v1/models` feed. In this codebase, `provider/model:free` and `provider/model` are treated as distinct model IDs. `free_models.isActive` is the current sync-state flag, while `model_availability_snapshots` stores historical positive sightings ("last seen as free in the feed").
 
 ### Structure
 
-- `src/pages/api/` - API routes (models endpoint at `v1/models/openrouter.ts`)
+- `src/pages/api/` - API routes (`/api/v1/models/ids`, `/api/v1/models/full`, admin/auth/demo routes)
 - `src/services/openrouter.ts` - Model sync logic, filtering, and database queries
 - `src/db/` - Drizzle schema and database client factory
 - `src/components/ui/` - shadcn/ui components
-- `src/hooks/useModels.ts` - Frontend hook for model fetching with client-side filtering/sorting
+- `src/hooks/useAvailability.ts` - Frontend hook for model availability history
+- `src/lib/runtime-access.ts` - Request-scoped env/DB resolution helper
 
 ### API
 
-Main endpoint: `GET /api/v1/models/openrouter`
+Main endpoints:
 
-- Query params: `filter` (comma-separated: chat, vision, coding, longContext, reasoning), `sort` (contextLength, maxOutput, name, provider, capable)
-- Returns: `{ models, feedbackCounts, lastUpdated, count }`
+- `GET /api/v1/models/ids`
+- `GET /api/v1/models/full`
+
+- Query params: `useCase`, `sort`, `topN`, `maxErrorRate`, `timeRange`, `myReports`
+- Returns IDs or full model objects, plus freshness metadata when applicable
 - CORS enabled for all origins

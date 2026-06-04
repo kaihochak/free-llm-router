@@ -56,7 +56,8 @@ bun run dev
 
 ### Database Schema
 
-- `free_models` - LLM model metadata from OpenRouter
+- `free_models` - current sync-state for model IDs from OpenRouter's `/api/v1/models` feed (`:free` and non-`:free` IDs are distinct)
+- `model_availability_snapshots` - historical daily "seen as free in the feed" records
 - `model_feedback` - User-submitted success/error reports
 - Users, API keys, and request logs in auth schema
 

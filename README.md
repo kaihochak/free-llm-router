@@ -5,6 +5,12 @@
 
 Open-source app for discovering healthy free OpenRouter models, with a dashboard for configuration and docs-driven SDK usage.
 
+Availability source of truth:
+
+- Current free-model status is based on the OpenRouter `/api/v1/models` feed.
+- In this app, `provider/model:free` and `provider/model` are treated as distinct model IDs.
+- Availability history means "last seen as free in the OpenRouter API feed", not "OpenRouter website page currently says Free".
+
 ## Quick Start (SDK + Dashboard)
 
 1. Sign in at [freellmrouter.com/dashboard](https://freellmrouter.com/dashboard).
@@ -70,6 +76,8 @@ For all other scripts and operational details, use the docs page.
 ## More Docs
 
 - Hosted docs: [freellmrouter.com/docs](https://freellmrouter.com/docs)
+- Availability semantics: [docs/AVAILABILITY.md](docs/AVAILABILITY.md)
+- DB slot switch checklist: [docs/DB_SLOT_SWITCH_CHECKLIST.md](docs/DB_SLOT_SWITCH_CHECKLIST.md)
 - RLS setup details: [docs/DATABASE_RLS.md](docs/DATABASE_RLS.md)
 - Optional SQL for RLS roles/policies: [scripts/db-migration/enable_rls.sql](scripts/db-migration/enable_rls.sql)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)

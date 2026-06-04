@@ -1,5 +1,9 @@
 # DB Migration Runbook (Slot-Based)
 
+Quick cutover checklist:
+
+- [docs/DB_SLOT_SWITCH_CHECKLIST.md](../../docs/DB_SLOT_SWITCH_CHECKLIST.md)
+
 Slot model:
 
 - Slot `1`: existing unsuffixed keys (`DATABASE_URL`, `DATABASE_URL_ADMIN`, ...)
