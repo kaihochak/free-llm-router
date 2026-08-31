@@ -50,7 +50,6 @@ function getAvailableDaysCount(model: AvailabilityData, dates: string[]): number
 }
 
 function getShortModelName(name: string): string {
-  // Remove provider prefix (e.g., "meta-llama/" or "google/") and ":free" suffix
   return name.replace(/^[^/]+\//, '').replace(/:free$/, '');
 }
 
@@ -62,7 +61,6 @@ export function AvailabilityMatrix({
   showStatusFilter = true,
   showModelCount = true,
 }: AvailabilityMatrixProps) {
-  // Show last 30 days by default, with pagination options
   const [visibleDays, setVisibleDays] = useState(30);
   const [statusFilter, setStatusFilter] = useState<AvailabilityStatusFilter>('currently_free');
   const matrixRootRef = useRef<HTMLDivElement | null>(null);
@@ -111,7 +109,6 @@ export function AvailabilityMatrix({
     });
   }, [models, statusFilter, visibleDates]);
 
-  // Group dates by month for header
   const monthHeaders = useMemo(() => {
     const headers: { month: string; startIndex: number; span: number }[] = [];
     let currentMonth = '';
@@ -132,7 +129,6 @@ export function AvailabilityMatrix({
       }
     });
 
-    // Add last month
     if (currentMonth) {
       headers.push({
         month: currentMonth,
@@ -154,7 +150,6 @@ export function AvailabilityMatrix({
       scroller.scrollLeft = scroller.scrollWidth - scroller.clientWidth;
     };
 
-    // Run after layout settles (fonts/table widths/hydration).
     let raf1 = 0;
     let raf2 = 0;
     const timeoutId = window.setTimeout(scrollToRight, 120);
@@ -239,7 +234,6 @@ export function AvailabilityMatrix({
       <div ref={matrixRootRef}>
         <Table>
           <TableHeader>
-            {/* Month header row */}
             <TableRow className="border-b-0">
               <TableHead className="sticky left-0 z-20 bg-card" />
               <TableHead className="bg-card" />
@@ -253,7 +247,6 @@ export function AvailabilityMatrix({
                 </TableHead>
               ))}
             </TableRow>
-            {/* Day header row */}
             <TableRow>
               <TableHead className="sticky left-0 z-20 bg-card min-w-[180px]">Model</TableHead>
               <TableHead className="text-right min-w-[60px] bg-card">Days</TableHead>
@@ -342,7 +335,6 @@ export function AvailabilityMatrix({
         </div>
       )}
 
-      {/* Pagination controls for date range */}
       {dates.length > 30 && (
         <div className="flex justify-center gap-2 p-4 border-t">
           <Button
@@ -350,21 +342,21 @@ export function AvailabilityMatrix({
             size="sm"
             onClick={() => setVisibleDays(30)}
           >
-            30 days
-          </Button>
-          <Button
-            variant={visibleDays === 60 ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setVisibleDays(60)}
-          >
-            60 days
+            1 month
           </Button>
           <Button
             variant={visibleDays === 90 ? 'default' : 'outline'}
             size="sm"
             onClick={() => setVisibleDays(90)}
           >
-            90 days
+            3 months
+          </Button>
+          <Button
+            variant={visibleDays === 180 ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setVisibleDays(180)}
+          >
+            6 months
           </Button>
         </div>
       )}

@@ -113,6 +113,9 @@ describe('/api/admin/cleanup', () => {
     const expectedLogsCutoff = new Date(
       fixedNow.getTime() - 30 * 24 * 60 * 60 * 1000
     ).toISOString();
+    const expectedAvailabilityCutoff = new Date(
+      fixedNow.getTime() - 180 * 24 * 60 * 60 * 1000
+    ).toISOString();
 
     const context = createMockContext({
       url: 'http://localhost:4321/api/admin/cleanup',
@@ -163,7 +166,7 @@ describe('/api/admin/cleanup', () => {
     assert.ok(body.deleted.availabilitySnapshots !== undefined);
     assert.strictEqual(body.cutoffs.modelFeedback, expectedFeedbackCutoff);
     assert.strictEqual(body.cutoffs.apiRequestLogs, expectedLogsCutoff);
-    assert.ok(body.cutoffs.availabilitySnapshots !== undefined);
+    assert.strictEqual(body.cutoffs.availabilitySnapshots, expectedAvailabilityCutoff);
   });
 
   it('returns 500 when cleanup fails', async () => {
