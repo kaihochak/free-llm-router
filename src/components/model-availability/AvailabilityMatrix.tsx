@@ -72,19 +72,10 @@ export function AvailabilityMatrix({
   }, [dates, visibleDays]);
 
   const displayModels = useMemo(() => {
-    const latestSnapshotDate = models.reduce<string | null>((latest, model) => {
-      const modelDates = Object.keys(model.availability);
-      if (modelDates.length === 0) return latest;
-      const modelLatest = modelDates.sort().slice(-1)[0];
-      if (!latest || modelLatest > latest) return modelLatest;
-      return latest;
-    }, null);
     const latestVisibleDate = visibleDates[visibleDates.length - 1];
 
     const filtered = models.filter((model) => {
-      const isCurrentlyAvailable = latestSnapshotDate
-        ? model.availability[latestSnapshotDate] === true
-        : model.isActive !== false;
+      const isCurrentlyAvailable = model.isActive === true;
       if (statusFilter === 'currently_free') return isCurrentlyAvailable;
       if (statusFilter === 'no_longer_free') return !isCurrentlyAvailable;
       return true;

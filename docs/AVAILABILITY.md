@@ -24,7 +24,7 @@ Important fields:
 - `is_active`: whether the latest successful sync marked this model as currently active/free
 - `last_seen_at`: the last sync time when this model ID was seen as free in the feed
 
-Current-model reads require an active flag and a `last_seen_at` value associated with the latest complete sync. This protects consumers from historically stale active flags.
+All current-model reads use `is_active` as the sole persisted current-state flag. `last_seen_at` is audit and display metadata only.
 
 ### `model_availability_snapshots`
 
@@ -40,20 +40,20 @@ Today this table is used as a history of "seen as free on this day".
 
 ## Sync Behavior
 
-The sync job fetches OpenRouter `/api/v1/models`, filters to free models, and then:
+The sync job fetches OpenRouter `/api/v1/models`, filters to free models, applies the model-state changes transactionally, and then records availability history:
 
 1. upserts seen free model IDs into `free_models`
 2. sets `is_active = true` for seen IDs
 3. sets `is_active = false` for previously active IDs that are no longer present
 4. writes daily snapshot rows for seen IDs
-5. records `models_last_complete_updated` when the complete OpenRouter response passes its integrity check
 
 This means:
 
-- `free_models.is_active` and recent `last_seen_at` evidence determine current state
+- `free_models.is_active` determines current state
+- `last_seen_at` records when a model was last observed as free
 - snapshots are historical evidence that a model was seen as free on a given day
 
-Sync integrity is based on the complete OpenRouter model response, not the number of free models. The free subset can legitimately fall by more than half without indicating a partial response.
+A successful, structurally valid OpenRouter response is authoritative regardless of the number of free models it contains. Validity includes the model identity and pricing fields needed to classify every entry. A valid response with zero free models deactivates every previously active model. Network errors, non-success responses, malformed payloads, and invalid model entries leave the existing active state unchanged.
 
 ## Meaning of "Last Seen as Free"
 
@@ -80,7 +80,7 @@ In the current implementation, missing from the latest snapshot does not by itse
 
 Because of that:
 
-- current-state decisions should use the shared active-model query, which combines `is_active`, `last_seen_at`, and the latest complete-sync timestamp
+- current-state decisions should use `free_models.is_active`
 - snapshot history should be interpreted as "when did we last see it as free"
 
 See [Availability Consistency Fix Report](./fixes/AVAILABILITY_CONSISTENCY_FIX.md) for the failure analysis and verification results.
@@ -90,7 +90,6 @@ See [Availability Consistency Fix Report](./fixes/AVAILABILITY_CONSISTENCY_FIX.m
 If availability looks wrong:
 
 1. Check whether the exact `:free` model ID exists in the current OpenRouter `/api/v1/models` feed.
-2. Check `free_models.is_active` and `last_seen_at` for that exact model ID.
-3. Check the `sync_meta` row whose key is `models_last_complete_updated` and compare its timestamp with `last_seen_at`.
-4. Check the latest row in `model_availability_snapshots` for that exact model ID.
-5. Do not treat the non-`:free` variant or the OpenRouter website model page as proof that the `:free` variant is still current in the feed.
+2. Check `free_models.is_active` for that exact model ID.
+3. Check `last_seen_at` and the latest row in `model_availability_snapshots` for historical evidence.
+4. Do not treat the non-`:free` variant or the OpenRouter website model page as proof that the `:free` variant is still current in the feed.

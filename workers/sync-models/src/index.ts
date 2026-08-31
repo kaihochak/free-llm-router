@@ -11,32 +11,12 @@
  */
 
 import { neon } from '@neondatabase/serverless';
+import { isFreeModel, parseOpenRouterModelsResponse } from '../../../shared/openrouter-models';
 
 interface Env {
   ACTIVE_DB_SLOT?: string;
   DATABASE_URL_ADMIN?: string;
   [key: string]: string | undefined;
-}
-
-interface OpenRouterApiModel {
-  id: string;
-  name: string;
-  pricing?: {
-    prompt?: string;
-    completion?: string;
-  };
-  context_length?: number;
-  description?: string;
-  architecture?: {
-    modality?: string;
-    input_modalities?: string[];
-    output_modalities?: string[];
-  };
-  top_provider?: {
-    max_completion_tokens?: number;
-    is_moderated?: boolean;
-  };
-  supported_parameters?: string[];
 }
 
 interface SyncResult {
@@ -46,12 +26,6 @@ interface SyncResult {
   updated: number;
   markedInactive: number;
   error?: string;
-}
-
-function isFreeModel(model: OpenRouterApiModel): boolean {
-  const promptCost = parseFloat(model.pricing?.prompt || '999');
-  const completionCost = parseFloat(model.pricing?.completion || '999');
-  return promptCost === 0 && completionCost === 0;
 }
 
 function parseActiveSlot(raw: string | undefined): number {
@@ -99,16 +73,11 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
       throw new Error(`OpenRouter API error: ${response.status}`);
     }
 
-    const data = (await response.json()) as { data?: OpenRouterApiModel[] };
-    const allModels: OpenRouterApiModel[] = data.data || [];
+    const { data: allModels } = parseOpenRouterModelsResponse(await response.json());
     result.totalApiModels = allModels.length;
 
     const freeModelsList = allModels.filter(isFreeModel);
     result.freeModelsFound = freeModelsList.length;
-
-    if (freeModelsList.length === 0) {
-      return result;
-    }
 
     const sql = neon(databaseUrl);
     const now = new Date().toISOString();
@@ -156,68 +125,68 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
       return `(${escapeValue(snapshotId)}, ${escapeValue(modelId)}, ${escapeValue(todayIso)}, TRUE)`;
     });
 
-    // Build the seenIds list for the NOT IN clause
-    const seenIdsList = seenIds.map((id) => escapeValue(id)).join(',');
+    const mutationStatements: string[] = [];
 
-    // Execute 4 separate queries (instead of 65+) to stay under Cloudflare's subrequest limit
-    // Query 1: Bulk upsert all models
-    await sql.query(`
-      INSERT INTO free_models (
-        id, name, context_length, max_completion_tokens, description,
-        modality, input_modalities, output_modalities, supported_parameters,
-        is_moderated, is_active, last_seen_at, created_at
-      ) VALUES ${modelValues.join(',\n')}
-      ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        context_length = EXCLUDED.context_length,
-        max_completion_tokens = EXCLUDED.max_completion_tokens,
-        description = EXCLUDED.description,
-        modality = EXCLUDED.modality,
-        input_modalities = EXCLUDED.input_modalities,
-        output_modalities = EXCLUDED.output_modalities,
-        supported_parameters = EXCLUDED.supported_parameters,
-        is_moderated = EXCLUDED.is_moderated,
-        is_active = TRUE,
-        last_seen_at = EXCLUDED.last_seen_at
-    `);
+    if (modelValues.length > 0) {
+      mutationStatements.push(`
+        INSERT INTO free_models (
+          id, name, context_length, max_completion_tokens, description,
+          modality, input_modalities, output_modalities, supported_parameters,
+          is_moderated, is_active, last_seen_at, created_at
+        ) VALUES ${modelValues.join(',\n')}
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          context_length = EXCLUDED.context_length,
+          max_completion_tokens = EXCLUDED.max_completion_tokens,
+          description = EXCLUDED.description,
+          modality = EXCLUDED.modality,
+          input_modalities = EXCLUDED.input_modalities,
+          output_modalities = EXCLUDED.output_modalities,
+          supported_parameters = EXCLUDED.supported_parameters,
+          is_moderated = EXCLUDED.is_moderated,
+          is_active = TRUE,
+          last_seen_at = EXCLUDED.last_seen_at
+      `);
+    }
 
-    const isCompleteModelFeed = allModels.length >= existingModels.length * 0.5;
-    if (isCompleteModelFeed) {
-      const updateResult = await sql.query(`
+    const deactivationStatementIndex = mutationStatements.length;
+    mutationStatements.push(
+      seenIds.length > 0
+        ? `
         UPDATE free_models
         SET is_active = FALSE
         WHERE is_active = TRUE
-        AND id NOT IN (${seenIdsList})
+        AND id NOT IN (${seenIds.map((id) => escapeValue(id)).join(',')})
         RETURNING id
-      `);
-      result.markedInactive = updateResult.length;
-    }
+      `
+        : `
+        UPDATE free_models
+        SET is_active = FALSE
+        WHERE is_active = TRUE
+        RETURNING id
+      `
+    );
 
-    // Query 3: Update sync metadata
-    await sql.query(`
+    mutationStatements.push(`
       INSERT INTO sync_meta (key, value, updated_at)
       VALUES ('models_last_updated', ${escapeValue(now)}, ${escapeValue(now)})
       ON CONFLICT (key) DO UPDATE SET
         value = EXCLUDED.value,
-        updated_at = EXCLUDED.updated_at
+      updated_at = EXCLUDED.updated_at
     `);
 
-    if (isCompleteModelFeed) {
-      await sql.query(`
-        INSERT INTO sync_meta (key, value, updated_at)
-        VALUES ('models_last_complete_updated', ${escapeValue(now)}, ${escapeValue(now)})
-        ON CONFLICT (key) DO UPDATE SET
-          value = EXCLUDED.value,
-          updated_at = EXCLUDED.updated_at
+    if (snapshotValues.length > 0) {
+      mutationStatements.push(`
+        INSERT INTO model_availability_snapshots (id, model_id, snapshot_date, is_available)
+        VALUES ${snapshotValues.join(',\n')}
+        ON CONFLICT (id) DO UPDATE SET is_available = TRUE
       `);
     }
 
-    // Query 4: Bulk insert availability snapshots
-    await sql.query(`
-      INSERT INTO model_availability_snapshots (id, model_id, snapshot_date, is_available)
-      VALUES ${snapshotValues.join(',\n')}
-      ON CONFLICT (id) DO UPDATE SET is_available = TRUE
-    `);
+    const mutationResults = await sql.transaction((transactionSql) =>
+      mutationStatements.map((statement) => transactionSql.query(statement))
+    );
+    result.markedInactive = mutationResults[deactivationStatementIndex].length;
 
     return result;
   } catch (error) {

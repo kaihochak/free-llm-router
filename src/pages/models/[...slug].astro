@@ -70,13 +70,10 @@ if (
 if ((model.contextLength ?? 0) >= 100000) capabilities.push('Long Context');
 
 const hasAvailability = Object.keys(availabilityData.availability).length > 0;
-const latestTrackedDate = availabilityData.dates[availabilityData.dates.length - 1] ?? null;
 const latestAvailableSnapshotDate = hasAvailability
   ? Object.keys(availabilityData.availability).sort().slice(-1)[0]
   : null;
-const isCurrentlyFree = latestTrackedDate
-  ? availabilityData.availability[latestTrackedDate] === true
-  : model.isActive !== false;
+const isCurrentlyFree = model.isActive === true;
 
 // SEO
 const title = isCurrentlyFree
