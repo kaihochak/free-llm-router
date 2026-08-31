@@ -27,7 +27,6 @@ export interface IssueData {
   total?: number;
   successCount?: number;
   errorRate: number;
-  // Model metadata for filtering
   modality: string | null;
   inputModalities: string[] | null;
   outputModalities: string[] | null;
@@ -102,13 +101,12 @@ export interface UseHealthOptions {
   overrideMaxErrorRate?: number;
 }
 
-const HEALTH_DEFAULT_TIME_RANGE: TimeRange = '7d';
+const HEALTH_DEFAULT_TIME_RANGE: TimeRange = '3d';
 const HEALTH_DEFAULT_TOP_N: number | undefined = undefined;
 const HEALTH_DEFAULT_RELIABILITY_FILTER_ENABLED = false;
 const HEALTH_DEFAULTS_VERSION = 1;
 
 export function useHealth(options?: UseHealthOptions) {
-  // Time range and myReports state
   const [range, setRange] = useLocalStorage<TimeRange>(
     'freeModels:health:range',
     HEALTH_DEFAULT_TIME_RANGE as TimeRange
@@ -119,7 +117,6 @@ export function useHealth(options?: UseHealthOptions) {
   );
   const { data: session } = useCachedSession();
 
-  // ModelControls state - persisted in localStorage
   const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>(
     'freeModels:health:useCases',
     DEFAULT_USE_CASE
@@ -145,10 +142,8 @@ export function useHealth(options?: UseHealthOptions) {
     0
   );
 
-  // Force myReports to false if user is not authenticated
   const effectiveMyReports = session ? myReports : false;
 
-  // Apply overrides
   const effectiveTopN = options?.overrideTopN ?? activeTopN;
   const effectiveReliabilityEnabled =
     options?.overrideReliabilityFilterEnabled ?? reliabilityFilterEnabled;
@@ -157,7 +152,6 @@ export function useHealth(options?: UseHealthOptions) {
     : undefined;
 
   useEffect(() => {
-    // Reset to false if user logs out
     if (!session && myReports) {
       setMyReportsState(false);
     }
@@ -202,7 +196,6 @@ export function useHealth(options?: UseHealthOptions) {
 
   const setMyReports = useCallback(
     (value: boolean) => {
-      // Only allow setting myReports to true if authenticated
       setMyReportsState(session ? value : false);
     },
     [session, setMyReportsState]
@@ -220,13 +213,11 @@ export function useHealth(options?: UseHealthOptions) {
   };
 
   const resetToDefaults = () => {
-    // Always reset useCase and sort to defaults
     setActiveUseCases(DEFAULT_USE_CASE);
     setActiveSort(DEFAULT_SORT);
     setRange(HEALTH_DEFAULT_TIME_RANGE as TimeRange);
     setMyReportsState(DEFAULT_MY_REPORTS);
 
-    // Only reset topN/health if not using overrides
     if (options?.overrideTopN === undefined) {
       setActiveTopN(HEALTH_DEFAULT_TOP_N);
     }
@@ -249,7 +240,6 @@ export function useHealth(options?: UseHealthOptions) {
     setRange,
     myReports: effectiveMyReports,
     setMyReports,
-    // ModelControls state
     activeUseCases,
     activeSort,
     activeTopN,

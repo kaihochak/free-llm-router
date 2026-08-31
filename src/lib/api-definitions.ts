@@ -1,12 +1,3 @@
-/**
- * Single source of truth for all API parameter definitions.
- * All UI components, documentation, and examples import from this file.
- *
- * Separates parameter DEFINITIONS (this file) from business logic (model-types.ts)
- */
-
-// ==================== USE CASE PARAMETER ====================
-
 export type UseCaseType = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
 
 export const VALID_USE_CASES: UseCaseType[] = [
@@ -21,7 +12,7 @@ export interface UseCaseDefinition {
   key: UseCaseType | 'all';
   label: string;
   description: string;
-  docDescription?: string; // For detailed documentation
+  docDescription?: string;
 }
 
 export const USE_CASE_DEFINITIONS: UseCaseDefinition[] = [
@@ -62,8 +53,6 @@ export const USE_CASE_DEFINITIONS: UseCaseDefinition[] = [
     docDescription: 'Models with advanced reasoning capabilities (e.g., o1, QwQ, DeepSeek R1)',
   },
 ];
-
-// ==================== SORT PARAMETER ====================
 
 export type SortType = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'newest';
 
@@ -115,19 +104,27 @@ export const SORT_DEFINITIONS: SortDefinition[] = [
   },
 ];
 
-// ==================== TIME RANGE PARAMETER ====================
+export type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '3d' | '7d' | '30d' | 'all';
 
-export type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'all';
+export const VALID_TIME_RANGES: TimeRange[] = [
+  '15m',
+  '30m',
+  '1h',
+  '6h',
+  '24h',
+  '3d',
+  '7d',
+  '30d',
+  'all',
+];
 
-export const VALID_TIME_RANGES: TimeRange[] = ['15m', '30m', '1h', '6h', '24h', '7d', '30d', 'all'];
-
-// Time ranges with labels (for UI display - used in useHealth.ts)
 export const VALID_TIME_RANGES_WITH_LABELS: TimeRange[] = [
   '15m',
   '30m',
   '1h',
   '6h',
   '24h',
+  '3d',
   '7d',
   '30d',
 ];
@@ -143,33 +140,31 @@ export const TIME_RANGE_DEFINITIONS: TimeRangeDefinition[] = [
   { value: '30m', label: '30m', description: '30 minutes' },
   { value: '1h', label: '1h', description: '1 hour' },
   { value: '6h', label: '6h', description: '6 hours' },
-  { value: '24h', label: '24h', description: '24 hours (recommended)' },
+  { value: '24h', label: '24h', description: '24 hours' },
+  { value: '3d', label: '3d', description: '3 days (recommended)' },
   { value: '7d', label: '7d', description: '7 days' },
   { value: '30d', label: '30d', description: '30 days' },
   { value: 'all', label: 'All', description: 'All-time' },
 ];
 
-// Time range to milliseconds conversion
-// 'all' maps to null to indicate no time limit (fetch all data)
 export const TIME_RANGE_MS: Record<TimeRange, number | null> = {
   '15m': 15 * 60 * 1000,
   '30m': 30 * 60 * 1000,
   '1h': 60 * 60 * 1000,
   '6h': 6 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
+  '3d': 3 * 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
   '30d': 30 * 24 * 60 * 60 * 1000,
   all: null,
 };
 
-// ==================== TOP N PARAMETER ====================
-
 export type TopNOption = 3 | 5 | 10 | undefined;
 
 export interface TopNDefinition {
-  value: string; // "3", "5", "10", "all"
+  value: string;
   label: string;
-  numeric: number | undefined; // 3, 5, 10, undefined
+  numeric: number | undefined;
 }
 
 export const TOP_N_DEFINITIONS: TopNDefinition[] = [
@@ -182,24 +177,17 @@ export const TOP_N_DEFINITIONS: TopNDefinition[] = [
 export const TOP_N_MIN = 1;
 export const TOP_N_MAX = 100;
 
-// ==================== MAX ERROR RATE PARAMETER ====================
-
-// Percentage (0-100) - models with error rate above this are excluded
 export const MAX_ERROR_RATE_MIN = 0;
 export const MAX_ERROR_RATE_MAX = 100;
-
-// ==================== DEFAULT VALUES ====================
 
 export const DEFAULT_USE_CASE: UseCaseType[] = [];
 export const DEFAULT_SORT: SortType = 'contextLength';
 export const DEFAULT_TOP_N: number | undefined = 5;
 export const DEFAULT_MAX_ERROR_RATE: number | undefined = 10;
-export const DEFAULT_TIME_RANGE: TimeRange = '7d';
+export const DEFAULT_TIME_RANGE: TimeRange = '3d';
 export const DEFAULT_MY_REPORTS: boolean = false;
 export const DEFAULT_RELIABILITY_FILTER_ENABLED: boolean = false;
 export const MAX_EXCLUDED_MODELS = 50;
-
-// ==================== UI TOOLTIP CONTENT ====================
 
 export const TOOLTIP_USE_CASE =
   'Select models by use case (chat, vision, tools, long context, reasoning)';
@@ -207,8 +195,6 @@ export const TOOLTIP_SORT = 'Sort models by context length, max output, capabili
 export const TOOLTIP_TOP_N = 'Return only the top N models based on sort order';
 export const TOOLTIP_RELIABILITY_FILTER =
   'Filter out unhealthy models by tweaking error rate threshold and time range';
-
-// ==================== VALIDATION UTILITIES ====================
 
 export function validateUseCases(value: string | null): UseCaseType[] {
   if (!value) return [];
@@ -244,18 +230,12 @@ export function validateMaxErrorRate(value: string | null): number | undefined {
   return Math.min(Math.max(MAX_ERROR_RATE_MIN, parsed), MAX_ERROR_RATE_MAX);
 }
 
-// ==================== HELPER UTILITIES ====================
-
-/** Convert TimeRange to cutoff Date */
 export function getCutoffDate(range: TimeRange): Date {
   if (range === 'all') return new Date(0);
   const ms = TIME_RANGE_MS[range];
   return new Date(Date.now() - (ms as number));
 }
 
-// ==================== API KEY PREFERENCES ====================
-
-/** Preferences that can be stored per API key and applied as defaults */
 export interface ApiKeyPreferences {
   useCases?: UseCaseType[];
   sort?: SortType;
@@ -266,31 +246,26 @@ export interface ApiKeyPreferences {
   excludeModelIds?: string[];
 }
 
-/** Validate and sanitize preferences object from untrusted input */
 export function validatePreferences(input: unknown): ApiKeyPreferences {
   if (!input || typeof input !== 'object') return {};
 
   const pref = input as Record<string, unknown>;
   const result: ApiKeyPreferences = {};
 
-  // Validate useCases
   if (Array.isArray(pref.useCases)) {
     result.useCases = pref.useCases.filter((uc) =>
       VALID_USE_CASES.includes(uc as UseCaseType)
     ) as UseCaseType[];
   }
 
-  // Validate sort
   if (typeof pref.sort === 'string' && VALID_SORTS.includes(pref.sort as SortType)) {
     result.sort = pref.sort as SortType;
   }
 
-  // Validate topN
   if (typeof pref.topN === 'number') {
     result.topN = Math.min(Math.max(TOP_N_MIN, pref.topN), TOP_N_MAX);
   }
 
-  // Validate maxErrorRate
   if (typeof pref.maxErrorRate === 'number') {
     result.maxErrorRate = Math.min(
       Math.max(MAX_ERROR_RATE_MIN, pref.maxErrorRate),
@@ -298,7 +273,6 @@ export function validatePreferences(input: unknown): ApiKeyPreferences {
     );
   }
 
-  // Validate timeRange
   if (
     typeof pref.timeRange === 'string' &&
     VALID_TIME_RANGES.includes(pref.timeRange as TimeRange)
@@ -306,12 +280,10 @@ export function validatePreferences(input: unknown): ApiKeyPreferences {
     result.timeRange = pref.timeRange as TimeRange;
   }
 
-  // Validate myReports
   if (typeof pref.myReports === 'boolean') {
     result.myReports = pref.myReports;
   }
 
-  // Validate excludeModelIds
   if (Array.isArray(pref.excludeModelIds)) {
     const excluded = Array.from(
       new Set(

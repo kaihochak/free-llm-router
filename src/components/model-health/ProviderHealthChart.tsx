@@ -19,6 +19,7 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: '1h', label: '1h' },
   { value: '6h', label: '6h' },
   { value: '24h', label: '24h' },
+  { value: '3d', label: '3d' },
   { value: '7d', label: '7d' },
   { value: '30d', label: '30d' },
 ];
@@ -48,7 +49,7 @@ async function fetchProviderHealth(provider: string, range: TimeRange): Promise<
 }
 
 function ProviderHealthChartInner({ provider }: { provider: string }) {
-  const [range, setRange] = useState<TimeRange>('7d');
+  const [range, setRange] = useState<TimeRange>('3d');
 
   const { data, isLoading } = useQuery({
     queryKey: ['provider-health', provider, range],

@@ -47,14 +47,13 @@ export function OnboardingFlow() {
     toggleUseCase,
     setActiveSort,
   } = useModels({
-    overrideTimeRange: '24h',
+    overrideTimeRange: '3d',
     overrideMyReports: false,
     overrideReliabilityFilterEnabled: false,
   });
 
   const totalPages = Math.ceil(models.length / ITEMS_PER_PAGE);
 
-  // Reset to page 1 when models change (e.g., filter/sort changes)
   if (currentPage > totalPages && totalPages > 0) {
     setCurrentPage(1);
   }
@@ -87,7 +86,7 @@ export function OnboardingFlow() {
     },
     {
       title: 'Set Fallback Priority',
-      description: 'Models are tried in order - first = primary, rest = fallbacks',
+      description: 'Models are tried in order: the first is primary, and the rest are fallbacks.',
       content: (
         <SortSelector
           activeSort={activeSort}
@@ -119,9 +118,7 @@ export function OnboardingFlow() {
 
   return (
     <div className="space-y-6">
-      {/* Step Navigation */}
       <div className="flex items-center justify-center gap-3">
-        {/* Left Arrow */}
         <button
           onClick={goToPrevStep}
           disabled={currentStep === 0}
@@ -135,7 +132,6 @@ export function OnboardingFlow() {
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        {/* Dots */}
         <div className="flex gap-2">
           {steps.map((_, index) => (
             <button
@@ -154,7 +150,6 @@ export function OnboardingFlow() {
           ))}
         </div>
 
-        {/* Right Arrow */}
         <button
           onClick={goToNextStep}
           disabled={currentStep === steps.length - 1}
@@ -169,7 +164,6 @@ export function OnboardingFlow() {
         </button>
       </div>
 
-      {/* Step Content with Animation */}
       <div className="relative overflow-hidden min-h-45">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
@@ -182,7 +176,6 @@ export function OnboardingFlow() {
             transition={springTransition}
           >
             <OnboardingStep
-              stepNumber={currentStep + 1}
               title={steps[currentStep].title}
               description={steps[currentStep].description}
               showConfirm={false}
@@ -194,7 +187,6 @@ export function OnboardingFlow() {
         </AnimatePresence>
       </div>
 
-      {/* Model List with Pagination (Hidden on Step 3) */}
       {currentStep !== 2 && (
         <ModelList
           models={models}

@@ -1,14 +1,12 @@
-/** Free LLM Router helper. Set FREE_LLM_ROUTER_API_KEY in your environment. */
-
 const API = 'https://freellmrouter.com/api/v1';
 const API_KEY = typeof process !== 'undefined' ? process.env.FREE_LLM_ROUTER_API_KEY : undefined;
 
 type UseCase = 'chat' | 'vision' | 'tools' | 'longContext' | 'reasoning';
 type Sort = 'contextLength' | 'maxOutput' | 'capable' | 'leastIssues' | 'newest';
 type CacheMode = 'default' | 'no-store';
-type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '7d' | '30d' | 'all';
+type TimeRange = '15m' | '30m' | '1h' | '6h' | '24h' | '3d' | '7d' | '30d' | 'all';
 
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
+const CACHE_TTL = 15 * 60 * 1000;
 
 interface GetModelIdsResult {
   ids: string[];
@@ -17,7 +15,6 @@ interface GetModelIdsResult {
 
 const cache = new Map<string, { data: GetModelIdsResult; timestamp: number }>();
 
-/** Returns `{ ids, requestId }`. Calling with no params uses saved API-key preferences if configured. */
 export async function getModelIds(
   useCase?: UseCase[],
   sort?: Sort,
@@ -84,7 +81,6 @@ export async function getModelIds(
   }
 }
 
-/** Fire-and-forget feedback call (does not throw). */
 export function reportIssue(
   modelId: string,
   issue: 'error' | 'rate_limited' | 'unavailable',
@@ -101,7 +97,6 @@ export function reportIssue(
   }).catch(() => {});
 }
 
-/** Fire-and-forget feedback call (does not throw). */
 export function reportSuccess(modelId: string, requestId?: string, details?: string) {
   fetch(`${API}/models/feedback`, {
     method: 'POST',
@@ -219,17 +214,14 @@ ${defaultCallComment}${getModelsCallIndented}
   for (const id of freeModels) {
     try {
       const res = await client.chat.completions.create({ model: id, messages });
-      // submit success feedback
       reportSuccess(id, requestId);
       return res;
     } catch (e) {
       const status = e.status || e.response?.status;
-      // submit issue feedback
       reportIssue(id, issueFromStatus(status), requestId, e.message);
     }
   }
 } catch {
-  // E.g. return await client.chat.completions.create({ model: 'anthropic/claude-3.5-sonnet', messages });
 }
 throw new Error('All models failed');`;
 }

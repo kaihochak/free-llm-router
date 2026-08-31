@@ -18,25 +18,12 @@ import { access } from '@/lib/runtime-access';
 
 function validateRange(value: string | null): TimeRange {
   const validated = validateTimeRange(value);
-  // Only allow UI-relevant time ranges (not 'all')
   if (VALID_TIME_RANGES_WITH_LABELS.includes(validated as TimeRange)) {
     return validated as TimeRange;
   }
   return DEFAULT_TIME_RANGE as TimeRange;
 }
 
-/**
- * Health endpoint for the health page and dashboard.
- * No authentication required - returns public community reports by default.
- *
- * Query params:
- * - range: time range (15m, 30m, 1h, 6h, 24h, 7d, 30d)
- * - myReports: filter to user's own reports (requires auth)
- * - useCases: comma-separated use case filters (chat, vision, tools, longContext, reasoning)
- * - sort: sort order (contextLength, maxOutput, capable, leastIssues, newest)
- * - topN: limit to top N results
- * - maxErrorRate: filter to models with error rate <= this value (0-100)
- */
 export const GET: APIRoute = async (context) => {
   try {
     const db = await initializeDb(context);
@@ -47,17 +34,15 @@ export const GET: APIRoute = async (context) => {
     const params = context.url.searchParams;
     const range = validateRange(params.get('range'));
 
-    // Optional myReports filter (requires authentication)
     const myReports = params.get('myReports') === 'true';
     let userId: string | undefined;
 
     try {
       userId = await getUserIdIfMyReports(context, myReports);
     } catch {
-      // If myReports=true but no valid API key, gracefully fall back to community data
+      // Fall back to community data when personal reports are unavailable.
     }
 
-    // Parse filter params
     const useCasesParam = params.get('useCases');
     const useCases = useCasesParam ? validateUseCases(useCasesParam) : undefined;
 
@@ -70,7 +55,6 @@ export const GET: APIRoute = async (context) => {
     const maxErrorRateParam = params.get('maxErrorRate');
     const maxErrorRate = maxErrorRateParam ? parseFloat(maxErrorRateParam) : undefined;
 
-    // Get filtered issues first
     const issues = await getFeedbackCountsByRange(db, {
       range,
       userId,
@@ -81,10 +65,8 @@ export const GET: APIRoute = async (context) => {
       maxErrorRate: maxErrorRate !== undefined && !isNaN(maxErrorRate) ? maxErrorRate : undefined,
     });
 
-    // Extract model IDs from filtered issues to filter timeline
     const filteredModelIds = issues.map((i) => i.modelId);
 
-    // Single source: stats DB functions (fma_stats role / RLS-compliant)
     const timeline = await getFeedbackTimeline(db, range, userId, statsDbUrl, filteredModelIds);
     const includeErrorRateDetails = exposeErrorRateDetails({
       EXPOSE_ERROR_RATE_DETAILS: rt.env('EXPOSE_ERROR_RATE_DETAILS'),

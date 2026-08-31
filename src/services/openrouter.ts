@@ -750,8 +750,9 @@ function generateTimeBuckets(range: TimeRange): string[] {
       d.setUTCHours(d.getUTCHours() - i);
       buckets.push(d.toISOString().replace('T', ' ').slice(0, 19));
     }
-  } else if (range === '7d') {
-    for (let i = 6; i >= 0; i--) {
+  } else if (range === '3d' || range === '7d') {
+    const dayCount = range === '3d' ? 3 : 7;
+    for (let i = dayCount - 1; i >= 0; i--) {
       const d = new Date(now);
       d.setUTCHours(0, 0, 0, 0);
       d.setUTCDate(d.getUTCDate() - i);

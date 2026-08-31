@@ -19,6 +19,7 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: '1h', label: '1h' },
   { value: '6h', label: '6h' },
   { value: '24h', label: '24h' },
+  { value: '3d', label: '3d' },
   { value: '7d', label: '7d' },
   { value: '30d', label: '30d' },
 ];
@@ -29,7 +30,6 @@ async function fetchModelHealth(modelId: string, range: TimeRange): Promise<Heal
   if (!response.ok) throw new Error('Failed to fetch health data');
   const data: HealthResponse = await response.json();
 
-  // Filter to just this model
   const normalizedId = modelId.replace(/:free$/, '');
   return {
     ...data,
@@ -49,7 +49,7 @@ async function fetchModelHealth(modelId: string, range: TimeRange): Promise<Heal
 }
 
 function ModelDetailChartInner({ modelId }: { modelId: string }) {
-  const [range, setRange] = useState<TimeRange>('7d');
+  const [range, setRange] = useState<TimeRange>('3d');
 
   const { data, isLoading } = useQuery({
     queryKey: ['model-health', modelId, range],
