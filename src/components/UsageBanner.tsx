@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -23,8 +22,7 @@ export function UsageBanner() {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Use responsibly</strong> - Abuse of this free service may cause us to lose
-              access to these models. Intended for MVPs, POCs, and fallback use only.
+              <strong>Use responsibly.</strong> For MVPs, POCs, and fallback use only.
             </AlertDescription>
           </div>
           <Button

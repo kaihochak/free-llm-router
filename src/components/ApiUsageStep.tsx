@@ -269,9 +269,11 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
       {/* Step 3: Copy free-llm-router.ts */}
       <div id="copy-file" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            {isCompact ? 1 : 3}
-          </span>
+          {!isCompact && (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              3
+            </span>
+          )}
           <h3 className="text-xl font-semibold sm:text-2xl">
             Copy{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">
@@ -289,9 +291,11 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
       {/* Step 5: Use It */}
       <div id="use-it" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            {isCompact ? 2 : 4}
-          </span>
+          {!isCompact && (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              4
+            </span>
+          )}
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
         <p className="text-muted-foreground">
@@ -349,9 +353,11 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
 
       <div id="further-configure-params" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            {isCompact ? 3 : 5}
-          </span>
+          {!isCompact && (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              5
+            </span>
+          )}
           <h3 className="text-xl font-semibold sm:text-2xl">Further Configure Parameters</h3>
         </div>
         <p className="text-muted-foreground">
