@@ -64,7 +64,7 @@ export function AvailabilityMatrix({
 }: AvailabilityMatrixProps) {
   // Show last 30 days by default, with pagination options
   const [visibleDays, setVisibleDays] = useState(30);
-  const [statusFilter, setStatusFilter] = useState<AvailabilityStatusFilter>('all_models');
+  const [statusFilter, setStatusFilter] = useState<AvailabilityStatusFilter>('currently_free');
   const matrixRootRef = useRef<HTMLDivElement | null>(null);
 
   const visibleDates = useMemo(() => {
