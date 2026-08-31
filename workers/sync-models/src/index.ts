@@ -181,13 +181,17 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
         last_seen_at = EXCLUDED.last_seen_at
     `);
 
-    // Query 2: Mark missing models as inactive
-    await sql.query(`
-      UPDATE free_models
-      SET is_active = FALSE
-      WHERE is_active = TRUE
-      AND id NOT IN (${seenIdsList})
-    `);
+    const isCompleteModelFeed = allModels.length >= existingModels.length * 0.5;
+    if (isCompleteModelFeed) {
+      const updateResult = await sql.query(`
+        UPDATE free_models
+        SET is_active = FALSE
+        WHERE is_active = TRUE
+        AND id NOT IN (${seenIdsList})
+        RETURNING id
+      `);
+      result.markedInactive = updateResult.length;
+    }
 
     // Query 3: Update sync metadata
     await sql.query(`
@@ -197,6 +201,16 @@ async function syncModels(databaseUrl: string): Promise<SyncResult> {
         value = EXCLUDED.value,
         updated_at = EXCLUDED.updated_at
     `);
+
+    if (isCompleteModelFeed) {
+      await sql.query(`
+        INSERT INTO sync_meta (key, value, updated_at)
+        VALUES ('models_last_complete_updated', ${escapeValue(now)}, ${escapeValue(now)})
+        ON CONFLICT (key) DO UPDATE SET
+          value = EXCLUDED.value,
+          updated_at = EXCLUDED.updated_at
+      `);
+    }
 
     // Query 4: Bulk insert availability snapshots
     await sql.query(`

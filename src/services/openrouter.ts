@@ -53,6 +53,16 @@ export interface SyncResult {
   error?: string;
 }
 
+export function shouldMarkMissingModelsInactive(
+  totalApiModelCount: number,
+  seenFreeModelCount: number,
+  existingModelCount: number
+): boolean {
+  if (totalApiModelCount === 0 || seenFreeModelCount === 0) return false;
+
+  return existingModelCount === 0 || totalApiModelCount >= existingModelCount * 0.5;
+}
+
 function isFreeModel(model: OpenRouterApiModel): boolean {
   const promptCost = parseFloat(model.pricing?.prompt || '999');
   const completionCost = parseFloat(model.pricing?.completion || '999');
@@ -156,17 +166,19 @@ export async function syncModels(db: Database): Promise<SyncResult> {
       }
     }
 
-    // Mark missing models as inactive (safety: only if we got >50% of known models)
-    const activeCount = existingModels.filter((m) => existingIds.has(m.id)).length;
-    if (seenIds.length >= activeCount * 0.5 || activeCount === 0) {
-      if (seenIds.length > 0) {
-        const updateResult = await db
-          .update(freeModels)
-          .set({ isActive: false })
-          .where(and(eq(freeModels.isActive, true), notInArray(freeModels.id, seenIds)));
+    const isCompleteModelFeed = shouldMarkMissingModelsInactive(
+      allModels.length,
+      seenIds.length,
+      existingModels.length
+    );
 
-        result.markedInactive = updateResult.rowCount ?? 0;
-      }
+    if (isCompleteModelFeed) {
+      const updateResult = await db
+        .update(freeModels)
+        .set({ isActive: false })
+        .where(and(eq(freeModels.isActive, true), notInArray(freeModels.id, seenIds)));
+
+      result.markedInactive = updateResult.rowCount ?? 0;
     }
 
     // Update sync metadata
@@ -181,6 +193,20 @@ export async function syncModels(db: Database): Promise<SyncResult> {
         target: syncMeta.key,
         set: { value: new Date().toISOString(), updatedAt: new Date() },
       });
+
+    if (isCompleteModelFeed) {
+      await db
+        .insert(syncMeta)
+        .values({
+          key: 'models_last_complete_updated',
+          value: new Date().toISOString(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: syncMeta.key,
+          set: { value: new Date().toISOString(), updatedAt: new Date() },
+        });
+    }
 
     // Record daily availability snapshot for all seen models
     try {
@@ -248,7 +274,33 @@ export async function getLastUpdated(db: Database): Promise<Date | null> {
   return result[0].updatedAt;
 }
 
+async function getLastCompleteSyncUpdated(db: Database): Promise<Date | null> {
+  const result = await db
+    .select({ updatedAt: syncMeta.updatedAt })
+    .from(syncMeta)
+    .where(eq(syncMeta.key, 'models_last_complete_updated'))
+    .limit(1);
+
+  return result[0]?.updatedAt ?? getLastUpdated(db);
+}
+
+const MODEL_SYNC_COMPLETION_TOLERANCE_MS = 15 * 60 * 1000;
+
+export function getCurrentModelCutoff(lastUpdated: Date | null): Date | null {
+  if (!lastUpdated) return null;
+  return new Date(lastUpdated.getTime() - MODEL_SYNC_COMPLETION_TOLERANCE_MS);
+}
+
+async function getCurrentModelCondition(db: Database): Promise<SQL> {
+  const cutoff = getCurrentModelCutoff(await getLastCompleteSyncUpdated(db));
+  if (!cutoff) return eq(freeModels.isActive, true);
+
+  return and(eq(freeModels.isActive, true), gte(freeModels.lastSeenAt, cutoff))!;
+}
+
 export async function getActiveModels(db: Database) {
+  const currentModelCondition = await getCurrentModelCondition(db);
+
   return db
     .select({
       id: freeModels.id,
@@ -265,7 +317,7 @@ export async function getActiveModels(db: Database) {
       createdAt: freeModels.createdAt,
     })
     .from(freeModels)
-    .where(eq(freeModels.isActive, true));
+    .where(currentModelCondition);
 }
 
 /**
@@ -480,6 +532,7 @@ export async function getFeedbackCountsByRange(
     const endTs = new Date();
     const startTs = windowMs !== null ? new Date(Date.now() - windowMs) : new Date(0);
     const rows = await getFeedbackCountsStats(statsDbUrl, startTs, endTs);
+    const currentModelCondition = await getCurrentModelCondition(db);
 
     const statsDb = createDb(statsDbUrl);
     const modelRows = await statsDb
@@ -493,7 +546,8 @@ export async function getFeedbackCountsByRange(
         contextLength: freeModels.contextLength,
         maxCompletionTokens: freeModels.maxCompletionTokens,
       })
-      .from(freeModels);
+      .from(freeModels)
+      .where(currentModelCondition);
 
     const modelMap = new Map<string, (typeof modelRows)[number]>();
     for (const model of modelRows) {
@@ -502,23 +556,25 @@ export async function getFeedbackCountsByRange(
 
     const summaryMap: Record<string, IssueSummary> = {};
     for (const row of rows) {
+      const model = modelMap.get(row.modelId);
+      if (!model) continue;
+
       if (!summaryMap[row.modelId]) {
-        const model = modelMap.get(row.modelId);
         summaryMap[row.modelId] = {
           modelId: row.modelId,
-          modelName: model?.name ?? row.modelId,
+          modelName: model.name,
           rateLimited: 0,
           unavailable: 0,
           error: 0,
           total: 0,
           successCount: 0,
           errorRate: 0,
-          modality: model?.modality ?? null,
-          inputModalities: model?.inputModalities ?? null,
-          outputModalities: model?.outputModalities ?? null,
-          supportedParameters: model?.supportedParameters ?? null,
-          contextLength: model?.contextLength ?? null,
-          maxCompletionTokens: model?.maxCompletionTokens ?? null,
+          modality: model.modality,
+          inputModalities: model.inputModalities,
+          outputModalities: model.outputModalities,
+          supportedParameters: model.supportedParameters,
+          contextLength: model.contextLength,
+          maxCompletionTokens: model.maxCompletionTokens,
         };
       }
 
@@ -563,7 +619,7 @@ export async function getFeedbackCountsByRange(
   }
 
   // Build where conditions
-  const whereConditions: SQL[] = [];
+  const whereConditions: SQL[] = [await getCurrentModelCondition(db)];
   if (windowMs !== null) {
     whereConditions.push(gte(modelFeedback.createdAt, new Date(Date.now() - windowMs)));
   }
@@ -1189,6 +1245,7 @@ export async function getRelatedModels(db: Database, model: { id: string }, limi
   if (!provider) return [];
 
   const likePattern = `${provider}/%`;
+  const currentModelCondition = await getCurrentModelCondition(db);
 
   return db
     .select({
@@ -1203,7 +1260,7 @@ export async function getRelatedModels(db: Database, model: { id: string }, limi
     .from(freeModels)
     .where(
       and(
-        eq(freeModels.isActive, true),
+        currentModelCondition,
         sql`${freeModels.id} LIKE ${likePattern}`,
         sql`${freeModels.id} != ${model.id}`
       )
@@ -1226,12 +1283,10 @@ export async function getSimilarModels(
   limit = 5
 ) {
   const provider = model.id.split('/')[0];
+  const currentModelCondition = await getCurrentModelCondition(db);
 
   // Build capability conditions to match
-  const conditions: SQL<unknown>[] = [
-    eq(freeModels.isActive, true),
-    sql`${freeModels.id} != ${model.id}`,
-  ];
+  const conditions: SQL<unknown>[] = [currentModelCondition, sql`${freeModels.id} != ${model.id}`];
 
   // Exclude same provider so this doesn't overlap with "More from {provider}"
   if (provider) {
@@ -1341,6 +1396,7 @@ export async function getModelFeedbackById(
 /** Fetch all active models belonging to a given provider. */
 export async function getModelsByProvider(db: Database, provider: string) {
   const likePattern = `${provider}/%`;
+  const currentModelCondition = await getCurrentModelCondition(db);
   return db
     .select({
       id: freeModels.id,
@@ -1356,7 +1412,7 @@ export async function getModelsByProvider(db: Database, provider: string) {
       createdAt: freeModels.createdAt,
     })
     .from(freeModels)
-    .where(and(eq(freeModels.isActive, true), sql`${freeModels.id} LIKE ${likePattern}`));
+    .where(and(currentModelCondition, sql`${freeModels.id} LIKE ${likePattern}`));
 }
 
 /**
@@ -1436,12 +1492,13 @@ export async function getProviderAvailability(db: Database, provider: string, da
 
 /** Return a sorted list of distinct provider names from active models. */
 export async function getDistinctProviders(db: Database): Promise<string[]> {
+  const currentModelCondition = await getCurrentModelCondition(db);
   const rows = await db
     .selectDistinct({
       id: freeModels.id,
     })
     .from(freeModels)
-    .where(eq(freeModels.isActive, true));
+    .where(currentModelCondition);
 
   const providers = new Set<string>();
   for (const row of rows) {
