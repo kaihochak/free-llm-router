@@ -16,9 +16,9 @@ export function ModelHero() {
   return (
     <div className="space-y-12">
       {/* Header */}
-      <div className="relative flex min-h-[80vh] flex-col items-center justify-center text-center pb-16 px-4">
+      <div className="relative flex flex-col items-center justify-center px-4 pt-8 pb-16 text-center">
         {/* Radial glow background */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.6_0.2_145/0.15)_0%,transparent_60%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.6_0.2_145/0.07)_0%,transparent_60%)]" />
 
         {/* Dot pattern overlay */}
         <div className="pointer-events-none absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle,currentColor_1px,transparent_1px)] bg-size-[24px_24px]" />
