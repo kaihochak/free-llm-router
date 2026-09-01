@@ -1,4 +1,12 @@
-import { Rocket, Book, Code, ChevronRight, Settings, SlidersHorizontal } from 'lucide-react';
+import {
+  Rocket,
+  Book,
+  Code,
+  ChevronRight,
+  Settings,
+  SlidersHorizontal,
+  CircleHelp,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
   Sidebar,
@@ -44,7 +52,6 @@ const navItems: NavItem[] = [
     href: '#parameter-configuration',
     icon: SlidersHorizontal,
     items: [
-      { title: 'Overview', href: '#parameter-configuration-overview' },
       { title: 'Configure Parameters', href: '#configure-params-live' },
       { title: 'Key Defaults', href: '#key-defaults' },
       { title: 'Request Overrides', href: '#request-overrides' },
@@ -83,6 +90,11 @@ const navItems: NavItem[] = [
       { title: 'timeRange', href: '#param-timeRange' },
       { title: 'myReports', href: '#param-myReports' },
     ],
+  },
+  {
+    title: 'FAQ',
+    href: '#faq',
+    icon: CircleHelp,
   },
 ];
 

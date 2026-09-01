@@ -5,9 +5,6 @@ export function CodeExamplesSection() {
   return (
     <section id="code-examples" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">Code Examples</h2>
-      <p className="mb-12 text-lg text-muted-foreground">
-        Ready-to-use patterns for common use cases.
-      </p>
       <div className="space-y-12">
         {/* Basic Usage */}
         <div id="example-basic-fallback" className="space-y-3 md:space-y-4 scroll-mt-20">

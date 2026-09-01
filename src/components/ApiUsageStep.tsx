@@ -206,30 +206,21 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
               <h3 className="text-xl font-semibold sm:text-2xl">Set Up OpenRouter</h3>
             </div>
             <p className="text-muted-foreground">
-              <a
-                href="https://openrouter.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                OpenRouter
-              </a>{' '}
-              provides a unified API for accessing many LLM providers. Sign up for free and{' '}
+              Create a dedicated{' '}
               <a
                 href="https://openrouter.ai/keys"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                create a dedicated API key
+                OpenRouter API key
               </a>{' '}
-              specifically for free model usage.
+              for free-model requests.
             </p>
             <Alert variant="warning">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Protect yourself from accidental charges.</strong> Create a{' '}
-                <strong>separate API key</strong> just for free models and set a{' '}
+                Set a small{' '}
                 <a
                   href="https://openrouter.ai/settings/limits"
                   target="_blank"
@@ -238,8 +229,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
                 >
                   credit limit
                 </a>{' '}
-                (e.g. $1) on your account. If a non-free model is accidentally used, you could be
-                charged. We are not responsible for any charges incurred on OpenRouter.
+                to prevent accidental charges.
               </AlertDescription>
             </Alert>
           </div>
@@ -259,8 +249,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
               >
                 Sign in with GitHub
               </a>{' '}
-              to create your API key. All keys share a per-user limit of 200 requests per 24 hours
-              (with SDK caching, this is plenty).
+              to create a Free LLM Router key.
             </p>
           </div>
         </>
@@ -282,8 +271,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
           </h3>
         </div>
         <p className="text-muted-foreground">
-          This helper fetches free model IDs from our API, reports both successes and issues back,
-          and handles caching automatically.
+          The helper fetches model IDs, caches them, and reports results.
         </p>
         <CodeBlock code={snippet} copyLabel="Copy" className="[&>div:first-child]:max-h-[26vh]" />
       </div>
@@ -299,7 +287,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
           <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
         </div>
         <p className="text-muted-foreground">
-          Use saved key defaults, or override for a single request.
+          Use saved defaults or override them for one request.
         </p>
         {!isCompact && (
           <div className="flex items-center justify-between gap-3">
@@ -340,15 +328,6 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
           language="typescript"
           className="text-sm"
         />
-        {!isCompact && (
-          <p className="text-sm text-muted-foreground">
-            More patterns are available in{' '}
-            <a href="#code-examples" className="text-primary hover:underline">
-              Code Examples
-            </a>{' '}
-            .
-          </p>
-        )}
       </div>
 
       <div id="further-configure-params" className="space-y-3 md:space-y-4 scroll-mt-20">
@@ -361,7 +340,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
           <h3 className="text-xl font-semibold sm:text-2xl">Further Configure Parameters</h3>
         </div>
         <p className="text-muted-foreground">
-          Need to tune use case, sorting, limits, reliability filters, and exclusions? Open{' '}
+          Tune model selection in{' '}
           <a
             href={isCompact ? '/docs/parameter-configuration' : '#parameter-configuration'}
             className="text-primary hover:underline"

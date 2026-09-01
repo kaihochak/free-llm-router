@@ -113,7 +113,7 @@ export function generateProviderSchema(provider: string, modelCount: number) {
 }
 
 /** JSON-LD FAQPage schema from an array of {question, answer} items. */
-export function generateFAQSchema(faqs: { question: string; answer: string }[]) {
+export function generateFAQSchema(faqs: readonly { question: string; answer: string }[]) {
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',

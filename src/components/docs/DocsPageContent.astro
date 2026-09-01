@@ -4,6 +4,8 @@ import { ParameterConfigurationSectionWithProvider } from './ParameterConfigurat
 import { CodeExamplesSection } from './CodeExamplesSection';
 import { ApiReferenceSection } from './ApiReferenceSection';
 import { QueryParamsSection } from './QueryParamsSection';
+import FaqSection from '../FaqSection.astro';
+import { docsFaqs } from '@/lib/docs-faq';
 import DataAttributionFooter from '../DataAttributionFooter.astro';
 import { DocsSidebar } from '../DocsSidebar';
 
@@ -97,6 +99,7 @@ const { initialSection = '' } = Astro.props;
     <CodeExamplesSection client:load />
     <ApiReferenceSection client:load />
     <QueryParamsSection client:load />
+    <FaqSection id="faq" faqs={docsFaqs} class="mt-20 scroll-mt-20" />
 
     <DataAttributionFooter class="border-t pt-12" />
   </div>

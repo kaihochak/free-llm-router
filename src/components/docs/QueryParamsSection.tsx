@@ -14,10 +14,8 @@ export function QueryParamsSection() {
     <section id="query-params" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">Query Parameters</h2>
       <p className="mb-12 text-muted-foreground">
-        Customize your requests by combining these parameters. All parameters are optional and can
-        be mixed and matched.
+        All parameters are optional and can be combined.
       </p>
-
       <div className="space-y-8">
         {/* useCase parameter */}
         <div className="scroll-mt-20 space-y-3" id="param-useCase">

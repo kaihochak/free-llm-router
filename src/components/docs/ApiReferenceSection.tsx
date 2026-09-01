@@ -17,13 +17,7 @@ export function ApiReferenceSection() {
   return (
     <section id="api-reference" className="mt-20 scroll-mt-20">
       <h2 className="mb-4 text-5xl font-bold">API Reference</h2>
-      <p className="mb-12 text-muted-foreground">
-        Complete reference for all available endpoints. See{' '}
-        <a href="#query-params" className="text-primary hover:underline">
-          Query Parameters
-        </a>{' '}
-        for parameter details.
-      </p>
+      <p className="mb-12 text-muted-foreground">Endpoints for model selection and feedback.</p>
 
       <div className="space-y-16">
         {/* GET /api/v1/models/ids */}
@@ -31,7 +25,7 @@ export function ApiReferenceSection() {
           <EndpointHeader
             method="GET"
             endpoint="/api/v1/models/ids"
-            description="Lightweight endpoint returning only model IDs. Fast and small payload - use this in production."
+            description="Returns model IDs for routing."
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -135,26 +129,16 @@ export function ApiReferenceSection() {
           <EndpointHeader
             method="GET"
             endpoint="/api/v1/models/full"
-            description="Full model objects with metadata, feedback counts, and timestamps. Use for browsing or debugging."
+            description="Returns models with metadata and health data."
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div>
                 <h4 className="mb-3 font-medium">Query Parameters</h4>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-muted-foreground">
                   Same parameters as{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code>:{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">useCase</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">sort</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">topN</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">maxErrorRate</code>,{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">timeRange</code>, and{' '}
-                  <code className="bg-muted px-1 py-0.5 rounded">myReports</code>.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  See <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code>{' '}
-                  documentation above for parameter details.
+                  <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code>.
                 </p>
               </div>
 
@@ -214,7 +198,7 @@ export function ApiReferenceSection() {
             endpoint="/api/v1/models/feedback"
             description={
               <>
-                Report model feedback: successes or issues (rate limiting, errors, unavailability).{' '}
+                Reports a successful or failed model request.{' '}
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                   Does not count towards your rate limit.
                 </span>
