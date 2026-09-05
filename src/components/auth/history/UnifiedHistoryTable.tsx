@@ -19,7 +19,7 @@ function FeedbackRow({ item }: { item: UnifiedHistoryItem }) {
   return (
     <TableRow>
       <TableCell>
-        <code className="text-sm truncate max-w-50">{item.modelId}</code>
+        <code className="type-label truncate max-w-50">{item.modelId}</code>
       </TableCell>
       <TableCell>
         <span className="text-muted-foreground">-</span>
@@ -31,10 +31,10 @@ function FeedbackRow({ item }: { item: UnifiedHistoryItem }) {
           <Badge variant="destructive">{item.issue || 'Error'}</Badge>
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground text-sm">
+      <TableCell className="text-muted-foreground type-label">
         {formatTimeAgo(item.createdAt)}
       </TableCell>
-      <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
+      <TableCell className="text-muted-foreground type-label max-w-50 truncate">
         <TruncatedWithTooltip text={item.details || '-'} />
       </TableCell>
     </TableRow>
@@ -47,8 +47,8 @@ function ChildFeedbackRow({ feedback, isUsed }: { feedback: LinkedFeedbackItem; 
       <TableCell>
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">↳</span>
-          <code className="text-sm truncate max-w-50">{feedback.modelId}</code>
-          {isUsed && <span className="text-xs text-green-600 font-medium">used</span>}
+          <code className="type-label truncate max-w-50">{feedback.modelId}</code>
+          {isUsed && <span className="type-caption text-green-600">used</span>}
         </div>
       </TableCell>
       <TableCell>
@@ -61,10 +61,10 @@ function ChildFeedbackRow({ feedback, isUsed }: { feedback: LinkedFeedbackItem; 
           <Badge variant="destructive">{feedback.issue || 'Error'}</Badge>
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground text-sm">
+      <TableCell className="text-muted-foreground type-label">
         {feedback.createdAt ? formatTimeAgo(feedback.createdAt) : '-'}
       </TableCell>
-      <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
+      <TableCell className="text-muted-foreground type-label max-w-50 truncate">
         <TruncatedWithTooltip text={feedback.details || '-'} />
       </TableCell>
     </TableRow>

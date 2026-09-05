@@ -54,14 +54,14 @@ export function ExpandableRequestRows({
                 <ChevronRight className="h-4 w-4" />
               )}
             </span>
-            <Badge variant="outline" className="font-mono text-xs">
+            <Badge variant="outline" className="font-mono type-caption">
               {item.method || '-'}
             </Badge>
-            <code className="text-sm truncate max-w-50">{item.endpoint || '-'}</code>
+            <code className="type-label truncate max-w-50">{item.endpoint || '-'}</code>
           </div>
         </TableCell>
         <TableCell>
-          <code className="text-xs text-muted-foreground">
+          <code className="type-caption text-muted-foreground">
             {item.apiKeyName || item.apiKeyPrefix || 'Deleted'}
           </code>
         </TableCell>
@@ -70,10 +70,10 @@ export function ExpandableRequestRows({
             {item.statusCode ?? '-'}
           </Badge>
         </TableCell>
-        <TableCell className="text-muted-foreground text-sm">
+        <TableCell className="text-muted-foreground type-label">
           {formatTimeAgo(item.createdAt)}
         </TableCell>
-        <TableCell className="text-muted-foreground text-sm">View</TableCell>
+        <TableCell className="text-muted-foreground type-label">View</TableCell>
       </TableRow>
       {isExpanded && (
         <TableRow className="bg-muted/10 hover:bg-muted/10">
