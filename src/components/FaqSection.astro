@@ -16,11 +16,11 @@ const { faqs, id, class: className = 'mb-8' } = Astro.props;
 {
   faqs.length > 0 && (
     <section id={id} class={className}>
-      <h2 class="text-lg font-semibold mb-3">Frequently Asked Questions</h2>
+      <h2 class="type-title mb-3">Frequently Asked Questions</h2>
       <div class="rounded-xl border bg-card divide-y overflow-hidden">
         {faqs.map((faq) => (
           <details class="group px-4 py-3">
-            <summary class="text-sm font-medium cursor-pointer text-foreground hover:text-primary transition-colors list-none flex items-center justify-between">
+            <summary class="type-label cursor-pointer text-foreground hover:text-primary transition-colors list-none flex items-center justify-between">
               {faq.question}
               <svg
                 class="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
@@ -35,7 +35,7 @@ const { faqs, id, class: className = 'mb-8' } = Astro.props;
                 <path d="m6 9 6 6 6-6" />
               </svg>
             </summary>
-            <p class="text-sm text-muted-foreground mt-2 leading-relaxed">{faq.answer}</p>
+            <p class="type-label text-muted-foreground mt-2 leading-relaxed">{faq.answer}</p>
           </details>
         ))}
       </div>

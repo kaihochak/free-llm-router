@@ -18,7 +18,7 @@ export function UsageBanner() {
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.3 }}
       >
-        <Alert variant="warning" className="flex items-start justify-between">
+        <Alert variant="warning" className="flex justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>

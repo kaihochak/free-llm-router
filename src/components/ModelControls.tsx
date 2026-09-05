@@ -121,7 +121,7 @@ export function ModelControls({
 
   const sortLabel = SORT_DEFINITIONS.find((s) => s.key === activeSort)?.label || activeSort;
 
-  const labelClass = isSmall ? 'text-xs leading-4' : 'text-xs md:text-sm font-medium leading-5';
+  const labelClass = isSmall ? 'type-caption' : 'type-label';
   const gapClass = isSmall ? 'gap-1' : 'gap-2';
   const buttonClass = isSmall ? 'h-5! md:h-8! min-w-[16px]' : 'h-8! md:h-10! min-w-[20px]';
   const chevronClass = isSmall ? 'h-3 w-3' : 'h-4 w-4';
@@ -378,10 +378,12 @@ export function ModelControls({
                     {(id: string) => (
                       <ComboboxItem key={id} value={id}>
                         <span className="min-w-0">
-                          <span className="block truncate font-medium">
+                          <span className="block truncate type-label">
                             {excludeLabelById.get(id) || id}
                           </span>
-                          <span className="block truncate text-muted-foreground text-xs">{id}</span>
+                          <span className="block truncate text-muted-foreground type-caption">
+                            {id}
+                          </span>
                         </span>
                       </ComboboxItem>
                     )}

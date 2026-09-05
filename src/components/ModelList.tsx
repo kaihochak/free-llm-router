@@ -152,18 +152,18 @@ export function ModelList({
 
               {/* Model Name & Badges */}
               <div className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                <span className="type-label text-foreground group-hover:text-primary transition-colors truncate">
                   {model.name}
                 </span>
                 {isNew && (
-                  <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[10px] font-medium hover:bg-blue-500/15">
+                  <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 type-caption hover:bg-blue-500/15">
                     New
                   </Badge>
                 )}
                 {badges.length > 0 && (
                   <div className="hidden sm:flex gap-1">
                     {badges.map((badge) => (
-                      <Badge key={badge} variant="secondary" className="text-[10px] font-medium">
+                      <Badge key={badge} variant="secondary" className="type-caption">
                         {badge}
                       </Badge>
                     ))}
@@ -172,7 +172,7 @@ export function ModelList({
               </div>
 
               {/* Stats */}
-              <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex shrink-0 items-center gap-3 type-caption text-muted-foreground">
                 {/* Context / Output tokens - only show if at least one value exists */}
                 {(model.contextLength || model.maxCompletionTokens) && (
                   <TooltipProvider>
@@ -206,13 +206,13 @@ export function ModelList({
                                 ? 'secondary'
                                 : 'outline'
                           }
-                          className="text-[10px] font-medium"
+                          className="type-caption"
                         >
                           {model.errorRate.toFixed(1)}%
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-medium">
+                        <p className="type-label">
                           {showErrorRateDetails
                             ? `${model.errorRate.toFixed(1)}% (${model.issueCount}/${
                                 (model.issueCount ?? 0) + (model.successCount ?? 0)
@@ -289,7 +289,7 @@ export function ModelList({
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm text-muted-foreground px-1">
+              <span className="type-label text-muted-foreground px-1">
                 {safePage} / {totalPages}
               </span>
               <Button

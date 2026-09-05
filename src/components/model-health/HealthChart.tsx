@@ -77,7 +77,7 @@ function InteractiveLegendContent({
               key={item.dataKey ?? item.value}
               onClick={() => onToggle(item.dataKey)}
               className={cn(
-                'min-w-[100px] flex items-center gap-1.5 rounded px-1.5 py-0.5 text-sm transition-opacity cursor-pointer',
+                'min-w-[100px] flex items-center gap-1.5 rounded px-1.5 py-0.5 type-label transition-opacity cursor-pointer',
                 isVisible ? 'opacity-100' : 'opacity-40 hover:opacity-60'
               )}
               title={isVisible ? 'Click to hide' : 'Click to show'}
@@ -94,7 +94,7 @@ function InteractiveLegendContent({
               <span className={`${!isVisible ? 'text-muted-foreground' : ''} flex flex-col`}>
                 {shortName}
                 {issueSummary && issueSummary.errorRate > 0 && (
-                  <span className="text-xs opacity-70 ml-1">
+                  <span className="type-caption opacity-70 ml-1">
                     ({issueSummary.errorRate.toFixed(1)}%)
                   </span>
                 )}
@@ -142,8 +142,8 @@ function SortedTooltipContent({
   }
 
   return (
-    <div className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
-      <div className="font-medium">{label}</div>
+    <div className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 type-caption shadow-xl">
+      <div className="type-label">{label}</div>
       <div className="grid gap-1.5">
         {sortedPayload.map((item) => {
           const name = String(item.name ?? '');
@@ -162,7 +162,7 @@ function SortedTooltipContent({
               <span className="flex-1 text-muted-foreground">
                 {chartConfig[name]?.label || name}
               </span>
-              <span className="font-mono font-medium tabular-nums text-foreground">
+              <span className="font-mono type-label tabular-nums text-foreground">
                 {showErrorRateDetails && totalCount > 0
                   ? `${Number(item.value ?? 0).toFixed(1)}% (${errorCount}/${totalCount})`
                   : `${Number(item.value ?? 0).toFixed(1)}%`}

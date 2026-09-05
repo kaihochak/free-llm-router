@@ -199,7 +199,7 @@ export function AvailabilityMatrix({
     <div className="rounded-xl border bg-card overflow-hidden">
       {(showModelCount || showStatusFilter) && (
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <span className="text-sm text-muted-foreground">
+          <span className="type-label text-muted-foreground">
             {showModelCount
               ? `${displayModels.length} model${displayModels.length === 1 ? '' : 's'} shown`
               : ''}
@@ -241,7 +241,7 @@ export function AvailabilityMatrix({
                 <TableHead
                   key={`${header.month}-${idx}`}
                   colSpan={header.span}
-                  className="text-center text-xs font-normal text-muted-foreground bg-card border-b-0"
+                  className="text-center type-caption text-muted-foreground bg-card border-b-0"
                 >
                   {header.month}
                 </TableHead>
@@ -254,7 +254,7 @@ export function AvailabilityMatrix({
                 <TableHead key={date} className="text-center px-0.5 min-w-[20px] bg-card">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-[10px] text-muted-foreground cursor-help">
+                      <span className="type-caption text-muted-foreground cursor-help">
                         {formatDateShort(date)}
                       </span>
                     </TooltipTrigger>
@@ -270,25 +270,25 @@ export function AvailabilityMatrix({
 
               return (
                 <TableRow key={model.modelId}>
-                  <TableCell className="sticky left-0 z-10 bg-card font-medium">
+                  <TableCell className="sticky left-0 z-10 bg-card type-label">
                     <a
                       href={modelDetailPath(model.modelId)}
                       className="block rounded-sm hover:text-primary transition-colors"
                     >
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="truncate block max-w-[180px] cursor-pointer text-sm underline-offset-2 hover:underline">
+                          <span className="truncate block max-w-[180px] cursor-pointer type-label underline-offset-2 hover:underline">
                             {getShortModelName(model.modelName)}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="font-medium">{model.modelName}</p>
-                          <p className="text-xs opacity-80">{model.modelId}</p>
+                          <p className="type-label">{model.modelName}</p>
+                          <p className="type-caption opacity-80">{model.modelId}</p>
                         </TooltipContent>
                       </Tooltip>
                     </a>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
+                  <TableCell className="text-right tabular-nums type-label text-muted-foreground">
                     {daysAvailable}
                   </TableCell>
                   {visibleDates.map((date) => {
@@ -310,7 +310,7 @@ export function AvailabilityMatrix({
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{formatDateFull(date)}</p>
-                            <p className="font-medium">
+                            <p className="type-label">
                               {isAvailable === undefined
                                 ? 'No data'
                                 : isAvailable
@@ -330,7 +330,7 @@ export function AvailabilityMatrix({
       </div>
 
       {displayModels.length === 0 && (
-        <div className="border-t p-6 text-center text-sm text-muted-foreground">
+        <div className="border-t p-6 text-center type-label text-muted-foreground">
           No models match this filter.
         </div>
       )}

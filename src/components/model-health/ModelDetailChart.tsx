@@ -66,7 +66,7 @@ function ModelDetailChartInner({ modelId }: { modelId: string }) {
               key={tr.value}
               variant={range === tr.value ? 'default' : 'outline'}
               size="sm"
-              className="text-xs px-2.5"
+              className="type-caption px-2.5"
               onClick={() => setRange(tr.value)}
             >
               {tr.label}
@@ -75,13 +75,13 @@ function ModelDetailChartInner({ modelId }: { modelId: string }) {
         </ButtonGroup>
       </div>
       {isLoading ? (
-        <div className="h-48 rounded-xl border bg-card flex items-center justify-center text-sm text-muted-foreground">
+        <div className="h-48 rounded-xl border bg-card flex items-center justify-center type-label text-muted-foreground">
           Loading chart...
         </div>
       ) : data && data.timeline.length > 0 ? (
         <IssuesChart timeline={data.timeline} issues={data.issues} range={range} />
       ) : (
-        <div className="h-48 rounded-xl border bg-card flex items-center justify-center text-sm text-muted-foreground">
+        <div className="h-48 rounded-xl border bg-card flex items-center justify-center type-label text-muted-foreground">
           No data available for this time range
         </div>
       )}
