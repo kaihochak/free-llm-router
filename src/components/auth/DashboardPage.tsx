@@ -107,7 +107,7 @@ function DashboardPageContent() {
         <TabsList>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="api">API Keys</TabsTrigger>
-          <TabsTrigger value="configure">Configure Parameters</TabsTrigger>
+          <TabsTrigger value="configure">Configure</TabsTrigger>
         </TabsList>
 
         <TabsContent value="history" className="mt-6">

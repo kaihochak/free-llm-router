@@ -199,22 +199,22 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
             <Key className="h-5 w-5" />
-            API Usage (Shared Across All Keys)
+            API Usage
           </CardTitle>
           <CardDescription className="text-blue-600 dark:text-blue-500">
-            Your usage resets 24 hours after your last request
+            Shared across keys · Resets 24 hours after your last request
           </CardDescription>
         </CardHeader>
         <CardContent>
           {userRateLimit ? (
             <div className="space-y-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{userRateLimit.remaining}</span>
+                <span className="type-heading">{userRateLimit.remaining}</span>
                 <span className="text-muted-foreground">
                   / {userRateLimit.limit} requests remaining
                 </span>
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="type-label text-muted-foreground">
                 {userRateLimit.requestCount > 0 ? (
                   <>
                     Used {userRateLimit.requestCount} request
@@ -244,7 +244,7 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <code className="flex-1 rounded bg-green-100 px-3 py-2 font-mono text-sm dark:bg-green-900/30">
+              <code className="flex-1 rounded bg-green-100 px-3 py-2 font-mono type-label dark:bg-green-900/30">
                 {newKey}
               </code>
               <Button variant="outline" size="sm" onClick={handleCopyKey}>
@@ -266,8 +266,7 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
         <CardHeader>
           <CardTitle>API Keys</CardTitle>
           <CardDescription>
-            Manage your keys ({apiKeys.length}/{MAX_KEYS}). All keys share your account&apos;s rate
-            limit of {userRateLimit?.limit ?? 200} requests per day.
+            {apiKeys.length} of {MAX_KEYS} keys.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -290,15 +289,13 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
                   : `Limit Reached (${MAX_KEYS})`}
             </Button>
           </form>
-          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+          {error && <p className="mt-2 type-label text-red-500">{error}</p>}
 
           <div className="mt-6">
             {isLoadingKeys ? (
               <p className="text-center text-muted-foreground py-4">Loading keys...</p>
             ) : apiKeys.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                No API keys yet. Create one above to get started.
-              </p>
+              <p className="text-center text-muted-foreground py-4">No API keys yet.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -321,9 +318,9 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
 
                     return [
                       <TableRow key={key.id}>
-                        <TableCell className="font-medium">{key.name}</TableCell>
+                        <TableCell className="type-label">{key.name}</TableCell>
                         <TableCell>
-                          <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
+                          <code className="rounded bg-muted px-2 py-1 font-mono type-label">
                             {key.prefix || key.start || 'fma_'}...
                           </code>
                         </TableCell>
@@ -356,12 +353,12 @@ export function ApiKeysTab({ userRateLimit }: ApiKeysTabProps) {
                       <TableRow key={`${key.id}-prefs`} className="hover:bg-transparent">
                         <TableCell colSpan={6}>
                           {isLoadingPreferenceSummaries ? (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="type-caption text-muted-foreground">
                               Loading parameters...
                             </span>
                           ) : (
                             <div className="flex items-center justify-between gap-3 rounded-md p-1">
-                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                              <div className="flex flex-wrap items-center gap-2 type-caption">
                                 {preferenceState && !preferenceState.ok ? (
                                   <Badge variant="destructive">{preferenceState.error}</Badge>
                                 ) : (

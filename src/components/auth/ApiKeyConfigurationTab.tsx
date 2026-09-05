@@ -293,7 +293,7 @@ export function ApiKeyConfigurationTab() {
 
   if (apiKeys.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="type-label text-muted-foreground">
         Create an API key first to configure its default parameters.
       </p>
     );
@@ -358,15 +358,6 @@ export function ApiKeyConfigurationTab() {
           excludeActionMode: 'exclude',
           onToggleExcludeModel: toggleExcludedModel,
         }}
-        helper={
-          <>
-            Tune filters and preview the output list. For full parameter details, see{' '}
-            <a href="/docs/parameter-configuration" className="text-primary hover:underline">
-              docs
-            </a>
-            .
-          </>
-        }
         bottomRow={
           <div className="flex items-center justify-between gap-3">
             <Select
@@ -393,14 +384,14 @@ export function ApiKeyConfigurationTab() {
               <div className="flex items-center gap-3">
                 {prefsMessage && (
                   <span
-                    className={`text-sm ${prefsMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}
+                    className={`type-label ${prefsMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}
                   >
                     {prefsMessage.text}
                   </span>
                 )}
                 {prefLoadError && (
                   <>
-                    <span className="text-sm text-red-600">{prefLoadError}</span>
+                    <span className="type-label text-red-600">{prefLoadError}</span>
                     <Button
                       variant="outline"
                       onClick={() => configuringKey && void handleConfigureKey(configuringKey)}
