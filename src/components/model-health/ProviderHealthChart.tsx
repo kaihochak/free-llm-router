@@ -49,7 +49,7 @@ async function fetchProviderHealth(provider: string, range: TimeRange): Promise<
 }
 
 function ProviderHealthChartInner({ provider }: { provider: string }) {
-  const [range, setRange] = useState<TimeRange>('3d');
+  const [range, setRange] = useState<TimeRange>('30d');
 
   const { data, isLoading } = useQuery({
     queryKey: ['provider-health', provider, range],
@@ -66,7 +66,7 @@ function ProviderHealthChartInner({ provider }: { provider: string }) {
               key={tr.value}
               variant={range === tr.value ? 'default' : 'outline'}
               size="sm"
-              className="text-xs px-2.5"
+              className="type-caption px-2.5"
               onClick={() => setRange(tr.value)}
             >
               {tr.label}
@@ -75,7 +75,7 @@ function ProviderHealthChartInner({ provider }: { provider: string }) {
         </ButtonGroup>
       </div>
       {isLoading ? (
-        <div className="h-48 rounded-xl border bg-card flex items-center justify-center text-sm text-muted-foreground">
+        <div className="h-48 rounded-xl border bg-card flex items-center justify-center type-label text-muted-foreground">
           Loading chart...
         </div>
       ) : data && data.timeline.length > 0 && data.issues.length > 0 ? (
@@ -86,7 +86,7 @@ function ProviderHealthChartInner({ provider }: { provider: string }) {
           showErrorRateDetails={false}
         />
       ) : (
-        <div className="h-48 rounded-xl border bg-card flex items-center justify-center text-sm text-muted-foreground">
+        <div className="h-48 rounded-xl border bg-card flex items-center justify-center type-label text-muted-foreground">
           No data available for this time range
         </div>
       )}

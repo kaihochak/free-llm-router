@@ -1194,10 +1194,12 @@ export async function getModelsByProvider(db: Database, provider: string) {
       outputModalities: freeModels.outputModalities,
       supportedParameters: freeModels.supportedParameters,
       isModerated: freeModels.isModerated,
+      isActive: freeModels.isActive,
       createdAt: freeModels.createdAt,
     })
     .from(freeModels)
-    .where(and(eq(freeModels.isActive, true), sql`${freeModels.id} LIKE ${likePattern}`));
+    .where(sql`${freeModels.id} LIKE ${likePattern}`)
+    .orderBy(sql`${freeModels.isActive} DESC`, freeModels.name);
 }
 
 export async function getProviderAvailability(db: Database, provider: string, days = 90) {
@@ -1276,8 +1278,7 @@ export async function getDistinctProviders(db: Database): Promise<string[]> {
     .selectDistinct({
       id: freeModels.id,
     })
-    .from(freeModels)
-    .where(eq(freeModels.isActive, true));
+    .from(freeModels);
 
   const providers = new Set<string>();
   for (const row of rows) {
