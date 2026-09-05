@@ -124,7 +124,7 @@ export function TryItPanel({ endpoint, method, defaultBody, exampleResponse }: T
       {/* Request Block */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-4 py-3">
-          <h4 className="text-sm font-medium">Request</h4>
+          <h4 className="type-label">Request</h4>
           <Button size="sm" onClick={handleSend} disabled={loading || !canSend}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
           </Button>
@@ -132,18 +132,18 @@ export function TryItPanel({ endpoint, method, defaultBody, exampleResponse }: T
 
         <div className="px-4 py-3 border-b">
           <div className="space-y-2">
-            <span className="text-xs text-muted-foreground">API Key</span>
+            <span className="type-caption text-muted-foreground">API Key</span>
             <Input
               value={apiKey}
               onChange={(event) => setApiKey(event.target.value)}
               placeholder="fma_..."
               type="text"
-              className="h-8 text-sm"
+              className="h-8 type-label"
               autoComplete="off"
             />
           </div>
           {!canSend && (
-            <p className="mt-2 text-xs text-muted-foreground">Required to send requests.</p>
+            <p className="mt-2 type-caption text-muted-foreground">Required to send requests.</p>
           )}
         </div>
 
@@ -182,10 +182,10 @@ export function TryItPanel({ endpoint, method, defaultBody, exampleResponse }: T
       {/* Response Block */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-4 py-3">
-          <h4 className="text-sm font-medium">Response</h4>
+          <h4 className="type-label">Response</h4>
           {statusCode !== null && (
             <span
-              className={`text-xs font-medium ${
+              className={`type-caption ${
                 statusCode >= 200 && statusCode < 300
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-red-600 dark:text-red-400'

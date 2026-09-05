@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/ui/code-block';
-import { useModels, generateSnippet, getModelControlsProps } from '@/hooks/useModels';
+import { useModels, generateSnippet } from '@/hooks/useModels';
 import { codeExamples } from '@/lib/code-examples/index';
 import { useCachedSession, authClient } from '@/lib/auth-client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -54,10 +53,6 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
   const { data: session } = useCachedSession();
   const modelsData = useModels();
   const {
-    models,
-    loading,
-    error,
-    lastUpdated,
     activeUseCases,
     activeSort,
     activeTopN,
@@ -74,9 +69,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
     setActiveTimeRange,
     setActiveMyReports,
   } = modelsData;
-  const modelControlsProps = getModelControlsProps(modelsData);
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>(NO_API_KEY_VALUE);
-  const [localSnapshot, setLocalSnapshot] = useState<ApiKeyPreferences | null>(null);
   const snippet = generateSnippet(apiUrl);
   const [useItMode, setUseItMode] = useState<'default' | 'override'>('default');
 
@@ -131,48 +124,6 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
     setActiveMyReports,
   ]);
 
-  const currentPreferences = useMemo<ApiKeyPreferences>(
-    () => ({
-      useCases: activeUseCases,
-      sort: activeSort,
-      topN: activeTopN,
-      maxErrorRate: reliabilityFilterEnabled ? activeMaxErrorRate : undefined,
-      timeRange: activeTimeRange as ApiKeyPreferences['timeRange'],
-      myReports: activeMyReports,
-      excludeModelIds: [],
-    }),
-    [
-      activeUseCases,
-      activeSort,
-      activeTopN,
-      reliabilityFilterEnabled,
-      activeMaxErrorRate,
-      activeTimeRange,
-      activeMyReports,
-    ]
-  );
-
-  const handleApiKeyChange = (value: string) => {
-    if (value === NO_API_KEY_VALUE) {
-      if (localSnapshot) {
-        setActiveUseCases(localSnapshot.useCases ?? DEFAULT_USE_CASE);
-        setActiveSort(localSnapshot.sort ?? DEFAULT_SORT);
-        setActiveTopN(localSnapshot.topN);
-        setReliabilityFilterEnabled(localSnapshot.maxErrorRate !== undefined);
-        setActiveMaxErrorRate(localSnapshot.maxErrorRate);
-        setActiveTimeRange(localSnapshot.timeRange ?? DEFAULT_TIME_RANGE);
-        setActiveMyReports(localSnapshot.myReports ?? DEFAULT_MY_REPORTS);
-      }
-      setSelectedApiKeyId(NO_API_KEY_VALUE);
-      return;
-    }
-
-    if (selectedApiKeyId === NO_API_KEY_VALUE) {
-      setLocalSnapshot(currentPreferences);
-    }
-    setSelectedApiKeyId(value);
-  };
-
   const defaultBasicSnippet = codeExamples.basicUsageDefault();
   const overrideBasicSnippet = codeExamples.basicUsage(
     activeUseCases,
@@ -186,7 +137,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
   return (
     <div className="w-full space-y-12">
       {isCompact && (
-        <p className="text-sm text-muted-foreground">
+        <p className="type-label text-muted-foreground">
           Need full setup and configuration?{' '}
           <a href="/docs" className="text-primary hover:underline">
             See the docs
@@ -200,10 +151,10 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
           {/* Step 1: Set Up OpenRouter */}
           <div id="setup-openrouter" className="space-y-3 md:space-y-4 scroll-mt-20">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground type-label">
                 1
               </span>
-              <h3 className="text-xl font-semibold sm:text-2xl">Set Up OpenRouter</h3>
+              <h3 className="type-title">Set Up OpenRouter</h3>
             </div>
             <p className="text-muted-foreground">
               Create a dedicated{' '}
@@ -225,7 +176,7 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
                   href="https://openrouter.ai/settings/limits"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline font-medium"
+                  className="underline type-label"
                 >
                   credit limit
                 </a>{' '}
@@ -237,16 +188,13 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
           {/* Step 2: Get Your API Key */}
           <div id="get-api-key" className="space-y-3 md:space-y-4 scroll-mt-20">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground type-label">
                 2
               </span>
-              <h3 className="text-xl font-semibold sm:text-2xl">Get Your API Key</h3>
+              <h3 className="type-title">Get Your API Key</h3>
             </div>
             <p className="text-muted-foreground">
-              <a
-                href="/login"
-                className="text-primary font-medium hover:underline hover:opacity-90"
-              >
+              <a href="/login" className="text-primary type-label hover:underline hover:opacity-90">
                 Sign in with GitHub
               </a>{' '}
               to create a Free LLM Router key.
@@ -259,13 +207,13 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
       <div id="copy-file" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           {!isCompact && (
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground type-label">
               3
             </span>
           )}
-          <h3 className="text-xl font-semibold sm:text-2xl">
+          <h3 className="type-title">
             Copy{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-lg sm:text-xl">
+            <code className="type-title rounded bg-muted px-1.5 py-0.5 font-mono">
               free-llm-router.ts
             </code>
           </h3>
@@ -280,11 +228,11 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
       <div id="use-it" className="space-y-3 md:space-y-4 scroll-mt-20">
         <div className="flex flex-wrap items-center gap-3">
           {!isCompact && (
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground type-label">
               4
             </span>
           )}
-          <h3 className="text-xl font-semibold sm:text-2xl">Use It</h3>
+          <h3 className="type-title">Use It</h3>
         </div>
         <p className="text-muted-foreground">
           Use saved defaults or override them for one request.
@@ -296,17 +244,17 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
               onValueChange={(value) => setUseItMode(value as 'default' | 'override')}
             >
               <TabsList className="h-8">
-                <TabsTrigger value="default" className="text-xs">
+                <TabsTrigger value="default" className="type-caption">
                   Default
                 </TabsTrigger>
-                <TabsTrigger value="override" className="text-xs">
+                <TabsTrigger value="override" className="type-caption">
                   Override
                 </TabsTrigger>
               </TabsList>
             </Tabs>
             {useItMode === 'override' && session?.user && apiKeys.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">API key</span>
+                <span className="type-caption text-muted-foreground">API key</span>
                 <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
                   <SelectTrigger className="w-full sm:w-56 h-9" size="default">
                     <SelectValue placeholder="Select API key" />
@@ -326,30 +274,24 @@ export function ApiUsageStep({ variant = 'full' }: ApiUsageStepProps) {
         <CodeBlock
           code={isCompact || useItMode === 'default' ? defaultBasicSnippet : overrideBasicSnippet}
           language="typescript"
-          className="text-sm"
+          className="type-label"
         />
       </div>
 
-      <div id="further-configure-params" className="space-y-3 md:space-y-4 scroll-mt-20">
-        <div className="flex flex-wrap items-center gap-3">
-          {!isCompact && (
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-              5
-            </span>
-          )}
-          <h3 className="text-xl font-semibold sm:text-2xl">Further Configure Parameters</h3>
+      {isCompact && (
+        <div id="further-configure-params" className="space-y-3 md:space-y-4 scroll-mt-20">
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className="type-title">Further Configure Parameters</h3>
+          </div>
+          <p className="text-muted-foreground">
+            Tune model selection in{' '}
+            <a href="/docs/parameter-configuration" className="text-primary hover:underline">
+              Parameter Configuration
+            </a>
+            .
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Tune model selection in{' '}
-          <a
-            href={isCompact ? '/docs/parameter-configuration' : '#parameter-configuration'}
-            className="text-primary hover:underline"
-          >
-            Parameter Configuration
-          </a>
-          .
-        </p>
-      </div>
+      )}
     </div>
   );
 }

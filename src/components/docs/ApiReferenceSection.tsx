@@ -6,17 +6,11 @@ import { ResponseTable } from './ResponseTable';
 import { ErrorsList } from './ErrorsList';
 import { CacheNote } from './CacheNote';
 import { codeExamples } from '@/lib/code-examples';
-import {
-  VALID_USE_CASES,
-  VALID_SORTS,
-  VALID_TIME_RANGES_WITH_LABELS,
-  DEFAULT_TIME_RANGE,
-} from '@/lib/api-definitions';
 
 export function ApiReferenceSection() {
   return (
     <section id="api-reference" className="mt-20 scroll-mt-20">
-      <h2 className="mb-4 text-5xl font-bold">API Reference</h2>
+      <h2 className="mb-4 type-heading">API Reference</h2>
       <p className="mb-12 text-muted-foreground">Endpoints for model selection and feedback.</p>
 
       <div className="space-y-16">
@@ -30,77 +24,13 @@ export function ApiReferenceSection() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
-              <ParamsTable
-                type="query"
-                params={[
-                  {
-                    name: 'useCase',
-                    type: 'string',
-                    description: (
-                      <>
-                        Comma-separated:{' '}
-                        {VALID_USE_CASES.map((useCase, idx) => (
-                          <span key={useCase}>
-                            {idx > 0 && ', '}
-                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{useCase}</code>
-                          </span>
-                        ))}
-                      </>
-                    ),
-                  },
-                  {
-                    name: 'sort',
-                    type: 'string',
-                    description: (
-                      <>
-                        One of:{' '}
-                        {VALID_SORTS.map((sort, idx) => (
-                          <span key={sort}>
-                            {idx > 0 && ', '}
-                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{sort}</code>
-                          </span>
-                        ))}
-                      </>
-                    ),
-                  },
-                  {
-                    name: 'topN',
-                    type: 'number',
-                    description: 'Return top N models based on sort order (1-100)',
-                  },
-                  {
-                    name: 'maxErrorRate',
-                    type: 'number',
-                    description: 'Exclude models with error rate above this percentage (0-100)',
-                  },
-                  {
-                    name: 'timeRange',
-                    type: 'string',
-                    description: (
-                      <>
-                        Time window for error rates:{' '}
-                        {VALID_TIME_RANGES_WITH_LABELS.map((tr, idx) => (
-                          <span key={tr}>
-                            {idx > 0 && ', '}
-                            <code className="text-xs bg-muted px-1 py-0.5 rounded">{tr}</code>
-                          </span>
-                        ))}
-                        . Default:{' '}
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                          {DEFAULT_TIME_RANGE}
-                        </code>
-                        .
-                      </>
-                    ),
-                  },
-                  {
-                    name: 'myReports',
-                    type: 'boolean',
-                    description:
-                      'If true, calculate error rates from only your own reports (requires API key). Default: false.',
-                  },
-                ]}
-              />
+              <p className="type-label text-muted-foreground">
+                See{' '}
+                <a href="#query-params" className="text-primary hover:underline">
+                  Query Parameters
+                </a>
+                .
+              </p>
 
               <ResponseTable
                 fields={[
@@ -135,8 +65,8 @@ export function ApiReferenceSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div>
-                <h4 className="mb-3 font-medium">Query Parameters</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="type-label mb-3">Query Parameters</h4>
+                <p className="type-label text-muted-foreground">
                   Same parameters as{' '}
                   <code className="bg-muted px-1 py-0.5 rounded">/models/ids</code>.
                 </p>
@@ -199,7 +129,7 @@ export function ApiReferenceSection() {
             description={
               <>
                 Reports a successful or failed model request.{' '}
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className="text-emerald-600 dark:text-emerald-400 type-label">
                   Does not count towards your rate limit.
                 </span>
               </>
@@ -231,9 +161,14 @@ export function ApiReferenceSection() {
                     description: (
                       <>
                         Required if success is false/omitted. One of:{' '}
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">rate_limited</code>,{' '}
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">unavailable</code>,{' '}
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">error</code>
+                        <code className="type-caption bg-muted px-1 py-0.5 rounded">
+                          rate_limited
+                        </code>
+                        ,{' '}
+                        <code className="type-caption bg-muted px-1 py-0.5 rounded">
+                          unavailable
+                        </code>
+                        , <code className="type-caption bg-muted px-1 py-0.5 rounded">error</code>
                       </>
                     ),
                   },
