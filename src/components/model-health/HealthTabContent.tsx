@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useHealth, type TimeRange } from '@/hooks/useHealth';
+import { HEALTH_DEFAULT_TIME_RANGE, useHealth, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { IssuesChart } from '@/components/model-health/HealthChart';
 import { ModelControls } from '@/components/ModelControls';
@@ -19,7 +19,6 @@ import { filterModelsByUseCase, sortModels } from '@/lib/model-types';
 import {
   DEFAULT_MY_REPORTS,
   DEFAULT_SORT,
-  DEFAULT_TIME_RANGE,
   DEFAULT_TOP_N,
   DEFAULT_USE_CASE,
 } from '@/lib/api-definitions';
@@ -118,7 +117,7 @@ export function HealthTabContent() {
     setActiveTopN(selectedPreferences.topN ?? DEFAULT_TOP_N);
     setReliabilityFilterEnabled(selectedPreferences.maxErrorRate !== undefined);
     setActiveMaxErrorRate(selectedPreferences.maxErrorRate);
-    setRange((selectedPreferences.timeRange ?? DEFAULT_TIME_RANGE) as TimeRange);
+    setRange((selectedPreferences.timeRange ?? HEALTH_DEFAULT_TIME_RANGE) as TimeRange);
     setMyReports(selectedPreferences.myReports ?? DEFAULT_MY_REPORTS);
     setExcludedModelIds(selectedPreferences.excludeModelIds ?? []);
     setCurrentPage(1);
@@ -142,7 +141,7 @@ export function HealthTabContent() {
         setActiveTopN(localSnapshot.topN ?? DEFAULT_TOP_N);
         setReliabilityFilterEnabled(localSnapshot.maxErrorRate !== undefined);
         setActiveMaxErrorRate(localSnapshot.maxErrorRate);
-        setRange((localSnapshot.timeRange ?? DEFAULT_TIME_RANGE) as TimeRange);
+        setRange((localSnapshot.timeRange ?? HEALTH_DEFAULT_TIME_RANGE) as TimeRange);
         setMyReports(localSnapshot.myReports ?? DEFAULT_MY_REPORTS);
         setExcludedModelIds(localSnapshot.excludeModelIds ?? []);
       }

@@ -101,10 +101,10 @@ export interface UseHealthOptions {
   overrideMaxErrorRate?: number;
 }
 
-const HEALTH_DEFAULT_TIME_RANGE: TimeRange = '3d';
+export const HEALTH_DEFAULT_TIME_RANGE: TimeRange = '30d';
 const HEALTH_DEFAULT_TOP_N: number | undefined = undefined;
 const HEALTH_DEFAULT_RELIABILITY_FILTER_ENABLED = false;
-const HEALTH_DEFAULTS_VERSION = 1;
+const HEALTH_DEFAULTS_VERSION = 2;
 
 export function useHealth(options?: UseHealthOptions) {
   const [range, setRange] = useLocalStorage<TimeRange>(
