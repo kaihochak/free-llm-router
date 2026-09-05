@@ -117,54 +117,53 @@ export function OnboardingFlow() {
   }, [currentStep]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-center gap-3">
-        <button
-          onClick={goToPrevStep}
-          disabled={currentStep === 0}
-          className={`p-2 rounded-full transition-colors ${
-            currentStep === 0
-              ? 'text-muted-foreground/30 cursor-not-allowed'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          aria-label="Previous step"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-
-        <div className="flex gap-2">
-          {steps.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setDirection(index > currentStep ? 1 : -1);
-                setCurrentStep(index);
-              }}
-              className={`h-2 w-2 rounded-full transition-colors ${
-                index === currentStep
-                  ? 'bg-primary'
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-              }`}
-              aria-label={`Go to step ${index + 1}`}
-            />
-          ))}
-        </div>
-
-        <button
-          onClick={goToNextStep}
-          disabled={currentStep === steps.length - 1}
-          className={`p-2 rounded-full transition-colors ${
-            currentStep === steps.length - 1
-              ? 'text-muted-foreground/30 cursor-not-allowed'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          aria-label="Next step"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
+    <div className="space-y-4">
       <div className="relative overflow-hidden min-h-45">
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={goToPrevStep}
+            disabled={currentStep === 0}
+            className={`p-2 rounded-full transition-colors ${
+              currentStep === 0
+                ? 'text-muted-foreground/30 cursor-not-allowed'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+            aria-label="Previous step"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <div className="flex gap-2">
+            {steps.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setDirection(index > currentStep ? 1 : -1);
+                  setCurrentStep(index);
+                }}
+                className={`h-2 w-2 rounded-full transition-colors ${
+                  index === currentStep
+                    ? 'bg-primary'
+                    : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }`}
+                aria-label={`Go to step ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={goToNextStep}
+            disabled={currentStep === steps.length - 1}
+            className={`p-2 rounded-full transition-colors ${
+              currentStep === steps.length - 1
+                ? 'text-muted-foreground/30 cursor-not-allowed'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+            aria-label="Next step"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentStep}

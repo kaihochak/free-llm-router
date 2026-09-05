@@ -26,7 +26,6 @@ export function UseCaseSelector({
             <Button
               key={useCase.key}
               variant={isActive ? 'secondary' : 'outline'}
-              size="xl"
               onClick={() => onToggleFilter(useCase.key)}
             >
               {useCase.label}
@@ -34,7 +33,7 @@ export function UseCaseSelector({
           );
         })}
         {onConfirm && (
-          <Button size="xl" onClick={onConfirm} variant="default">
+          <Button onClick={onConfirm} variant="default">
             Continue
             <ChevronRight className="ml-1 h-4 w-4" />
           </Button>

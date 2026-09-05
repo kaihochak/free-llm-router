@@ -165,21 +165,19 @@ export function FeedbackDialog() {
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <span className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+        <span className="flex items-center gap-1.5 type-label text-muted-foreground hover:text-foreground cursor-pointer">
           <span className="">Feedback</span>
         </span>
       </SheetTrigger>
       <SheetContent side="right" className="flex flex-col">
         <SheetHeader>
           <SheetTitle>Send Feedback</SheetTitle>
-          <SheetDescription>
-            Help us improve by sharing your thoughts or reporting issues.
-          </SheetDescription>
+          <SheetDescription>Share an idea or report a problem.</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 space-y-4 px-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Type</label>
+            <label className="type-label">Type</label>
             <Select
               value={formData.type}
               onValueChange={(value: FeedbackType) =>
@@ -204,15 +202,15 @@ export function FeedbackDialog() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            {errors.type && <p className="text-sm text-destructive">{errors.type}</p>}
+            {errors.type && <p className="type-label text-destructive">{errors.type}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label className="type-label">
               {formData.type === 'bug' ? 'Describe the issue' : 'Your feedback'}
             </label>
             <textarea
-              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-full h-32 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-full h-32 rounded-md border bg-transparent px-3 py-2 type-label shadow-xs focus-visible:outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 resize-none"
               placeholder={
                 formData.type === 'bug'
                   ? 'What happened? What did you expect to happen?'
@@ -222,20 +220,16 @@ export function FeedbackDialog() {
               onChange={(e) => setFormData((prev) => ({ ...prev, message: e.target.value }))}
               aria-invalid={!!errors.message}
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between type-caption text-muted-foreground">
               <span>
-                {errors.message ? (
-                  <span className="text-destructive">{errors.message}</span>
-                ) : (
-                  'Minimum 10 characters'
-                )}
+                {errors.message ? <span className="text-destructive">{errors.message}</span> : null}
               </span>
               <span>{formData.message.length}/5000</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
+            <label className="type-label">Email</label>
             <Input
               type="email"
               placeholder="your@email.com"
@@ -243,11 +237,7 @@ export function FeedbackDialog() {
               onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
               aria-invalid={!!errors.email}
             />
-            {errors.email ? (
-              <p className="text-sm text-destructive">{errors.email}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">We'll use this to follow up</p>
-            )}
+            {errors.email && <p className="type-label text-destructive">{errors.email}</p>}
           </div>
 
           {import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && <div ref={turnstileRef} />}

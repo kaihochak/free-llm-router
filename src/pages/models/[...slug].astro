@@ -217,13 +217,13 @@ const availabilityModels = hasAvailability
 <Layout title={title} description={description} jsonLd={jsonLd} url={modelDetailPath(model.id)}>
   <div class="container mx-auto max-w-3xl px-4 py-8">
     <!-- Breadcrumbs -->
-    <nav class="mb-6 text-sm text-muted-foreground" aria-label="Breadcrumb">
+    <nav class="mb-6 type-label text-muted-foreground" aria-label="Breadcrumb">
       <ol class="flex items-center gap-1.5">
         <li><a href="/" class="hover:text-foreground transition-colors">Home</a></li>
         <li class="text-muted-foreground/50">/</li>
         <li><a href="/models" class="hover:text-foreground transition-colors">Models</a></li>
         <li class="text-muted-foreground/50">/</li>
-        <li class="text-foreground font-medium truncate">{model.name}</li>
+        <li class="text-foreground type-label truncate">{model.name}</li>
       </ol>
     </nav>
 
@@ -238,10 +238,10 @@ const availabilityModels = hasAvailability
             onerror="this.style.display='none'"
           />
           <div class="min-w-0">
-            <h1 class="text-2xl font-bold tracking-tight text-foreground">
+            <h1 class="type-heading">
               {model.name}
             </h1>
-            <p class="text-sm text-muted-foreground mt-1">
+            <p class="type-label text-muted-foreground mt-1">
               by <a
                 href={providerDetailPath(provider)}
                 class="capitalize hover:text-foreground transition-colors underline-offset-2 hover:underline"
@@ -249,14 +249,14 @@ const availabilityModels = hasAvailability
               >
               {
                 isNew && (
-                  <span class="ml-2 inline-flex items-center rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                  <span class="ml-2 inline-flex items-center rounded-full bg-blue-500/15 px-2 py-0.5 type-caption text-blue-600 dark:text-blue-400">
                     New
                   </span>
                 )
               }
               {
                 isInactive && (
-                  <span class="ml-2 inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  <span class="ml-2 inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 type-caption text-amber-700 dark:text-amber-400">
                     No longer free
                   </span>
                 )
@@ -264,7 +264,7 @@ const availabilityModels = hasAvailability
             </p>
             {
               isInactive && (
-                <p class="text-xs text-muted-foreground mt-2">
+                <p class="type-caption text-muted-foreground mt-2">
                   Last seen as free: {lastSeenLabel ?? 'unknown'}
                 </p>
               )
@@ -275,7 +275,7 @@ const availabilityModels = hasAvailability
           href={openRouterUrl}
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0 mt-1"
+          class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 type-label text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0 mt-1"
         >
           OpenRouter
           <svg
@@ -296,7 +296,7 @@ const availabilityModels = hasAvailability
         capabilities.length > 0 && (
           <div class="flex flex-wrap gap-1.5 mt-4">
             {capabilities.map((cap) => (
-              <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+              <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 type-caption text-muted-foreground">
                 {cap}
               </span>
             ))}
@@ -309,10 +309,9 @@ const availabilityModels = hasAvailability
     {
       hasAvailability && (
         <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-3">Availability</h2>
-          <p class="text-xs text-muted-foreground mb-3">
-            Available {availableDays} of {totalTrackedDays} tracked days. Daily snapshots show
-            whether this model was accessible as a free model on OpenRouter.
+          <h2 class="type-title mb-3">Availability</h2>
+          <p class="type-caption text-muted-foreground mb-3">
+            Available on {availableDays} of {totalTrackedDays} tracked days.
           </p>
           <AvailabilityMatrix
             client:load
@@ -329,7 +328,7 @@ const availabilityModels = hasAvailability
     {
       model.description && (
         <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-2">About</h2>
+          <h2 class="type-title mb-2">About</h2>
           <p class="text-muted-foreground leading-relaxed">{model.description}</p>
         </section>
       )
@@ -337,60 +336,56 @@ const availabilityModels = hasAvailability
 
     <!-- Capabilities -->
     <section class="mb-8">
-      <h2 class="text-lg font-semibold mb-3">Specifications</h2>
+      <h2 class="type-title mb-3">Specifications</h2>
       <div class="rounded-xl border bg-card divide-y overflow-hidden">
         <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-sm text-muted-foreground">Context Length</span>
-          <span class="text-sm font-mono font-medium">{formatTokens(model.contextLength)}</span>
+          <span class="type-label text-muted-foreground">Context Length</span>
+          <span class="type-label font-mono">{formatTokens(model.contextLength)}</span>
         </div>
         <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-sm text-muted-foreground">Max Output Tokens</span>
-          <span class="text-sm font-mono font-medium"
-            >{formatTokens(model.maxCompletionTokens)}</span
-          >
+          <span class="type-label text-muted-foreground">Max Output Tokens</span>
+          <span class="type-label font-mono">{formatTokens(model.maxCompletionTokens)}</span>
         </div>
         <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-sm text-muted-foreground">Modality</span>
-          <span class="text-sm font-mono font-medium">{model.modality ?? '-'}</span>
+          <span class="type-label text-muted-foreground">Modality</span>
+          <span class="type-label font-mono">{model.modality ?? '-'}</span>
         </div>
         {
           model.inputModalities && model.inputModalities.length > 0 && (
             <div class="flex items-center justify-between px-4 py-3">
-              <span class="text-sm text-muted-foreground">Input</span>
-              <span class="text-sm font-medium">{model.inputModalities.join(', ')}</span>
+              <span class="type-label text-muted-foreground">Input</span>
+              <span class="type-label">{model.inputModalities.join(', ')}</span>
             </div>
           )
         }
         {
           model.outputModalities && model.outputModalities.length > 0 && (
             <div class="flex items-center justify-between px-4 py-3">
-              <span class="text-sm text-muted-foreground">Output</span>
-              <span class="text-sm font-medium">{model.outputModalities.join(', ')}</span>
+              <span class="type-label text-muted-foreground">Output</span>
+              <span class="type-label">{model.outputModalities.join(', ')}</span>
             </div>
           )
         }
         {
           model.supportedParameters && model.supportedParameters.length > 0 && (
             <div class="flex items-center justify-between px-4 py-3">
-              <span class="text-sm text-muted-foreground">Supported Parameters</span>
-              <span class="text-sm font-medium">{model.supportedParameters.join(', ')}</span>
+              <span class="type-label text-muted-foreground">Supported Parameters</span>
+              <span class="type-label">{model.supportedParameters.join(', ')}</span>
             </div>
           )
         }
         <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-sm text-muted-foreground">Content Moderation</span>
-          <span class="text-sm font-medium">{model.isModerated ? 'Yes' : 'No'}</span>
+          <span class="type-label text-muted-foreground">Content Moderation</span>
+          <span class="type-label">{model.isModerated ? 'Yes' : 'No'}</span>
         </div>
       </div>
     </section>
 
     <!-- Reliability -->
     <section class="mb-8">
-      <h2 class="text-lg font-semibold mb-3">Error Rate</h2>
-      <p class="text-xs text-muted-foreground mb-3 leading-relaxed">
-        Based on feedback reported by Free LLM Router users. Error rate reflects the percentage of
-        requests that encountered issues such as rate limiting, unavailability, or errors.
-        <a href="/docs" class="underline hover:text-foreground transition-colors">Learn more</a>.
+      <h2 class="type-title mb-3">Error Rate</h2>
+      <p class="type-caption text-muted-foreground mb-3 leading-relaxed">
+        Based on community reports.
       </p>
 
       <!-- Interactive chart -->
@@ -403,20 +398,20 @@ const availabilityModels = hasAvailability
         hasFeedback && (
           <div class="rounded-xl border bg-card overflow-hidden">
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="w-full type-label">
                 <thead>
                   <tr class="border-b">
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Model</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">1h</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">6h</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">24h</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">7d</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">30d</th>
+                    <th class="px-4 py-3 text-left type-label text-muted-foreground">Model</th>
+                    <th class="px-4 py-3 text-right type-label text-muted-foreground">1h</th>
+                    <th class="px-4 py-3 text-right type-label text-muted-foreground">6h</th>
+                    <th class="px-4 py-3 text-right type-label text-muted-foreground">24h</th>
+                    <th class="px-4 py-3 text-right type-label text-muted-foreground">7d</th>
+                    <th class="px-4 py-3 text-right type-label text-muted-foreground">30d</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y">
                   <tr>
-                    <td class="px-4 py-3 font-medium text-foreground truncate max-w-[200px]">
+                    <td class="px-4 py-3 type-label text-foreground truncate max-w-[200px]">
                       {model.name}
                     </td>
                     <td
@@ -472,7 +467,7 @@ const availabilityModels = hasAvailability
     {
       similarModels.length > 0 && (
         <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-3">Similar Models</h2>
+          <h2 class="type-title mb-3">Similar Models</h2>
           <div class="rounded-xl border bg-card divide-y overflow-hidden">
             {similarModels.map((similar) => {
               const simProvider = getProviderFromId(similar.id);
@@ -487,9 +482,9 @@ const availabilityModels = hasAvailability
                     class="h-5 w-5 object-contain opacity-70 dark:invert dark:opacity-80 shrink-0"
                     onerror="this.style.display='none'"
                   />
-                  <span class="font-medium text-foreground truncate">{similar.name}</span>
+                  <span class="type-label text-foreground truncate">{similar.name}</span>
                   {similar.contextLength && (
-                    <span class="ml-auto text-xs text-muted-foreground font-mono shrink-0">
+                    <span class="ml-auto type-caption text-muted-foreground font-mono shrink-0">
                       {formatTokens(similar.contextLength)}
                     </span>
                   )}
@@ -505,7 +500,7 @@ const availabilityModels = hasAvailability
     {
       relatedModels.length > 0 && (
         <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-3">
+          <h2 class="type-title mb-3">
             More from{' '}
             <a href={providerDetailPath(provider)} class="hover:text-primary transition-colors">
               {providerCapitalized}
@@ -525,9 +520,9 @@ const availabilityModels = hasAvailability
                     class="h-5 w-5 object-contain opacity-70 dark:invert dark:opacity-80 shrink-0"
                     onerror="this.style.display='none'"
                   />
-                  <span class="font-medium text-foreground truncate">{related.name}</span>
+                  <span class="type-label text-foreground truncate">{related.name}</span>
                   {related.contextLength && (
-                    <span class="ml-auto text-xs text-muted-foreground font-mono shrink-0">
+                    <span class="ml-auto type-caption text-muted-foreground font-mono shrink-0">
                       {formatTokens(related.contextLength)}
                     </span>
                   )}
@@ -543,11 +538,11 @@ const availabilityModels = hasAvailability
     {
       faqs.length > 0 && (
         <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-3">Frequently Asked Questions</h2>
+          <h2 class="type-title mb-3">Frequently Asked Questions</h2>
           <div class="rounded-xl border bg-card divide-y overflow-hidden">
             {faqs.map((faq) => (
               <details class="group px-4 py-3">
-                <summary class="text-sm font-medium cursor-pointer text-foreground hover:text-primary transition-colors list-none flex items-center justify-between">
+                <summary class="type-label cursor-pointer text-foreground hover:text-primary transition-colors list-none flex items-center justify-between">
                   {faq.question}
                   <svg
                     class="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
@@ -561,7 +556,7 @@ const availabilityModels = hasAvailability
                     <path d="m6 9 6 6 6-6" />
                   </svg>
                 </summary>
-                <p class="text-sm text-muted-foreground mt-2 leading-relaxed">{faq.answer}</p>
+                <p class="type-label text-muted-foreground mt-2 leading-relaxed">{faq.answer}</p>
               </details>
             ))}
           </div>

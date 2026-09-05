@@ -18,13 +18,11 @@ const PAGE_CONTENT: Record<
 > = {
   health: {
     heading: 'Free Model Health',
-    description:
-      'Browse community-reported health for free OpenRouter models. Compare reliability, error rates, and recent issue reports to find models that are actually working.',
+    description: 'Compare community-reported error rates across free models.',
   },
   availability: {
     heading: 'Free Model Availability',
-    description:
-      'Track daily availability history for free OpenRouter models. See which models stayed available over time and spot removals or downtime in OpenRouter sync data.',
+    description: 'See which models were available for free on each day.',
   },
 };
 
@@ -41,20 +39,15 @@ function ModelsPageContent({ currentView = 'health' }: ModelsPageProps) {
 
   return (
     <section className="scroll-mt-16 sm:mt-4">
-      <h1 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">{content.heading}</h1>
-      <p className="mb-8 text-base text-muted-foreground sm:text-lg">{content.description}</p>
-      <p className="mb-8 text-sm text-muted-foreground sm:text-base">
-        We are not OpenRouter. Health data is community-reported, and availability is tracked from
-        OpenRouter model syncs.
-      </p>
-
+      <h1 className="type-heading mb-3 sm:mb-4">{content.heading}</h1>
+      <p className="type-body mb-8 text-muted-foreground">{content.description}</p>
       <nav className="mb-6" aria-label="Model sections">
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
           <a
             href="/models"
             aria-current={currentView === 'health' ? 'page' : undefined}
             className={cn(
-              'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 type-label ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               currentView === 'health'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground'
@@ -63,10 +56,10 @@ function ModelsPageContent({ currentView = 'health' }: ModelsPageProps) {
             Health
           </a>
           <a
-            href="/models/availability"
+            href="/availability"
             aria-current={currentView === 'availability' ? 'page' : undefined}
             className={cn(
-              'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 type-label ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               currentView === 'availability'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground'

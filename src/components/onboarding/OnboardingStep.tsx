@@ -21,11 +21,11 @@ export function OnboardingStep({
   wide = false,
 }: OnboardingStepProps) {
   return (
-    <div className="flex flex-col items-center text-center space-y-10 py-10">
+    <div className="flex flex-col items-center text-center space-y-6 py-8">
       {/* Step Header */}
-      <div className="flex flex-col items-center text-center space-y-2">
-        <h2 className="text-4xl font-bold sm:text-5xl">{title}</h2>
-        {description && <p className="text-lg text-muted-foreground">{description}</p>}
+      <div className="flex flex-col items-center text-center space-y-1">
+        <h2 className="type-heading">{title}</h2>
+        {description && <p className="type-body text-muted-foreground">{description}</p>}
       </div>
 
       {/* Step Content */}
