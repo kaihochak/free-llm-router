@@ -18,21 +18,21 @@ export function ParamsTable({ type, params }: ParamsTableProps) {
 
   return (
     <div>
-      <h4 className="mb-3 font-medium">{title}</h4>
+      <h4 className="type-label mb-3">{title}</h4>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full type-label">
           <thead>
             <tr className="border-b">
-              <th className="py-2 pr-4 text-left font-medium">Parameter</th>
-              <th className="py-2 pr-4 text-left font-medium">Type</th>
-              {isBodyTable && <th className="py-2 pr-4 text-left font-medium">Required</th>}
-              <th className="py-2 text-left font-medium">Description</th>
+              <th className="py-2 pr-4 text-left type-label">Parameter</th>
+              <th className="py-2 pr-4 text-left type-label">Type</th>
+              {isBodyTable && <th className="py-2 pr-4 text-left type-label">Required</th>}
+              <th className="py-2 text-left type-label">Description</th>
             </tr>
           </thead>
           <tbody className="text-muted-foreground">
             {params.map((param, idx) => (
               <tr key={param.name} className={idx === params.length - 1 ? '' : 'border-b'}>
-                <td className="py-2 pr-4 font-mono text-xs">{param.name}</td>
+                <td className="py-2 pr-4 font-mono type-caption">{param.name}</td>
                 <td className="py-2 pr-4">{param.type}</td>
                 {isBodyTable && <td className="py-2 pr-4">{param.required ? 'Yes' : 'No'}</td>}
                 <td className="py-2">{param.description}</td>

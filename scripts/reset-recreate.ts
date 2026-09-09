@@ -106,7 +106,7 @@ function applyRls(databaseUrl: string): void {
   const appPassword = getPasswordFromUrl(appUrl) ?? generatePassword();
   const adminPassword = getPasswordFromUrl(adminUrl) ?? generatePassword();
   const statsPassword = getPasswordFromUrl(statsUrl) ?? generatePassword();
-  const sql = readFileSync('sql/enable_rls.sql', 'utf8')
+  const sql = readFileSync('scripts/db-migration/enable_rls.sql', 'utf8')
     .replaceAll('<app_password>', escapeSqlLiteral(appPassword))
     .replaceAll('<admin_password>', escapeSqlLiteral(adminPassword))
     .replaceAll('<stats_password>', escapeSqlLiteral(statsPassword));

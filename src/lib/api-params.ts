@@ -1,6 +1,6 @@
 import type { APIContext } from 'astro';
-import { type Database, createDb, apiKeys } from '@/db';
-import { eq } from 'drizzle-orm';
+import { type Database, apiKeys, withUserContext } from '@/db';
+import { and, eq } from 'drizzle-orm';
 import {
   type UseCaseType,
   type SortType,
@@ -22,6 +22,9 @@ import {
   rateLimitedResponse,
 } from '@/lib/api-auth';
 import { extractApiKeyPreferences } from '@/lib/api-key-metadata';
+import { access } from '@/lib/runtime-access';
+
+type DbRole = 'app' | 'admin' | 'stats' | 'owner';
 
 export interface ParsedModelParams {
   useCases: UseCaseType[];
@@ -52,30 +55,32 @@ export function parseModelParams(
   searchParams: URLSearchParams,
   savedPreferences?: ApiKeyPreferences
 ): ParsedModelParams {
-  const prefs = savedPreferences || {};
+  const ignoreSavedPreferences = searchParams.get('_ignoreSavedPreferences') === 'true';
+  const prefs = ignoreSavedPreferences ? {} : savedPreferences || {};
+  const hasValue = (value: string | null): value is string => value !== null && value.trim() !== '';
 
   // Query param provided? Use it. Otherwise use saved preference or default.
   const useCaseParam = searchParams.get('useCase');
-  const useCases = useCaseParam !== null ? validateUseCases(useCaseParam) : prefs.useCases || [];
+  const useCases = hasValue(useCaseParam) ? validateUseCases(useCaseParam) : prefs.useCases || [];
 
   const sortParam = searchParams.get('sort');
-  const sort = sortParam !== null ? validateSort(sortParam) : prefs.sort || DEFAULT_SORT;
+  const sort = hasValue(sortParam) ? validateSort(sortParam) : prefs.sort || DEFAULT_SORT;
 
   const topNParam = searchParams.get('topN');
-  const topN = topNParam !== null ? validateTopN(topNParam) : prefs.topN;
+  const topN = hasValue(topNParam) ? validateTopN(topNParam) : prefs.topN;
 
   const maxErrorRateParam = searchParams.get('maxErrorRate');
-  const maxErrorRate =
-    maxErrorRateParam !== null ? validateMaxErrorRate(maxErrorRateParam) : prefs.maxErrorRate;
+  const maxErrorRate = hasValue(maxErrorRateParam)
+    ? validateMaxErrorRate(maxErrorRateParam)
+    : prefs.maxErrorRate;
 
   const timeRangeParam = searchParams.get('timeRange');
-  const timeRange =
-    timeRangeParam !== null
-      ? validateTimeRange(timeRangeParam)
-      : prefs.timeRange || DEFAULT_TIME_RANGE;
+  const timeRange = hasValue(timeRangeParam)
+    ? validateTimeRange(timeRangeParam)
+    : prefs.timeRange || DEFAULT_TIME_RANGE;
 
   const myReportsParam = searchParams.get('myReports');
-  const myReports = myReportsParam !== null ? myReportsParam === 'true' : prefs.myReports || false;
+  const myReports = hasValue(myReportsParam) ? myReportsParam === 'true' : prefs.myReports || false;
 
   // Internal-only escape hatch used by /api/demo/models to neutralize demo-key exclusions.
   const clearExcludedModels = searchParams.get('_clearExcludedModels') === 'true';
@@ -87,18 +92,25 @@ export function parseModelParams(
 /**
  * Load saved preferences from an API key's metadata field
  */
-async function loadApiKeyPreferences(db: Database, keyId: string): Promise<ApiKeyPreferences> {
+async function loadApiKeyPreferences(
+  databaseUrl: string,
+  userId: string,
+  keyId: string
+): Promise<ApiKeyPreferences> {
   try {
-    const [key] = await db
-      .select({ metadata: apiKeys.metadata })
-      .from(apiKeys)
-      .where(eq(apiKeys.id, keyId))
-      .limit(1);
+    const [key] = await withUserContext(databaseUrl, userId, async (tx) => {
+      return tx
+        .select({ metadata: apiKeys.metadata })
+        .from(apiKeys)
+        .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
+        .limit(1);
+    });
 
     if (!key?.metadata) return {};
 
     return extractApiKeyPreferences(key.metadata);
-  } catch {
+  } catch (error) {
+    console.warn('[API Params] Failed to load API key preferences:', error);
     return {};
   }
 }
@@ -130,9 +142,8 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
   }
 
   // Get database connection
-  const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
-  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
+  const rt = access(context);
+  const databaseUrl = rt.dbUrl('app');
 
   if (!databaseUrl) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
@@ -141,12 +152,19 @@ export async function initializeRequest(context: APIContext): Promise<RequestCon
     });
   }
 
-  const db = createDb(databaseUrl);
+  const db = rt.db('app');
+  if (!db) {
+    return new Response(JSON.stringify({ error: 'Database not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
 
   // Load saved preferences from API key metadata
-  const savedPreferences = validation.keyId
-    ? await loadApiKeyPreferences(db, validation.keyId)
-    : undefined;
+  const savedPreferences =
+    validation.keyId && validation.userId
+      ? await loadApiKeyPreferences(databaseUrl, validation.userId, validation.keyId)
+      : undefined;
 
   // Parse parameters with saved preferences as fallback defaults
   const params = parseModelParams(context.url.searchParams, savedPreferences);
@@ -176,19 +194,19 @@ export async function getUserIdIfMyReports(
  * Initialize database connection only (for public endpoints)
  * Returns Database if successful, or Response if error
  */
-export async function initializeDb(context: APIContext): Promise<Database | Response> {
-  const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
-  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
-
-  if (!databaseUrl) {
+export async function initializeDb(
+  context: APIContext,
+  role: DbRole = 'app'
+): Promise<Database | Response> {
+  const db = access(context).db(role);
+  if (!db) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   }
 
-  return createDb(databaseUrl);
+  return db;
 }
 
 export interface AuthOnlyContext {
@@ -221,9 +239,8 @@ export async function initializeAuthOnly(context: APIContext): Promise<AuthOnlyC
     );
   }
 
-  const runtime = (context.locals as { runtime?: { env?: { DATABASE_URL?: string } } }).runtime;
-  const importMetaEnv = (import.meta as { env?: { DATABASE_URL?: string } }).env;
-  const databaseUrl = runtime?.env?.DATABASE_URL || importMetaEnv?.DATABASE_URL;
+  const rt = access(context);
+  const databaseUrl = rt.dbUrl('app');
 
   if (!databaseUrl) {
     return new Response(JSON.stringify({ error: 'Database not configured' }), {
@@ -232,6 +249,12 @@ export async function initializeAuthOnly(context: APIContext): Promise<AuthOnlyC
     });
   }
 
-  const db = createDb(databaseUrl);
+  const db = rt.db('app');
+  if (!db) {
+    return new Response(JSON.stringify({ error: 'Database not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
   return { db, databaseUrl, userId: validation.userId, keyId: validation.keyId };
 }

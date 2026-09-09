@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getClientIp, createRateLimiter, isAllowedOrigin } from '@/lib/api-utils';
 import { siteConfig } from '@/lib/seo';
 import { createRequestId, withRequestId, errorJsonResponse, logApiStage } from '@/lib/api-response';
+import { access } from '@/lib/runtime-access';
 
 // Lightweight in-memory cache (best effort per instance).
 // This keeps the endpoint anonymous while reducing demo key burn.
@@ -32,11 +33,9 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
     return errorJsonResponse({ error: 'Forbidden', code: 'FORBIDDEN' }, { requestId, status: 403 });
   }
 
-  const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const env = runtime?.env || {};
-
-  const demoKey = env.DEMO_API_KEY || import.meta.env.DEMO_API_KEY;
-  const baseUrl = env.BETTER_AUTH_URL || import.meta.env.BETTER_AUTH_URL || url.origin;
+  const rt = access(locals);
+  const demoKey = rt.env('DEMO_API_KEY');
+  const baseUrl = rt.env('BETTER_AUTH_URL') || url.origin;
 
   if (!demoKey) {
     return errorJsonResponse(
@@ -73,11 +72,8 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
 
   try {
     const params = new URLSearchParams(url.searchParams);
-    // Neutralize demo key-level saved preferences so site behavior is deterministic.
-    // Empty query values are treated as explicit "no filter"/undefined by validators.
-    params.set('useCase', '');
-    params.set('topN', '');
-    params.set('maxErrorRate', '');
+    // Neutralize demo-key saved preferences, but keep caller-provided query params.
+    params.set('_ignoreSavedPreferences', 'true');
     // Force myReports=false for demo - shows community data, not demo user's reports
     params.set('myReports', 'false');
     // Internal flag consumed by /api/v1/model routes to ignore saved key exclusions.
@@ -90,9 +86,20 @@ export const GET: APIRoute = async ({ locals, url, request }) => {
     const text = await response.text();
 
     if (!response.ok) {
+      const upstreamBody = text.replace(/\s+/g, ' ').trim().slice(0, 300);
       logApiStage('/api/demo/models', requestId, 'upstream_error', {
         upstreamStatus: response.status,
+        upstreamBody,
       });
+      if (response.status === 401) {
+        return errorJsonResponse(
+          {
+            error: 'Demo API key is invalid for the active database',
+            code: 'DEMO_KEY_INVALID',
+          },
+          { requestId, status: 500 }
+        );
+      }
       return errorJsonResponse(
         {
           error: text ? 'Failed to fetch models' : 'Failed to fetch models',

@@ -22,7 +22,7 @@ export function ApiPreferencesConfigurator({
         <ModelControls {...modelControlsProps} />
       </div>
       <ModelList {...modelListProps} />
-      {helper && <p className="text-sm text-muted-foreground">{helper}</p>}
+      {helper && <p className="type-label text-muted-foreground">{helper}</p>}
     </div>
   );
 }

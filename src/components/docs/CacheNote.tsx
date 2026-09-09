@@ -5,7 +5,7 @@ interface CacheNoteProps {
 
 export function CacheNote({ maxAge, sdkTtl }: CacheNoteProps) {
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="type-caption text-muted-foreground">
       <code className="bg-muted px-1 py-0.5 rounded">Cache-Control: private, max-age={maxAge}</code>{' '}
       - Responses are cached for {maxAge} seconds at the HTTP layer
       {sdkTtl && ` and ${sdkTtl} minutes in the SDK`}.

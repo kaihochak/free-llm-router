@@ -27,7 +27,7 @@ export function LoginPage() {
   return (
     <Card className="w-full">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Sign In</CardTitle>
+        <CardTitle className="type-heading">Sign In</CardTitle>
         <CardDescription>Sign in with GitHub to create and manage your API keys</CardDescription>
       </CardHeader>
       <CardContent>

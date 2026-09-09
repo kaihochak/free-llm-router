@@ -277,21 +277,13 @@ export function ParameterConfigurationSection() {
 
   return (
     <section id="parameter-configuration" className="mt-20 scroll-mt-20 space-y-6">
-      <h2 className="mb-4 text-5xl font-bold">Parameter Configuration</h2>
-
-      <section id="parameter-configuration-overview" className="space-y-3 scroll-mt-20">
-        <h3 className="text-xl font-semibold sm:text-2xl">Overview</h3>
-        <p className="text-muted-foreground">
-          Configure model selection once in the app, then call <code>getModelIds()</code> without
-          request parameters. Saved defaults are applied per API key automatically.
-        </p>
-        <p className="text-muted-foreground">
-          Use <strong>Preview only</strong> to test filters locally without saving to a key.
-        </p>
-      </section>
+      <h2 className="mb-4 type-heading">Parameter Configuration</h2>
+      <p className="text-muted-foreground">
+        Save model filters to an API key or override them per request.
+      </p>
 
       <section id="configure-params-live" className="space-y-3 scroll-mt-20">
-        <h3 className="text-xl font-semibold sm:text-2xl">Configure Parameters</h3>
+        <h3 className="type-title">Configure Parameters</h3>
         <ApiPreferencesConfigurator
           modelControlsProps={{
             ...modelControlsProps,
@@ -349,7 +341,7 @@ export function ParameterConfigurationSection() {
                   </Select>
                   {selectedApiKeyId !== NO_API_KEY_VALUE && (
                     <div className="flex items-center gap-3">
-                      <p className="text-xs text-muted-foreground">
+                      <p className="type-caption text-muted-foreground">
                         {prefLoadError
                           ? prefLoadError
                           : saveStatus === 'saved'
@@ -387,42 +379,25 @@ export function ParameterConfigurationSection() {
               )}
             </>
           }
-          helper={
-            <>
-              Tune filters and preview the output list. For full parameter details, see{' '}
-              <a href="#query-params" className="text-primary hover:underline">
-                Query Parameters
-              </a>
-              .
-            </>
-          }
         />
       </section>
 
       <section id="key-defaults" className="space-y-3 scroll-mt-20">
-        <h3 className="text-xl font-semibold sm:text-2xl">Key Defaults</h3>
+        <h3 className="type-title">Key Defaults</h3>
         <p className="text-muted-foreground">
-          Parameters are saved per API key. A call like <code>getModelIds()</code> uses the selected
-          key&apos;s saved defaults.
-        </p>
-        <p className="text-muted-foreground">
-          Model exclusions are also saved per key in app settings. They are applied automatically
-          for that key and are not part of request-level override arguments.
+          Calls without parameters use the selected key&apos;s saved configuration.
         </p>
         <CodeBlock
           code={`const { ids, requestId } = await getModelIds()`}
           language="typescript"
-          className="text-sm"
+          className="type-label"
         />
       </section>
 
       <section id="request-overrides" className="space-y-3 scroll-mt-20">
-        <h3 className="text-xl font-semibold sm:text-2xl">Request Overrides</h3>
-        <p className="text-muted-foreground">
-          Passing arguments to <code>getModelIds(...)</code> overrides those defaults for that
-          request only.
-        </p>
-        <CodeBlock code={overrideCallSnippet} language="typescript" className="text-sm" />
+        <h3 className="type-title">Request Overrides</h3>
+        <p className="text-muted-foreground">Passed parameters apply to that request only.</p>
+        <CodeBlock code={overrideCallSnippet} language="typescript" className="type-label" />
       </section>
     </section>
   );

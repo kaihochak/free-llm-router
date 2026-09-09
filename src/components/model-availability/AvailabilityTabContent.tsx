@@ -20,15 +20,6 @@ export function AvailabilityTabContent() {
 
   return (
     <div>
-      <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
-        Daily model availability tracked from OpenRouter sync. Green indicates the model was
-        available as a free model on that day.
-      </p>
-      <p className="mb-8 text-sm text-muted-foreground sm:text-base">
-        Data is recorded each time models are synced from OpenRouter. Models that are no longer free
-        or have been removed will show as unavailable.
-      </p>
-
       {/* Controls - reuse ModelControls with subset of options */}
       <ModelControls
         activeUseCases={activeUseCases}

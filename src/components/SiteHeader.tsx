@@ -13,22 +13,28 @@ export function SiteHeader({ showSidebarTrigger = true }: SiteHeaderProps) {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="flex w-full items-center gap-3 px-4">
-        <div className="flex items-center gap-3 md:gap-6">
+      <div className="flex w-full items-center gap-2 px-3 sm:gap-3 sm:px-4">
+        <div className="flex items-center gap-2 md:gap-6">
           {showSidebarTrigger && <SidebarTrigger className="md:hidden" />}
-          <a href="/" className="flex items-center gap-2 font-semibold">
+          <a href="/" className="flex items-center gap-2 type-label">
             <img src="/favicon.svg" alt="" className="h-5 w-5" />
-            <span className="hidden sm:inline text-sm sm:text-base">Free LLM Router</span>
+            <span className="type-label hidden sm:inline">Free LLM Router</span>
           </a>
-          <nav className="items-center gap-4 flex">
-            <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
+          <nav className="flex items-center gap-2 sm:gap-4">
+            <a href="/docs" className="type-label text-muted-foreground hover:text-foreground">
               Docs
             </a>
-            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">
+            <a href="/pricing" className="type-label text-muted-foreground hover:text-foreground">
               Pricing
             </a>
-            <a href="/models" className="text-sm text-muted-foreground hover:text-foreground">
-              Models
+            <a href="/models" className="type-label text-muted-foreground hover:text-foreground">
+              Health
+            </a>
+            <a
+              href="/availability"
+              className="type-label text-muted-foreground hover:text-foreground"
+            >
+              Availability
             </a>
             <div className="hidden md:block">
               <FeedbackDialog />
@@ -38,25 +44,17 @@ export function SiteHeader({ showSidebarTrigger = true }: SiteHeaderProps) {
         <div className="flex-1" />
         {!isPending &&
           (session?.user ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-2 text-xs sm:px-3 sm:text-sm"
-              asChild
-            >
+            <Button variant="outline" size="sm" className="type-caption h-8 px-2 sm:px-3" asChild>
               <a href="/dashboard">Dashboard</a>
             </Button>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-2 text-xs sm:px-3 sm:text-sm"
-              asChild
-            >
+            <Button variant="outline" size="sm" className="type-caption h-8 px-2 sm:px-3" asChild>
               <a href="/login">Sign In</a>
             </Button>
           ))}
-        <ThemeToggle />
+        <div className="hidden sm:block">
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

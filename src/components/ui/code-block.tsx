@@ -47,11 +47,11 @@ export function CodeBlock({
     <div className={`relative rounded-lg border bg-muted/50 overflow-hidden ${className}`}>
       {highlightedCode ? (
         <div
-          className="max-h-[50vh] overflow-y-auto p-4 text-sm text-left leading-relaxed [&_pre]:bg-transparent! [&_pre]:whitespace-pre-wrap [&_pre]:wrap-break-word [&_code]:bg-transparent!"
+          className="max-h-[50vh] overflow-y-auto p-4 type-label text-left leading-relaxed [&_pre]:bg-transparent! [&_pre]:whitespace-pre-wrap [&_pre]:wrap-break-word [&_code]:bg-transparent!"
           dangerouslySetInnerHTML={{ __html: highlightedCode }}
         />
       ) : (
-        <pre className="p-4 text-sm font-mono text-left leading-relaxed whitespace-pre-wrap wrap-break-word">
+        <pre className="p-4 type-label font-mono text-left leading-relaxed whitespace-pre-wrap wrap-break-word">
           <code>{code}</code>
         </pre>
       )}

@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useHealth, type TimeRange } from '@/hooks/useHealth';
+import { HEALTH_DEFAULT_TIME_RANGE, useHealth, type TimeRange } from '@/hooks/useHealth';
 import { ModelList } from '@/components/ModelList';
 import { IssuesChart } from '@/components/model-health/HealthChart';
 import { ModelControls } from '@/components/ModelControls';
@@ -19,7 +19,6 @@ import { filterModelsByUseCase, sortModels } from '@/lib/model-types';
 import {
   DEFAULT_MY_REPORTS,
   DEFAULT_SORT,
-  DEFAULT_TIME_RANGE,
   DEFAULT_TOP_N,
   DEFAULT_USE_CASE,
 } from '@/lib/api-definitions';
@@ -118,7 +117,7 @@ export function HealthTabContent() {
     setActiveTopN(selectedPreferences.topN ?? DEFAULT_TOP_N);
     setReliabilityFilterEnabled(selectedPreferences.maxErrorRate !== undefined);
     setActiveMaxErrorRate(selectedPreferences.maxErrorRate);
-    setRange((selectedPreferences.timeRange ?? DEFAULT_TIME_RANGE) as TimeRange);
+    setRange((selectedPreferences.timeRange ?? HEALTH_DEFAULT_TIME_RANGE) as TimeRange);
     setMyReports(selectedPreferences.myReports ?? DEFAULT_MY_REPORTS);
     setExcludedModelIds(selectedPreferences.excludeModelIds ?? []);
     setCurrentPage(1);
@@ -142,7 +141,7 @@ export function HealthTabContent() {
         setActiveTopN(localSnapshot.topN ?? DEFAULT_TOP_N);
         setReliabilityFilterEnabled(localSnapshot.maxErrorRate !== undefined);
         setActiveMaxErrorRate(localSnapshot.maxErrorRate);
-        setRange((localSnapshot.timeRange ?? DEFAULT_TIME_RANGE) as TimeRange);
+        setRange((localSnapshot.timeRange ?? HEALTH_DEFAULT_TIME_RANGE) as TimeRange);
         setMyReports(localSnapshot.myReports ?? DEFAULT_MY_REPORTS);
         setExcludedModelIds(localSnapshot.excludeModelIds ?? []);
       }
@@ -268,16 +267,6 @@ export function HealthTabContent() {
 
   return (
     <div>
-      <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
-        {myReports ? 'Your personal' : 'Community-reported'} model health data based on both
-        successful requests and reported issues.
-      </p>
-      <p className="mb-8 text-sm text-muted-foreground sm:text-base">
-        Error rates show the percentage of failed requests relative to total reports. Lower
-        percentages indicate healthier models. Help improve this data by reporting both successes
-        and issues via the API.
-      </p>
-
       {session?.user && (
         <div className="mb-4 flex items-center gap-3">
           <Select value={selectedApiKeyId} onValueChange={handleApiKeyChange}>
@@ -327,8 +316,8 @@ export function HealthTabContent() {
 
       {/* Chart */}
       <div className="mt-6 mb-3 flex items-center gap-2">
-        <span className="font-medium">Error Rate Over Time</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">
+        <span className="type-label">Error Rate Over Time</span>
+        <span className="type-label text-emerald-600 dark:text-emerald-400">
           &#8595; Lower is better
         </span>
       </div>
@@ -343,10 +332,7 @@ export function HealthTabContent() {
 
       {/* Issues list */}
       <div className="mb-3 flex items-center gap-2">
-        <span className="font-medium">Models by Error Rate</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">
-          &#8595; Lower is better
-        </span>
+        <span className="type-label">Models by Error Rate</span>
         <div className="ml-auto">
           <ButtonGroup>
             <Button

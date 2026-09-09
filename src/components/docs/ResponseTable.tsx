@@ -13,20 +13,20 @@ interface ResponseTableProps {
 export function ResponseTable({ fields }: ResponseTableProps) {
   return (
     <div>
-      <h4 className="mb-3 font-medium">Response</h4>
+      <h4 className="type-label mb-3">Response</h4>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full type-label">
           <thead>
             <tr className="border-b">
-              <th className="py-2 pr-4 text-left font-medium">Field</th>
-              <th className="py-2 pr-4 text-left font-medium">Type</th>
-              <th className="py-2 text-left font-medium">Description</th>
+              <th className="py-2 pr-4 text-left type-label">Field</th>
+              <th className="py-2 pr-4 text-left type-label">Type</th>
+              <th className="py-2 text-left type-label">Description</th>
             </tr>
           </thead>
           <tbody className="text-muted-foreground">
             {fields.map((field, idx) => (
               <tr key={field.name} className={idx === fields.length - 1 ? '' : 'border-b'}>
-                <td className="py-2 pr-4 font-mono text-xs">{field.name}</td>
+                <td className="py-2 pr-4 font-mono type-caption">{field.name}</td>
                 <td className="py-2 pr-4">{field.type}</td>
                 <td className="py-2">{field.description}</td>
               </tr>

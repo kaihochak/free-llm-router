@@ -4,6 +4,7 @@
  */
 
 import { createAuth, type AuthEnv } from '@/lib/auth';
+import { access } from '@/lib/runtime-access';
 
 export interface SessionResult {
   session: { user: { id: string } };
@@ -20,17 +21,15 @@ export interface SessionError {
  * Get environment configuration from Cloudflare runtime or import.meta.env
  */
 export function getEnvConfig(locals: unknown) {
-  const runtime = (locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const env = runtime?.env || {};
-  const importMetaEnv = (import.meta as { env?: Record<string, string> }).env;
+  const rt = access(locals);
 
   return {
-    databaseUrl: env.DATABASE_URL || importMetaEnv?.DATABASE_URL,
-    databaseUrlAdmin: env.DATABASE_URL_ADMIN || importMetaEnv?.DATABASE_URL_ADMIN,
-    baseUrl: env.BETTER_AUTH_URL || importMetaEnv?.BETTER_AUTH_URL,
-    secret: env.BETTER_AUTH_SECRET || importMetaEnv?.BETTER_AUTH_SECRET,
-    githubClientId: env.GITHUB_CLIENT_ID || importMetaEnv?.GITHUB_CLIENT_ID,
-    githubClientSecret: env.GITHUB_CLIENT_SECRET || importMetaEnv?.GITHUB_CLIENT_SECRET,
+    databaseUrl: rt.dbUrl('app'),
+    databaseUrlAdmin: rt.dbUrl('admin'),
+    baseUrl: rt.env('BETTER_AUTH_URL'),
+    secret: rt.env('BETTER_AUTH_SECRET'),
+    githubClientId: rt.env('GITHUB_CLIENT_ID'),
+    githubClientSecret: rt.env('GITHUB_CLIENT_SECRET'),
   };
 }
 

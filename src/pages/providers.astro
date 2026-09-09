@@ -1,0 +1,114 @@
+---
+import Layout from '../layouts/base.astro';
+import { access } from '@/lib/runtime-access';
+import { getDistinctProviders } from '@/services/openrouter';
+import { providerDetailPath } from '@/lib/model-urls';
+import { buttonVariants } from '@/components/ui/button';
+
+const db = access(Astro.locals).db('app');
+if (!db) throw new Error('Missing env: DATABASE_URL');
+
+const providers = await getDistinctProviders(db);
+const providersPerPage = 20;
+const totalPages = Math.max(1, Math.ceil(providers.length / providersPerPage));
+const pageParam = Astro.url.searchParams.get('page');
+const parsedPage = pageParam === null ? 1 : Number(pageParam);
+
+if (!Number.isInteger(parsedPage) || parsedPage < 1 || parsedPage > totalPages) {
+  return Astro.redirect('/providers');
+}
+
+if (parsedPage === 1 && pageParam !== null) {
+  return Astro.redirect('/providers');
+}
+
+const currentPage = parsedPage;
+const paginatedProviders = providers.slice(
+  (currentPage - 1) * providersPerPage,
+  currentPage * providersPerPage
+);
+const pageUrl = (page: number) => (page === 1 ? '/providers' : `/providers?page=${page}`);
+const pageTitle = currentPage === 1 ? 'Providers' : `Providers - Page ${currentPage}`;
+---
+
+<Layout
+  title={pageTitle}
+  description="Browse free OpenRouter model providers and view provider-level reliability and availability."
+  url={pageUrl(currentPage)}
+>
+  <div class="container mx-auto max-w-3xl px-4 py-8">
+    <h1 class="type-heading mb-2">Providers</h1>
+
+    <div class="rounded-xl border bg-card divide-y overflow-hidden">
+      {
+        paginatedProviders.map((provider) => (
+          <a
+            href={providerDetailPath(provider)}
+            class="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+          >
+            <div class="flex min-w-0 items-center gap-3">
+              <img
+                src={`https://models.dev/logos/${provider}.svg`}
+                alt={provider}
+                class="h-6 w-6 object-contain opacity-70 dark:invert dark:opacity-80 shrink-0"
+                onerror="this.style.display='none'"
+              />
+              <span class="type-label text-foreground group-hover:text-primary transition-colors capitalize truncate">
+                {provider}
+              </span>
+            </div>
+            <svg
+              class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </a>
+        ))
+      }
+    </div>
+
+    {
+      totalPages > 1 && (
+        <nav class="mt-6 flex items-center justify-center gap-1" aria-label="Provider pages">
+          {currentPage > 1 && (
+            <a
+              href={pageUrl(currentPage - 1)}
+              rel="prev"
+              class={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              Previous
+            </a>
+          )}
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            <a
+              href={pageUrl(page)}
+              aria-current={page === currentPage ? 'page' : undefined}
+              class={buttonVariants({
+                variant: 'outline',
+                size: 'icon-sm',
+                className: page === currentPage ? 'bg-accent text-accent-foreground' : undefined,
+              })}
+            >
+              {page}
+            </a>
+          ))}
+          {currentPage < totalPages && (
+            <a
+              href={pageUrl(currentPage + 1)}
+              rel="next"
+              class={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              Next
+            </a>
+          )}
+        </nav>
+      )
+    }
+  </div>
+</Layout>

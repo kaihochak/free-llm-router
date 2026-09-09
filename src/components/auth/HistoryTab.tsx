@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { authClient } from '@/lib/auth-client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, FileText, Key } from 'lucide-react';
 import {
@@ -32,8 +32,6 @@ export function HistoryTab({ isSessionReady }: { isSessionReady?: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>History</CardTitle>
-        <CardDescription>View your API request history and usage reports</CardDescription>
         <div className="flex items-center gap-2 pt-2">
           <Button
             variant={filter === 'unified' ? 'default' : 'outline'}

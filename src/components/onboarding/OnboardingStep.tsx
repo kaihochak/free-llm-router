@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
 interface OnboardingStepProps {
-  stepNumber: number;
   title: string;
   description?: string;
   children: React.ReactNode;
@@ -13,7 +12,6 @@ interface OnboardingStepProps {
 }
 
 export function OnboardingStep({
-  stepNumber,
   title,
   description,
   children,
@@ -23,14 +21,11 @@ export function OnboardingStep({
   wide = false,
 }: OnboardingStepProps) {
   return (
-    <div className="flex flex-col items-center text-center space-y-10 py-10">
+    <div className="flex flex-col items-center text-center space-y-6 py-8">
       {/* Step Header */}
-      <div className="flex flex-col items-center text-center space-y-2">
-        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          Step {stepNumber}
-        </span>
-        <h2 className="text-4xl font-bold sm:text-5xl">{title}</h2>
-        {description && <p className="text-lg text-muted-foreground">{description}</p>}
+      <div className="flex flex-col items-center text-center space-y-1">
+        <h2 className="type-heading">{title}</h2>
+        {description && <p className="type-body text-muted-foreground">{description}</p>}
       </div>
 
       {/* Step Content */}

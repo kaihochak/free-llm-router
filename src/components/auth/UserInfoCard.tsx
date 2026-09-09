@@ -28,8 +28,8 @@ export function UserInfo({ user }: UserInfoProps) {
           <img src={user.image} alt={user.name || 'User'} className="h-12 w-12 rounded-full" />
         )}
         <div>
-          <h2 className="text-xl font-semibold">{user.name}</h2>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+          <h2 className="type-title">{user.name}</h2>
+          <p className="type-label text-muted-foreground">{user.email}</p>
         </div>
       </div>
       <Button variant="outline" onClick={handleSignOut}>

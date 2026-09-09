@@ -50,35 +50,35 @@ export function RequestDetailsPanel({ responseData }: { responseData: ParsedResp
             onMyReportsChange={noop}
           />
         ) : (
-          <p className="text-sm text-muted-foreground">No parameters available</p>
+          <p className="type-label text-muted-foreground">No parameters available</p>
         )}
       </div>
 
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <span className="text-sm font-semibold">Returned models</span>
+          <span className="type-label">Returned models</span>
           <Badge variant="outline">{modelCount}</Badge>
         </div>
 
         {!responseData ? (
-          <p className="text-sm text-muted-foreground">No model list available</p>
+          <p className="type-label text-muted-foreground">No model list available</p>
         ) : modelIds.length === 0 && modelCount > 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="type-label text-muted-foreground">
             Model list not captured for this request. ({modelCount} returned)
           </p>
         ) : modelIds.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No models returned</p>
+          <p className="type-label text-muted-foreground">No models returned</p>
         ) : (
           <div className="space-y-2">
             <ul className="space-y-1">
               {visibleModelIds.map((modelId) => (
                 <li key={modelId}>
-                  <code className="text-xs">{modelId}</code>
+                  <code className="type-caption">{modelId}</code>
                 </li>
               ))}
             </ul>
             {remainingModels > 0 && (
-              <p className="text-xs text-muted-foreground">+{remainingModels} more</p>
+              <p className="type-caption text-muted-foreground">+{remainingModels} more</p>
             )}
           </div>
         )}

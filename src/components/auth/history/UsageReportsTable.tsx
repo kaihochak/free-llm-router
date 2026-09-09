@@ -63,10 +63,10 @@ export function UsageReportsTable({
           {items.map((item) => (
             <TableRow key={item.id}>
               <TableCell>
-                <code className="text-sm truncate max-w-50 block">{item.modelId}</code>
+                <code className="type-label truncate max-w-50 block">{item.modelId}</code>
               </TableCell>
               <TableCell>
-                <code className="text-xs text-muted-foreground">
+                <code className="type-caption text-muted-foreground">
                   {item.apiKeyName || item.apiKeyPrefix || '-'}
                 </code>
               </TableCell>
@@ -77,10 +77,10 @@ export function UsageReportsTable({
                   <Badge variant="destructive">{item.issue || 'Error'}</Badge>
                 )}
               </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
+              <TableCell className="text-muted-foreground type-label">
                 {formatTimeAgo(item.createdAt)}
               </TableCell>
-              <TableCell className="text-muted-foreground text-sm max-w-50 truncate">
+              <TableCell className="text-muted-foreground type-label max-w-50 truncate">
                 <TruncatedWithTooltip text={item.details || '-'} />
               </TableCell>
             </TableRow>

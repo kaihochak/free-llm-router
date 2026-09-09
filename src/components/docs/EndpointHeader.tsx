@@ -28,13 +28,13 @@ export function EndpointHeader({ method, endpoint, description }: EndpointHeader
       <div>
         <div className="flex items-center gap-2 mb-2">
           <span
-            className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold ${
+            className={`inline-flex items-center rounded px-2 py-0.5 type-caption ${
               METHOD_COLORS[method]
             }`}
           >
             {method}
           </span>
-          <h3 className="font-mono text-lg font-medium">{endpoint}</h3>
+          <h3 className="type-title font-mono">{endpoint}</h3>
         </div>
         <p className="text-muted-foreground">{description}</p>
       </div>

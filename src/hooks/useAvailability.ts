@@ -18,7 +18,7 @@ export interface AvailabilityData {
   supportedParameters: string[] | null;
   contextLength: number | null;
   maxCompletionTokens: number | null;
-  availability: Record<string, boolean>; // { "2026-01-31": true, "2026-01-30": false, ... }
+  availability: Record<string, boolean>;
 }
 
 interface AvailabilityResponse {
@@ -54,13 +54,10 @@ async function fetchAvailability(options: FetchAvailabilityOptions): Promise<Ava
   return response.json();
 }
 
-const AVAILABILITY_DEFAULT_DAYS = 90;
+const AVAILABILITY_DEFAULT_DAYS = 180;
 
 export function useAvailability() {
-  const [days, setDays] = useLocalStorage<number>(
-    'freeModels:availability:days',
-    AVAILABILITY_DEFAULT_DAYS
-  );
+  const days = AVAILABILITY_DEFAULT_DAYS;
   const [activeUseCases, setActiveUseCases] = useLocalStorage<UseCaseType[]>(
     'freeModels:availability:useCases',
     DEFAULT_USE_CASE
@@ -82,7 +79,7 @@ export function useAvailability() {
         useCases: activeUseCases,
         sort: activeSort,
       }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     ...STRICT_QUERY_OPTIONS,
   });
 
@@ -98,7 +95,6 @@ export function useAvailability() {
   };
 
   const resetToDefaults = () => {
-    setDays(AVAILABILITY_DEFAULT_DAYS);
     setActiveUseCases(DEFAULT_USE_CASE);
     setActiveSort(DEFAULT_SORT);
   };
@@ -111,7 +107,6 @@ export function useAvailability() {
     loading,
     error: error instanceof Error ? error.message : error ? String(error) : null,
     days,
-    setDays,
     activeUseCases,
     activeSort,
     toggleUseCase,

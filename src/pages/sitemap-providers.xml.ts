@@ -1,12 +1,11 @@
 import type { APIRoute } from 'astro';
-import { createDb } from '@/db';
+import { access } from '@/lib/runtime-access';
 import { getDistinctProviders } from '@/services/openrouter';
 import { siteConfig } from '@/lib/seo';
 
 export const GET: APIRoute = async (context) => {
-  const runtime = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime;
-  const databaseUrl = runtime?.env?.DATABASE_URL || import.meta.env.DATABASE_URL;
-  const db = createDb(databaseUrl);
+  const db = access(context).db('app');
+  if (!db) throw new Error('Missing env: DATABASE_URL');
   const providers = await getDistinctProviders(db);
 
   const today = new Date().toISOString().split('T')[0];
@@ -14,7 +13,7 @@ export const GET: APIRoute = async (context) => {
   const urls = providers
     .map(
       (p) => `  <url>
-    <loc>${siteConfig.url}/providers/${p}</loc>
+    <loc>${siteConfig.url}/providers/${encodeURIComponent(p)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -29,7 +28,7 @@ ${urls}
 
   return new Response(xml, {
     headers: {
-      'Content-Type': 'application/xml',
+      'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600',
     },
   });

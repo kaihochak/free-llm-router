@@ -3,7 +3,7 @@ export const siteConfig = {
   url: 'https://freellmrouter.com',
   description:
     'Find free OpenRouter models with live health and availability. One API call routes to working free models so your app stays up.',
-  defaultImage: '/og-image.png',
+  defaultImage: '/og-image.svg',
 };
 
 export interface SEOProps {
@@ -96,13 +96,24 @@ export function generateBreadcrumbSchema(items: { name: string; url: string }[])
 }
 
 /** JSON-LD CollectionPage schema for a provider page listing its models. */
-export function generateProviderSchema(provider: string, modelCount: number) {
+export function generateProviderSchema(
+  provider: string,
+  modelCount: number,
+  activeModelCount = modelCount
+) {
   const providerCapitalized = provider.charAt(0).toUpperCase() + provider.slice(1);
+  const inactiveModelCount = modelCount - activeModelCount;
+  const description =
+    activeModelCount === modelCount
+      ? `Browse ${modelCount} free ${providerCapitalized} AI models available on OpenRouter. View reliability and availability data.`
+      : activeModelCount > 0
+        ? `Browse ${activeModelCount} active and ${inactiveModelCount} previously free ${providerCapitalized} AI models on OpenRouter. View reliability and availability data.`
+        : `View reliability and availability history for ${modelCount} previously free ${providerCapitalized} AI models on OpenRouter.`;
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: `Free ${providerCapitalized} Models on OpenRouter`,
-    description: `Browse ${modelCount} free ${providerCapitalized} AI models available on OpenRouter. View reliability and availability data.`,
+    description,
     url: `${siteConfig.url}/providers/${provider}`,
     provider: {
       '@type': 'Organization',
@@ -113,7 +124,7 @@ export function generateProviderSchema(provider: string, modelCount: number) {
 }
 
 /** JSON-LD FAQPage schema from an array of {question, answer} items. */
-export function generateFAQSchema(faqs: { question: string; answer: string }[]) {
+export function generateFAQSchema(faqs: readonly { question: string; answer: string }[]) {
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',

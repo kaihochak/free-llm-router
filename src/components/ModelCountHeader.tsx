@@ -49,16 +49,16 @@ export function ModelCountHeader({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 type-caption text-emerald-600 dark:text-emerald-400">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
         Live
       </span>
-      <p className="text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">{count}</span> {label}
+      <p className="type-label text-muted-foreground">
+        <span className="type-label text-foreground">{count}</span> {label}
         {relativeTime && (
           <span className="hidden sm:inline">
             <span className="mx-1.5">·</span>
-            <span className="text-xs">Updated {relativeTime}</span>
+            <span className="type-caption">Updated {relativeTime}</span>
           </span>
         )}
       </p>

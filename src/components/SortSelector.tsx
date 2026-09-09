@@ -15,14 +15,13 @@ export function SortSelector({ activeSort, onSortChange, onConfirm }: SortSelect
         <Button
           key={option.key}
           variant={activeSort === option.key ? 'secondary' : 'outline'}
-          size="xl"
           onClick={() => onSortChange(option.key)}
         >
           {option.label}
         </Button>
       ))}
       {onConfirm && (
-        <Button size="xl" onClick={onConfirm}>
+        <Button onClick={onConfirm}>
           Get Code
           <ChevronRight className="ml-1 h-4 w-4" />
         </Button>

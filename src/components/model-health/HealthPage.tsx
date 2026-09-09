@@ -73,12 +73,12 @@ function IssuesPageContent() {
 
   return (
     <section className="scroll-mt-16 sm:mt-4">
-      <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-5xl">Model Health</h2>
-      <p className="mb-3 text-base text-muted-foreground sm:mb-4 sm:text-lg">
+      <h2 className="type-heading mb-3 sm:mb-4">Model Health</h2>
+      <p className="type-body mb-3 text-muted-foreground sm:mb-4">
         {myReports ? 'Your personal' : 'Community-reported'} model health data based on both
         successful requests and reported issues.
       </p>
-      <p className="mb-8 text-sm text-muted-foreground sm:mb-12 sm:text-base">
+      <p className="type-body mb-8 text-muted-foreground sm:mb-12">
         Error rates show the percentage of failed requests relative to total reports. Lower
         percentages indicate healthier models. Help improve this data by reporting both successes
         and issues via the API.
@@ -110,8 +110,8 @@ function IssuesPageContent() {
 
       {/* Chart */}
       <div className="mt-6 mb-3 flex items-center gap-2">
-        <span className="font-medium">Error Rate Over Time</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
+        <span className="type-label">Error Rate Over Time</span>
+        <span className="type-label text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
       </div>
       <div className="mb-8">
         <IssuesChart
@@ -124,8 +124,8 @@ function IssuesPageContent() {
 
       {/* Issues list */}
       <div className="mb-3 flex items-center gap-2">
-        <span className="font-medium">Models by Error Rate</span>
-        <span className="text-sm text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
+        <span className="type-label">Models by Error Rate</span>
+        <span className="type-label text-emerald-600 dark:text-emerald-400">↓ Lower is better</span>
       </div>
       <ModelList
         models={models}
