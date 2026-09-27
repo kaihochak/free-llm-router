@@ -136,8 +136,7 @@ jobs:
           esac
           test -n "$ADMIN_URL" || { echo "Missing admin URL for ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1; }
           printf '%s' "$ADMIN_URL" | bunx wrangler secret put "$ADMIN_SECRET_NAME" --env production
-          printf '%s' "$ACTIVE_DB_SLOT" | bunx wrangler secret put ACTIVE_DB_SLOT --env production
-          bun run deploy:production
+          bunx wrangler deploy --env production --var "ACTIVE_DB_SLOT:$ACTIVE_DB_SLOT"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

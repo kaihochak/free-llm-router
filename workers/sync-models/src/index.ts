@@ -4,8 +4,9 @@
  * This worker runs hourly inside Cloudflare's network, bypassing bot protection.
  * It directly connects to the Neon database to sync models.
  *
- * Required secrets (set via `wrangler secret put`):
+ * Runtime variable (set via `wrangler deploy --var`):
  * - ACTIVE_DB_SLOT (optional, defaults to 1)
+ * Required secrets (set via `wrangler secret put`):
  * - DATABASE_URL_ADMIN (slot 1)
  * - DATABASE_URL_ADMIN_<N> (slot N)
  */

@@ -79,6 +79,7 @@ Minimum credentials needed:
    workflow uploads the selected admin URL to the Worker.
 3. For each cutover, change only the GitHub Environment variable
    `ACTIVE_DB_SLOT=<target-slot>` and run its workflow. It updates the corresponding
-   Pages and Worker runtime slot values, then deploys.
+   Pages and Worker runtime slot values, then deploys. The Worker's slot is a text
+   variable passed to `wrangler deploy`; its database URL remains a secret.
    Staging uses the shared Pages preview configuration, which affects all preview branches.
 4. Re-enable writes/worker after successful cutover.

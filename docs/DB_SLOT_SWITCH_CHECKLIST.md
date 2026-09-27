@@ -67,7 +67,7 @@ If both slots are already configured, only change GitHub's `ACTIVE_DB_SLOT` in s
 ### Cloudflare Worker (`workers/sync-models`)
 
 - The workflow uploads the selected slot's admin URL from GitHub secrets before switching the Worker. No manual Worker URL change is needed for cutover.
-- The Worker also has `ACTIVE_DB_SLOT`. The workflow sets it to the GitHub Environment's selected slot; the hourly sync writes to that slot.
+- The Worker also has `ACTIVE_DB_SLOT` as a text variable (not a secret). The workflow sets it during Worker deployment; the hourly sync writes to that slot.
 - If an environment has only slot 1 (such as staging before slot 2 is created), its `_2` URL can be added later.
 
 ### GitHub Actions
