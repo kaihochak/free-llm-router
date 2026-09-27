@@ -23,15 +23,15 @@ head_sampling_rate = 1
 # Staging environment
 [env.staging]
 name = "free-llm-router-sync-staging"
-# Secrets:
-# - ACTIVE_DB_SLOT (optional, defaults to 1)
+# Secrets provisioned by the GitHub Actions staging deployment:
+# - ACTIVE_DB_SLOT (1 or 2)
 # - DATABASE_URL_ADMIN (slot 1)
-# - DATABASE_URL_ADMIN_<N> (slot N)
+# - DATABASE_URL_ADMIN_2 (slot 2)
 
 # Production environment
 [env.production]
 name = "free-llm-router-sync-production"
-# Secrets:
-# - ACTIVE_DB_SLOT (optional, defaults to 1)
+# Secrets provisioned by the GitHub Actions production deployment:
+# - ACTIVE_DB_SLOT (1 or 2)
 # - DATABASE_URL_ADMIN (slot 1)
-# - DATABASE_URL_ADMIN_<N> (slot N)
+# - DATABASE_URL_ADMIN_2 (slot 2)

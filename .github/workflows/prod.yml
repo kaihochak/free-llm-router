@@ -93,8 +93,18 @@ jobs:
 
       - name: Deploy to Cloudflare Workers (Production)
         working-directory: workers/sync-models
-        run: bun run deploy:production
+        run: |
+          printf '%s' "$ACTIVE_DB_SLOT" | bunx wrangler secret put ACTIVE_DB_SLOT --env production
+          case "$ACTIVE_DB_SLOT" in
+            1) ADMIN_SECRET_NAME=DATABASE_URL_ADMIN; ADMIN_URL="$DATABASE_URL_ADMIN_1" ;;
+            2) ADMIN_SECRET_NAME=DATABASE_URL_ADMIN_2; ADMIN_URL="$DATABASE_URL_ADMIN_2" ;;
+            *) echo "Unsupported ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1 ;;
+          esac
+          test -n "$ADMIN_URL" || { echo "Missing admin URL for ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1; }
+          printf '%s' "$ADMIN_URL" | bunx wrangler secret put "$ADMIN_SECRET_NAME" --env production
+          bun run deploy:production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        # Note: DATABASE_URL_ADMIN secret is set manually via:
-        # cd workers/sync-models && bunx wrangler secret put DATABASE_URL_ADMIN --env production
+          ACTIVE_DB_SLOT: ${{ vars.ACTIVE_DB_SLOT || '1' }}
+          DATABASE_URL_ADMIN_1: ${{ secrets.DATABASE_URL_ADMIN }}
+          DATABASE_URL_ADMIN_2: ${{ secrets.DATABASE_URL_ADMIN_2 }}
