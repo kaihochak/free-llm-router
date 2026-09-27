@@ -72,8 +72,13 @@ Minimum credentials needed:
 
 ## Deployment notes
 
-1. Keep `ACTIVE_DB_SLOT=1` until copy is complete and validated.
-2. Update secrets for the new slot in:
-   GitHub env, Cloudflare Pages env, Worker secrets.
-3. For cutover, set `ACTIVE_DB_SLOT=<target-slot>` in all environments and deploy.
+1. Keep runtime on the current slot until copy is complete and validated.
+2. If the target slot is new, configure its credentials once: the owner/admin URLs in
+   GitHub Environment secrets and the app/admin/stats URLs in Cloudflare Pages. No
+   credential changes are needed for later switches between configured slots. The
+   workflow uploads the selected admin URL to the Worker.
+3. For each cutover, change only the GitHub Environment variable
+   `ACTIVE_DB_SLOT=<target-slot>` and run its workflow. It updates the corresponding
+   Pages and Worker runtime slot values, then deploys.
+   Staging uses the shared Pages preview configuration, which affects all preview branches.
 4. Re-enable writes/worker after successful cutover.

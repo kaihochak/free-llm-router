@@ -1,10 +1,10 @@
 # DB Slot Switch Checklist
 
-Use this when moving runtime traffic from slot `1` to slot `2` (or any slot `N`).
+Use this when moving runtime traffic between slots `1` and `2`.
 
 This is the short operator checklist. For wizard details, see `scripts/db-migration/README.md`.
 
-## 1. Prepare New Slot
+## 1. Prepare Target Slot
 
 - Run:
 
@@ -12,14 +12,10 @@ This is the short operator checklist. For wizard details, see `scripts/db-migrat
 bun run db:new
 ```
 
-- Confirm the new slot has:
-  - `DATABASE_URL_<N>`
-  - `DATABASE_URL_ADMIN_<N>`
-  - `DATABASE_URL_STATS_<N>`
-  - `DATABASE_URL_OWNER_<N>`
+- Confirm the target slot has its four role URLs. Slot 1 uses unsuffixed names; slot 2 uses `_2` suffixes.
 
 - Keep runtime on the old slot for now:
-  - `ACTIVE_DB_SLOT=1`
+  - leave `ACTIVE_DB_SLOT` set to the current source slot
 
 ## 2. Copy Data
 
@@ -30,7 +26,7 @@ bun run db:migrate
 ```
 
 - Copy from old slot to new slot.
-- If prompted, truncate the target before re-copying.
+- If prompted, truncating clears **all public-table data in the target slot** before the copy. Confirm the source and target direction before accepting.
 - Do **not** switch runtime yet.
 
 ## 3. Verify Copy
@@ -38,7 +34,7 @@ bun run db:migrate
 - Run:
 
 ```bash
-bun run db:verify --source-slot=1 --target-slot=2
+bun run db:verify --source-slot=<source> --target-slot=<target>
 ```
 
 - Confirm key-table counts are acceptable for cutover.
@@ -56,40 +52,41 @@ Goal:
 
 - avoid old-slot/new-slot drift during the cutover window
 
-## 5. Update Secrets
+## 5. Confirm Target Slot Is Configured
+
+These URLs are one-time setup for a new slot, not values to change at every cutover.
+If both slots are already configured, only change GitHub's `ACTIVE_DB_SLOT` in step 6.
 
 ### Cloudflare Pages
 
-- set `ACTIVE_DB_SLOT=2`
-- ensure these exist:
-  - `DATABASE_URL`
-  - `DATABASE_URL_ADMIN`
-  - `DATABASE_URL_STATS`
-  - `DATABASE_URL_2`
-  - `DATABASE_URL_ADMIN_2`
-  - `DATABASE_URL_STATS_2`
+- Keep both slots' URLs in the correct Pages environment when both slots exist (production for `main`, preview for `staging`):
+  - Slot 1: `DATABASE_URL`, `DATABASE_URL_ADMIN`, `DATABASE_URL_STATS`
+  - Slot 2: `DATABASE_URL_2`, `DATABASE_URL_ADMIN_2`, `DATABASE_URL_STATS_2`
+- Pages also has `ACTIVE_DB_SLOT`. The workflow sets it to the GitHub Environment's selected slot; Pages uses the matching URL set at runtime.
 
 ### Cloudflare Worker (`workers/sync-models`)
 
-- set `ACTIVE_DB_SLOT=2`
-- ensure these exist:
-  - `DATABASE_URL_ADMIN`
-  - `DATABASE_URL_ADMIN_2`
+- The workflow uploads the selected slot's admin URL from GitHub secrets before switching the Worker. No manual Worker URL change is needed for cutover.
+- The Worker also has `ACTIVE_DB_SLOT`. The workflow sets it to the GitHub Environment's selected slot; the hourly sync writes to that slot.
+- If an environment has only slot 1 (such as staging before slot 2 is created), its `_2` URL can be added later.
 
 ### GitHub Actions
 
-- set `DATABASE_URL_OWNER` to the owner URL for the active target slot
-- GitHub should not be the runtime source of truth for app DB reads
+- Store `ACTIVE_DB_SLOT` in the corresponding GitHub Environment (`production` or `staging`); this is the only value to change for a cutover between configured slots.
+- Store owner URLs as `DATABASE_URL_OWNER` (slot 1) and `DATABASE_URL_OWNER_2` (slot 2).
+- Store Worker admin URLs as `DATABASE_URL_ADMIN` (slot 1) and `DATABASE_URL_ADMIN_2` (slot 2).
+- The selected slot's owner and admin secrets are required. For example, staging on slot 1 does not need slot 2 secrets yet.
+- The Cloudflare API token needs Pages Write and Workers Scripts Write access, and `CLOUDFLARE_ACCOUNT_ID` must be available to the Pages job.
 
 ## 6. Deploy
 
-- Deploy Pages
-- Deploy the sync worker
+- Run the appropriate GitHub workflow (`Production Checks + Migrations` or `Staging Checks + Migrations`) after setting the GitHub Environment variable.
+- The workflow pushes the schema to the selected slot, verifies that the matching Pages database URLs exist, sets Pages `ACTIVE_DB_SLOT`, deploys Pages, provisions the Worker's selected admin URL and `ACTIVE_DB_SLOT`, and deploys the Worker.
+- Staging uses the shared Pages project's **preview** configuration. A change there applies to all preview deployments of that project, not just the `staging` branch.
 
 After deploy:
 
-- app runtime should read slot `2`
-- worker should write slot `2`
+- app runtime and Worker should both use the selected slot
 
 ## 7. Post-Cutover Checks
 
@@ -111,22 +108,9 @@ Recommended spot checks:
 
 If cutover is bad:
 
-### Cloudflare Pages
-
-- set `ACTIVE_DB_SLOT=1`
-
-### Cloudflare Worker
-
-- set `ACTIVE_DB_SLOT=1`
-
-### GitHub Actions
-
-- point `DATABASE_URL_OWNER` back to slot `1` owner URL
-
-Then:
-
-- redeploy Pages
-- redeploy worker
+- Set the appropriate GitHub Environment's `ACTIVE_DB_SLOT` back to the previous slot.
+- Run that environment's workflow again. It updates Pages, the Worker, and the schema target from the same setting.
+- Verify both runtime surfaces after rollback. Data written after the copy may need reconciliation before switching back.
 
 ## 9. Rules to Remember
 

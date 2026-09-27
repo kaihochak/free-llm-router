@@ -3,6 +3,7 @@ name: Production Checks + Migrations
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   production-checks:
@@ -25,9 +26,21 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Push database schema (production)
-        run: bun run db:push
+        run: |
+          case "$ACTIVE_DB_SLOT" in
+            1) ADMIN_URL="$DATABASE_URL_ADMIN" ;;
+            2) export DATABASE_URL_OWNER="$DATABASE_URL_OWNER_2"; ADMIN_URL="$DATABASE_URL_ADMIN_2" ;;
+            *) echo "Unsupported ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1 ;;
+          esac
+          test -n "$DATABASE_URL_OWNER" || { echo "Missing owner URL for ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1; }
+          test -n "$ADMIN_URL" || { echo "Missing Worker admin URL for ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1; }
+          bun run db:push
         env:
+          ACTIVE_DB_SLOT: ${{ vars.ACTIVE_DB_SLOT }}
           DATABASE_URL_OWNER: ${{ secrets.DATABASE_URL_OWNER }}
+          DATABASE_URL_OWNER_2: ${{ secrets.DATABASE_URL_OWNER_2 }}
+          DATABASE_URL_ADMIN: ${{ secrets.DATABASE_URL_ADMIN }}
+          DATABASE_URL_ADMIN_2: ${{ secrets.DATABASE_URL_ADMIN_2 }}
 
       - name: Build project
         run: bun run build
@@ -66,6 +79,28 @@ jobs:
           PUBLIC_POSTHOG_KEY: ${{ secrets.PUBLIC_POSTHOG_KEY }}
           PUBLIC_POSTHOG_HOST: ${{ secrets.PUBLIC_POSTHOG_HOST }}
 
+      - name: Set Cloudflare Pages DB slot
+        run: |
+          set -euo pipefail
+          case "$ACTIVE_DB_SLOT" in
+            1) suffix='' ;;
+            2) suffix='_2' ;;
+            *) echo "Unsupported ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1 ;;
+          esac
+          pages_url="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/free-llm-router"
+          current=$(curl -fsS "$pages_url" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          for key in "DATABASE_URL$suffix" "DATABASE_URL_ADMIN$suffix" "DATABASE_URL_STATS$suffix"; do
+            jq -e --arg env "$PAGES_ENVIRONMENT" --arg key "$key" '.success == true and .result.deployment_configs[$env].env_vars[$key] != null' <<< "$current" > /dev/null || { echo "Pages $PAGES_ENVIRONMENT is missing $key" >&2; exit 1; }
+          done
+          body=$(jq -nc --arg env "$PAGES_ENVIRONMENT" --arg slot "$ACTIVE_DB_SLOT" '{deployment_configs:{($env):{env_vars:{ACTIVE_DB_SLOT:{type:"plain_text",value:$slot}}}}}')
+          response=$(curl -fsS -X PATCH "$pages_url" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' --data "$body")
+          jq -e '.success == true' <<< "$response" > /dev/null
+        env:
+          ACTIVE_DB_SLOT: ${{ vars.ACTIVE_DB_SLOT }}
+          PAGES_ENVIRONMENT: production
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy to Cloudflare Pages
         run: bunx wrangler pages deploy dist --project-name free-llm-router --branch main
         env:
@@ -74,7 +109,7 @@ jobs:
 
   deploy-sync-worker:
     name: Deploy Sync Worker (Production)
-    needs: [production-checks]
+    needs: [deploy]
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -94,17 +129,18 @@ jobs:
       - name: Deploy to Cloudflare Workers (Production)
         working-directory: workers/sync-models
         run: |
-          printf '%s' "$ACTIVE_DB_SLOT" | bunx wrangler secret put ACTIVE_DB_SLOT --env production
           case "$ACTIVE_DB_SLOT" in
-            1) ADMIN_SECRET_NAME=DATABASE_URL_ADMIN; ADMIN_URL="$DATABASE_URL_ADMIN_1" ;;
+            1) ADMIN_SECRET_NAME=DATABASE_URL_ADMIN; ADMIN_URL="$DATABASE_URL_ADMIN" ;;
             2) ADMIN_SECRET_NAME=DATABASE_URL_ADMIN_2; ADMIN_URL="$DATABASE_URL_ADMIN_2" ;;
             *) echo "Unsupported ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1 ;;
           esac
           test -n "$ADMIN_URL" || { echo "Missing admin URL for ACTIVE_DB_SLOT=$ACTIVE_DB_SLOT" >&2; exit 1; }
           printf '%s' "$ADMIN_URL" | bunx wrangler secret put "$ADMIN_SECRET_NAME" --env production
+          printf '%s' "$ACTIVE_DB_SLOT" | bunx wrangler secret put ACTIVE_DB_SLOT --env production
           bun run deploy:production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          ACTIVE_DB_SLOT: ${{ vars.ACTIVE_DB_SLOT || '1' }}
-          DATABASE_URL_ADMIN_1: ${{ secrets.DATABASE_URL_ADMIN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ACTIVE_DB_SLOT: ${{ vars.ACTIVE_DB_SLOT }}
+          DATABASE_URL_ADMIN: ${{ secrets.DATABASE_URL_ADMIN }}
           DATABASE_URL_ADMIN_2: ${{ secrets.DATABASE_URL_ADMIN_2 }}
