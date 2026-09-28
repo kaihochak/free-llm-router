@@ -183,3 +183,21 @@ jobs:
           ACTIVE_DB_SLOT: ${{ vars.ACTIVE_DB_SLOT }}
           DATABASE_URL_ADMIN: ${{ secrets.DATABASE_URL_ADMIN }}
           DATABASE_URL_ADMIN_2: ${{ secrets.DATABASE_URL_ADMIN_2 }}
+
+      - name: Verify DB slot in GitHub, Pages, and Worker
+        run: |
+          set -euo pipefail
+          pages_url="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/free-llm-router"
+          worker_url="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/settings"
+          pages=$(curl -fsS "$pages_url" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          worker=$(curl -fsS "$worker_url" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          pages_slot=$(jq -r --arg env "$PAGES_ENVIRONMENT" 'select(.success == true) | .result.deployment_configs[$env].env_vars.ACTIVE_DB_SLOT | select(.type == "plain_text") | .value' <<< "$pages")
+          worker_slot=$(jq -r 'select(.success == true) | .result.bindings[] | select(.name == "ACTIVE_DB_SLOT" and .type == "plain_text") | .text' <<< "$worker")
+          printf 'DB slots: GitHub=%s Pages=%s Worker=%s\n' "$ACTIVE_DB_SLOT" "$pages_slot" "$worker_slot"
+          test "$pages_slot" = "$ACTIVE_DB_SLOT" && test "$worker_slot" = "$ACTIVE_DB_SLOT" || { echo 'DB slot mismatch after deployment' >&2; exit 1; }
+        env:
+          ACTIVE_DB_SLOT: ${{ vars.ACTIVE_DB_SLOT }}
+          PAGES_ENVIRONMENT: preview
+          WORKER_NAME: free-llm-router-sync-staging
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

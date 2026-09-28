@@ -82,6 +82,7 @@ If both slots are already configured, only change GitHub's `ACTIVE_DB_SLOT` in s
 
 - Run the appropriate GitHub workflow (`Production Checks + Migrations` or `Staging Checks + Migrations`) after setting the GitHub Environment variable.
 - The workflow pushes the schema to the selected slot, verifies that the matching Pages database URLs exist, sets Pages `ACTIVE_DB_SLOT`, deploys Pages, provisions the Worker's selected admin URL and `ACTIVE_DB_SLOT`, and deploys the Worker.
+- After deployment, the workflow reads back `ACTIVE_DB_SLOT` from Pages and the Worker, compares both with GitHub's selected value, and fails if they differ.
 - Staging uses the shared Pages project's **preview** configuration. A change there applies to all preview deployments of that project, not just the `staging` branch.
 
 After deploy:
