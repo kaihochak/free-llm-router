@@ -59,8 +59,12 @@ For the reverse switch, use `--source-slot=2 --target-slot=1`.
 
 - Read the displayed source/target plan before confirming. The target normally
   contains an old copy. When prompted, **truncating deletes all public-table data
-  on the target**, then the wizard copies source data into it. Preserve the old
-  target separately first if its data is needed. Never truncate the source.
+  on the target**, then the wizard copies source data into it. The wizard first
+  writes a complete temporary source dump; truncate and restore run in one target
+  transaction, so a failed restore rolls back the truncate and copy. Rollback
+  preserves the target's pre-attempt state, even if it was already incomplete.
+  Preserve the old target separately first if its data is needed. Never truncate
+  the source.
 - The wizard performs a post-copy key-table check. Treat any mismatch or `ERR`
   as a stop; do not switch traffic.
 - The optional local `.env` change affects only local commands, not production.

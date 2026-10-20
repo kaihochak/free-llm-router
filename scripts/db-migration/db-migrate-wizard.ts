@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
-import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import {
@@ -176,19 +177,6 @@ function runPsqlQuery(url: string, sql: string): string {
   return (result.stdout || '').trim();
 }
 
-function runPsqlExec(url: string, sql: string): void {
-  const psqlBin = process.env.PSQL_BIN || 'psql';
-  const result = spawnSync(psqlBin, ['-v', 'ON_ERROR_STOP=1', '-c', sql, url], {
-    stdio: 'inherit',
-  });
-  if (result.error) {
-    throw new Error(`psql failed: ${result.error.message}`);
-  }
-  if ((result.status ?? 1) !== 0) {
-    throw new Error(`psql exited with code ${result.status ?? 1}`);
-  }
-}
-
 function escapeSqlLiteral(value: string): string {
   return value.replaceAll("'", "''");
 }
@@ -339,27 +327,24 @@ function estimatePublicRows(url: string): number {
   return Math.trunc(n);
 }
 
-function truncatePublicTables(url: string): void {
+function getTargetTruncateSql(url: string): string | undefined {
   const tables = runPsqlQuery(
     url,
     "select coalesce(string_agg(format('%I.%I', schemaname, tablename), ', ' order by tablename), '') from pg_tables where schemaname = 'public';"
   );
   if (!tables) {
-    console.log('No public tables found on target to truncate.');
-    return;
+    return undefined;
   }
-  runPsqlExec(url, `TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE;`);
+  return `TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE;`;
 }
 
-async function cloneDataOnly(oldDbUrl: string, newDbUrl: string): Promise<void> {
+function cloneDataOnly(oldDbUrl: string, newDbUrl: string, truncateTarget: boolean): void {
   const oldUrl = withSslRequire(oldDbUrl);
   const newUrl = withSslRequire(newDbUrl);
   const sourceServerMajor = getServerMajor(oldUrl);
   const pgDump = resolvePgDumpBinary(sourceServerMajor);
   const psql = resolvePsqlBinary(pgDump.major);
-
-  const pgDumpArgs = ['--no-owner', '--no-privileges', '--data-only', oldUrl];
-  const psqlArgs = ['-v', 'ON_ERROR_STOP=1', newUrl];
+  const truncateSql = truncateTarget ? getTargetTruncateSql(newUrl) : undefined;
 
   console.log('DB clone configuration:');
   console.log(`- from: ${summarizeConnection(oldUrl)}`);
@@ -370,20 +355,36 @@ async function cloneDataOnly(oldDbUrl: string, newDbUrl: string): Promise<void> 
   console.log(`- using psql: ${psql.bin} (v${psql.major})`);
   console.log('');
 
-  const dump = spawn(pgDump.bin, pgDumpArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
-  const restore = spawn(psql.bin, psqlArgs, { stdio: ['pipe', 'inherit', 'pipe'] });
+  const tempDir = mkdtempSync(join(tmpdir(), 'free-models-db-copy-'));
+  const dumpPath = join(tempDir, 'data.sql');
+  try {
+    console.log('Writing complete source dump before changing target...');
+    const dump = spawnSync(
+      pgDump.bin,
+      ['--no-owner', '--no-privileges', '--data-only', '--file', dumpPath, oldUrl],
+      { stdio: 'inherit' }
+    );
+    if (dump.error || dump.status !== 0) {
+      throw new Error(`Source dump failed (pg_dump=${dump.status ?? 'error'}).`);
+    }
+    if (statSync(dumpPath).size === 0) {
+      throw new Error('Source dump is empty; target was not changed.');
+    }
 
-  dump.stdout.pipe(restore.stdin);
-  dump.stderr.pipe(process.stderr);
-  restore.stderr.pipe(process.stderr);
-
-  const [dumpCode, restoreCode] = await Promise.all([
-    new Promise<number>((resolve) => dump.on('close', (code) => resolve(code ?? 1))),
-    new Promise<number>((resolve) => restore.on('close', (code) => resolve(code ?? 1))),
-  ]);
-
-  if (dumpCode !== 0 || restoreCode !== 0) {
-    throw new Error(`Clone failed (pg_dump=${dumpCode}, psql=${restoreCode}).`);
+    const psqlArgs = ['-X', '-v', 'ON_ERROR_STOP=1', '--single-transaction'];
+    if (truncateSql) {
+      console.log('Truncating target public tables inside the restore transaction...');
+      psqlArgs.push('-c', truncateSql);
+    }
+    psqlArgs.push('-f', dumpPath, newUrl);
+    const restore = spawnSync(psql.bin, psqlArgs, { stdio: 'inherit' });
+    if (restore.error || restore.status !== 0) {
+      throw new Error(
+        `Restore failed (psql=${restore.status ?? 'error'}); target transaction rolled back.`
+      );
+    }
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
   }
 }
 
@@ -658,6 +659,9 @@ async function main() {
     const sourceKeyHasData = Object.values(sourceKeyTableCounts).some(
       (value) => typeof value === 'number' && value > 0
     );
+    const targetKeyHasData = Object.values(targetKeyTableCounts).some(
+      (value) => typeof value === 'number' && value > 0
+    );
     const sourceKeyHasSchemaErrors = Object.values(sourceKeyTableCounts).some(
       (value) => value === 'ERR'
     );
@@ -744,15 +748,15 @@ async function main() {
       }
     }
 
-    if (targetRowsBefore > 0) {
+    let truncateTarget = false;
+    if (targetRowsBefore > 0 || targetKeyHasData) {
       const shouldTruncateTarget = await askYesNo(
         rl,
         'Target has existing rows. Truncate target public tables before copy?',
         'yes'
       );
       if (shouldTruncateTarget) {
-        console.log('Truncating target public tables...');
-        truncatePublicTables(targetCopyUrl);
+        truncateTarget = true;
       } else {
         console.log('Skipping target truncate (duplicate key conflicts may stop copy).');
       }
@@ -760,7 +764,7 @@ async function main() {
 
     console.log('');
     console.log('Step 6: Executing copy step...');
-    await cloneDataOnly(sourceCopyUrl, targetCopyUrl);
+    cloneDataOnly(sourceCopyUrl, targetCopyUrl, truncateTarget);
     console.log('Clone completed successfully.');
 
     console.log('');

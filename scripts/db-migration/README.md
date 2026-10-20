@@ -42,8 +42,11 @@ This wizard:
 1. reads `.env` + process env
 2. asks source (slot number or pasted postgres URL)
 3. asks target (slot number or pasted postgres URL)
-4. runs data copy and post-copy verification
-5. if target is a slot, optionally updates local `.env` `ACTIVE_DB_SLOT=<target>`
+4. writes a complete data-only dump to a private temporary file, then runs any
+   confirmed target truncate and the restore in one transaction; a restore failure
+   rolls back both and the temporary file is removed
+5. runs post-copy verification
+6. if target is a slot, optionally updates local `.env` `ACTIVE_DB_SLOT=<target>`
 
 ### 3) Verify source/target are in sync
 
