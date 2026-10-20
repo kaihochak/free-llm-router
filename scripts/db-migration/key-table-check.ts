@@ -10,7 +10,11 @@ export const KEY_TABLES = [
 ] as const;
 
 export type TableCountValue = number | 'ERR';
-export type TableCountMismatch = { table: string; source: number; target: number };
+export type TableCountMismatch = {
+  table: string;
+  source: TableCountValue;
+  target: TableCountValue;
+};
 
 function quoteIdent(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
@@ -61,8 +65,8 @@ export function findCountMismatches(
   for (const table of KEY_TABLES) {
     const s = source[table];
     const t = target[table];
-    if (typeof s === 'number' && typeof t === 'number' && s !== t) {
-      mismatches.push({ table, source: s, target: t });
+    if (s === 'ERR' || t === 'ERR' || s !== t) {
+      mismatches.push({ table, source: s ?? 'ERR', target: t ?? 'ERR' });
     }
   }
   return mismatches;

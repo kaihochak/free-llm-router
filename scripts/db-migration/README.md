@@ -1,6 +1,6 @@
 # DB Migration Runbook (Slot-Based)
 
-Quick cutover checklist:
+Repeat production cutovers (start here; no new slot setup when both slots exist):
 
 - [docs/DB_SLOT_SWITCH_CHECKLIST.md](../../docs/DB_SLOT_SWITCH_CHECKLIST.md)
 
@@ -16,9 +16,9 @@ Files:
 - `db-migrate-wizard.ts` (interactive copy from slot -> slot)
 - `enable_rls.sql`
 
-## Recommended flow
+## First-time setup and command details
 
-### 1) Setup a new slot (2/3/4...)
+### 1) Setup a new slot only if needed (2/3/4...)
 
 ```bash
 bun run db:new

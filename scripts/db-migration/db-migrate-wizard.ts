@@ -766,6 +766,7 @@ async function main() {
     console.log('');
     console.log('Step 7: Post-copy verification.');
     let postCheckMismatches: TableCountMismatch[] = [];
+    let postCheckSucceeded = false;
     try {
       const targetRowsAfter = estimatePublicRows(targetCopyUrl);
       console.log(`- target estimated rows after copy: ${targetRowsAfter}`);
@@ -806,6 +807,7 @@ async function main() {
         sourceKeyTableCountsAfter,
         targetKeyTableCountsAfter
       );
+      postCheckSucceeded = true;
       if (postCheckMismatches.length > 0) {
         console.log('');
         console.log('Post-copy mismatch detected (do not switch slot yet):');
@@ -823,7 +825,7 @@ async function main() {
       );
     }
 
-    if (postCheckMismatches.length > 0) {
+    if (!postCheckSucceeded || postCheckMismatches.length > 0) {
       console.log('');
       console.log('Aborting before slot switch due to post-copy mismatches.');
       process.exit(1);
