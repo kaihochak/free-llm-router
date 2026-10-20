@@ -94,9 +94,13 @@ gh workflow run prod.yml --ref main
 
 The workflow pushes schema to the selected slot, sets Pages production's
 `ACTIVE_DB_SLOT`, deploys Pages, uploads the selected Worker admin URL, and deploys
-the Worker with its `ACTIVE_DB_SLOT` text variable. Do not separately edit Pages or
-Worker slot values or use `wrangler secret put ACTIVE_DB_SLOT`; that name is a text
-binding, not a secret.
+the **production sync Worker** with its `ACTIVE_DB_SLOT` text variable. That is the
+same Worker whose hourly cron sync writes to the database. For target slot 2, the
+workflow supplies `DATABASE_URL_ADMIN_2` and deploys the Worker with
+`ACTIVE_DB_SLOT=2`; its scheduled handler then selects the slot-2 URL. The cron
+schedule itself does not change. Do not separately edit Pages or Worker slot values
+or use `wrangler secret put ACTIVE_DB_SLOT`; that name is a text binding, not a
+secret.
 
 ## 6. Verify Cloudflare after deployment
 
@@ -109,7 +113,11 @@ gh run view RUN_ID --log | rg 'DB slots: GitHub=[12] Pages=[12] Worker=[12]'
 ```
 
 Replace `RUN_ID` with the **new** run ID. The final line must show the target slot
-for GitHub, Pages, and Worker. This is the workflow's live Cloudflare readback.
+for GitHub, Pages, and Worker. This is the workflow's live Cloudflare readback and
+confirms that the cron Worker's slot binding switched too. A successful Pages
+deployment alone is not enough: wait for the Worker deployment and this final
+three-way check before resuming the hourly sync.
+
 Wrangler is useful for an additional read-only Worker deployment inspection:
 
 ```bash
