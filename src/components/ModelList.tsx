@@ -220,13 +220,13 @@ export function ModelList({
                             : `Error rate: ${model.errorRate.toFixed(1)}%`}
                         </p>
                         {showErrorRateDetails && (model.rateLimited ?? 0) > 0 && (
-                          <p className="text-muted-foreground">Rate limited: {model.rateLimited}</p>
+                          <p>Rate limited: {model.rateLimited}</p>
                         )}
                         {showErrorRateDetails && (model.unavailable ?? 0) > 0 && (
-                          <p className="text-muted-foreground">Unavailable: {model.unavailable}</p>
+                          <p>Unavailable: {model.unavailable}</p>
                         )}
                         {showErrorRateDetails && (model.errorCount ?? 0) > 0 && (
-                          <p className="text-muted-foreground">Errors: {model.errorCount}</p>
+                          <p>Errors: {model.errorCount}</p>
                         )}
                       </TooltipContent>
                     </Tooltip>
